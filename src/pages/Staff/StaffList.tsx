@@ -1,80 +1,94 @@
 import { useState } from 'react'
 import { Plus, Trash2, UserCog } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
+import { useTranslation } from '../../i18n/useTranslation'
 import PageHeader from '../../components/PageHeader'
 import Modal from '../../components/Modal'
-import { Field, TextInput, SelectInput, PrimaryButton, SecondaryButton } from '../../components/form'
+import { BilingualField, Field, TextInput, SelectInput, PrimaryButton, SecondaryButton } from '../../components/form'
 import type { StaffMember, StaffRole } from '../../types'
-
-const ROLES: StaffRole[] = ['Administrator', 'Recruiter', 'Accountant', 'Coordinator']
 
 export default function StaffList() {
   const staff = useAppStore((s) => s.staff)
+  const requests = useAppStore((s) => s.requests)
   const addStaff = useAppStore((s) => s.addStaff)
+  const updateStaffRole = useAppStore((s) => s.updateStaffRole)
   const toggleStaffActive = useAppStore((s) => s.toggleStaffActive)
   const deleteStaff = useAppStore((s) => s.deleteStaff)
+  const { t, tb, language } = useTranslation()
   const [addOpen, setAddOpen] = useState(false)
 
   function handleDelete(id: string, name: string) {
-    if (window.confirm(`Remove staff member "${name}"?`)) {
-      deleteStaff(id)
-    }
+    if (window.confirm(`${t('action_delete')} ${name}?`)) deleteStaff(id)
   }
 
   return (
     <div className="flex flex-col gap-4 p-4">
       <PageHeader
-        title="Staff"
-        subtitle={`${staff.length} team member${staff.length === 1 ? '' : 's'}`}
+        title={t('nav_staff')}
+        subtitle={t('page_staff_subtitle')}
         actions={
           <PrimaryButton onClick={() => setAddOpen(true)} className="flex items-center gap-1.5">
-            <Plus className="size-3.5" /> Add Staff
+            <Plus className="size-3.5" /> {language === 'ar' ? 'إضافة موظف' : 'Add Staff'}
           </PrimaryButton>
         }
       />
 
-      <div className="overflow-hidden rounded-lg border border-[#162650] bg-[#0a142f]">
-        <table className="w-full text-left">
+      <div className="overflow-x-auto rounded-lg border border-[var(--edge)] bg-[var(--surface)]">
+        <table className="w-full text-start">
           <thead>
-            <tr className="border-b border-[#14234b] text-[10.5px] font-bold uppercase text-slate-400">
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Role</th>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3 text-right">Action</th>
+            <tr className="border-b border-[var(--edge-soft)] text-[10.5px] font-bold uppercase text-[var(--text-secondary)]">
+              <th className="px-4 py-3">{t('label_name')}</th>
+              <th className="px-4 py-3">{language === 'ar' ? 'الدور' : 'Role'}</th>
+              <th className="px-4 py-3">{t('label_email')}</th>
+              <th className="px-4 py-3">{language === 'ar' ? 'الطلبات المعالجة' : 'Requests Handled'}</th>
+              <th className="px-4 py-3">{t('label_status')}</th>
+              <th className="sticky end-0 bg-[var(--surface)] px-4 py-3 text-end">{t('label_action')}</th>
             </tr>
           </thead>
           <tbody>
-            {staff.map((m) => (
-              <tr key={m.id} className="border-b border-[#122046] text-xs last:border-b-0">
-                <td className="px-4 py-3">
-                  <span className="flex items-center gap-2.5 text-slate-200">
-                    <span className="flex size-7 items-center justify-center rounded-full bg-slate-700">
-                      <UserCog className="size-3.5 text-slate-300" />
+            {staff.map((m) => {
+              const handled = requests.filter((r) => r.responsibleEmployeeId === m.id).length
+              return (
+                <tr key={m.id} className="border-b border-[var(--edge-soft2)] text-xs last:border-b-0 hover:bg-[var(--surface-hover)]">
+                  <td className="px-4 py-3">
+                    <span className="flex items-center gap-2.5 text-[var(--text-primary)]">
+                      <span className="flex size-7 items-center justify-center rounded-full bg-[var(--surface-hover)]">
+                        <UserCog className="size-3.5 text-[var(--text-muted)]" />
+                      </span>
+                      {tb(m.name)}
                     </span>
-                    {m.name}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-slate-400">{m.role}</td>
-                <td className="px-4 py-3 text-slate-400">{m.email}</td>
-                <td className="px-4 py-3">
-                  <button
-                    type="button"
-                    onClick={() => toggleStaffActive(m.id)}
-                    className={`rounded px-2 py-0.5 text-[10px] font-bold ${
-                      m.active ? 'bg-emerald-950/80 text-emerald-400' : 'bg-slate-800 text-slate-400'
-                    }`}
-                  >
-                    {m.active ? 'Active' : 'Inactive'}
-                  </button>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <button type="button" onClick={() => handleDelete(m.id, m.name)} className="text-slate-400 hover:text-rose-400">
-                    <Trash2 className="size-3.5" />
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="px-4 py-3">
+                    <select
+                      value={m.role}
+                      onChange={(e) => updateStaffRole(m.id, e.target.value as StaffRole)}
+                      className="rounded border border-[var(--edge)] bg-[var(--input)] px-2 py-1 text-[10.5px] text-[var(--text-primary)] focus:outline-none"
+                    >
+                      <option value="admin">{language === 'ar' ? 'مسؤول' : 'Admin'}</option>
+                      <option value="user">{language === 'ar' ? 'مستخدم' : 'User'}</option>
+                    </select>
+                  </td>
+                  <td className="px-4 py-3 text-[var(--text-secondary)]">{m.email}</td>
+                  <td className="px-4 py-3 text-[var(--text-secondary)]">{handled}</td>
+                  <td className="px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleStaffActive(m.id)}
+                      className={`rounded px-2 py-0.5 text-[10px] font-bold ${
+                        m.status === 'Active' ? 'bg-emerald-950/80 text-emerald-400' : 'bg-[var(--surface-hover)] text-[var(--text-muted)]'
+                      }`}
+                    >
+                      {m.status === 'Active' ? t('label_active') : t('label_inactive')}
+                    </button>
+                  </td>
+                  <td className="sticky end-0 bg-[var(--surface)] px-4 py-3 text-end">
+                    <button type="button" onClick={() => handleDelete(m.id, m.name.en)} className="text-[var(--text-muted)] hover:text-rose-400">
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
@@ -97,37 +111,50 @@ function AddStaffModal({
   onSubmit,
 }: {
   onClose: () => void
-  onSubmit: (data: Omit<StaffMember, 'id' | 'active'>) => void
+  onSubmit: (data: Omit<StaffMember, 'id' | 'status'>) => void
 }) {
-  const [name, setName] = useState('')
-  const [role, setRole] = useState<StaffRole>('Recruiter')
+  const { t, language } = useTranslation()
+  const [nameEn, setNameEn] = useState('')
+  const [nameAr, setNameAr] = useState('')
+  const [role, setRole] = useState<StaffRole>('user')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim() || !email.trim()) return
-    onSubmit({ name: name.trim(), role, email: email.trim() })
+    if (!nameEn.trim() || !email.trim()) return
+    onSubmit({ name: { en: nameEn.trim(), ar: nameAr.trim() }, role, email: email.trim(), phone: phone.trim() })
   }
 
   return (
-    <Modal title="Add Staff" onClose={onClose}>
+    <Modal title={language === 'ar' ? 'إضافة موظف' : 'Add Staff'} onClose={onClose}>
       <form onSubmit={handleSubmit}>
-        <Field label="Full Name">
-          <TextInput value={name} onChange={(e) => setName(e.target.value)} required autoFocus />
-        </Field>
-        <Field label="Role">
+        <BilingualField
+          labelEn={t('label_english_name')}
+          labelAr={t('label_arabic_name')}
+          valueEn={nameEn}
+          valueAr={nameAr}
+          onChangeEn={setNameEn}
+          onChangeAr={setNameAr}
+          required
+        />
+        <Field label={language === 'ar' ? 'الدور' : 'Role'}>
           <SelectInput value={role} onChange={(e) => setRole(e.target.value as StaffRole)}>
-            {ROLES.map((r) => (
-              <option key={r}>{r}</option>
-            ))}
+            <option value="admin">{language === 'ar' ? 'مسؤول (وصول كامل)' : 'Admin (full access)'}</option>
+            <option value="user">{language === 'ar' ? 'مستخدم (إدخال بيانات)' : 'User (data entry)'}</option>
           </SelectInput>
         </Field>
-        <Field label="Email">
-          <TextInput type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={t('label_email')}>
+            <TextInput type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </Field>
+          <Field label={t('label_phone')}>
+            <TextInput value={phone} onChange={(e) => setPhone(e.target.value)} />
+          </Field>
+        </div>
         <div className="mt-4 flex justify-end gap-2">
-          <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
-          <PrimaryButton type="submit">Add Staff</PrimaryButton>
+          <SecondaryButton onClick={onClose}>{t('action_cancel')}</SecondaryButton>
+          <PrimaryButton type="submit">{language === 'ar' ? 'إضافة موظف' : 'Add Staff'}</PrimaryButton>
         </div>
       </form>
     </Modal>

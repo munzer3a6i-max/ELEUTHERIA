@@ -3,7 +3,39 @@
 @theme {
   --font-sans: 'Roboto Condensed', system-ui, sans-serif;
   --font-heading: 'Roboto Condensed', system-ui, sans-serif;
-  --font-serif: Georgia, 'Times New Roman', serif;
+  --font-arabic: 'Tajawal', 'Roboto Condensed', system-ui, sans-serif;
+}
+
+:root {
+  --page: #060b18;
+  --sidebar: #091124;
+  --surface: #0a142f;
+  --surface-hover: #101c3d;
+  --input: #0d1836;
+  --active: #192b59;
+  --edge: #162650;
+  --edge-soft: #14234b;
+  --edge-soft2: #122046;
+  --edge-strong: #23386d;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+}
+
+:root[data-theme='light'] {
+  --page: #f1f5f9;
+  --sidebar: #ffffff;
+  --surface: #ffffff;
+  --surface-hover: #f1f5f9;
+  --input: #f8fafc;
+  --active: #fef3c7;
+  --edge: #e2e8f0;
+  --edge-soft: #edf1f7;
+  --edge-soft2: #edf1f7;
+  --edge-strong: #cbd5e1;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
 }
 
 html,
@@ -14,10 +46,21 @@ body,
 
 body {
   margin: 0;
-  background: #060b18;
-  color: #e2e8f0;
+  background: var(--page);
+  color: var(--text-primary);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+[dir='rtl'] {
+  font-family: var(--font-arabic);
+}
+
+@media print {
+  aside,
+  header {
+    display: none !important;
+  }
 }

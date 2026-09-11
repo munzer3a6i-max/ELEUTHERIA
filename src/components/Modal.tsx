@@ -18,12 +18,12 @@ export default function Modal({
       onClick={onClose}
     >
       <div
-        className={`w-full ${width} rounded-lg border border-[#1b2b54] bg-[#0a142f] shadow-2xl`}
+        className={`w-full ${width} rounded-lg border border-[var(--edge)] bg-[var(--surface)] shadow-2xl`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-[#152347] px-5 py-3.5">
-          <h2 className="text-sm font-bold text-slate-100">{title}</h2>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-200">
+        <div className="flex items-center justify-between border-b border-[var(--edge)] px-5 py-3.5">
+          <h2 className="text-sm font-bold text-[var(--text-primary)]">{title}</h2>
+          <button type="button" onClick={onClose} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
             <X className="size-4" />
           </button>
         </div>

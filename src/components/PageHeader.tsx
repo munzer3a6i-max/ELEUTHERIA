@@ -12,8 +12,8 @@ export default function PageHeader({
   return (
     <div className="mb-4 flex items-start justify-between gap-4">
       <div>
-        <h1 className="text-lg font-bold text-white">{title}</h1>
-        {subtitle && <p className="mt-0.5 text-xs text-slate-400">{subtitle}</p>}
+        <h1 className="text-lg font-bold text-[var(--text-primary)]">{title}</h1>
+        {subtitle && <p className="mt-0.5 text-xs text-[var(--text-secondary)]">{subtitle}</p>}
       </div>
       {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
     </div>

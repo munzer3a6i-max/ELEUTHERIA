@@ -4,11 +4,11 @@ import TopBar from '../components/TopBar'
 
 export default function AppShell() {
   return (
-    <div className="flex min-h-screen bg-[#060b18] font-sans text-slate-200">
+    <div className="flex min-h-screen bg-[var(--page)] font-sans text-[var(--text-primary)]">
       <Sidebar />
       <div className="flex min-h-screen flex-1 flex-col">
         <TopBar />
-        <main className="flex-1 overflow-y-auto bg-[#060b18]">
+        <main className="flex-1 overflow-y-auto bg-[var(--page)]">
           <Outlet />
         </main>
       </div>

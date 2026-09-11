@@ -1,12 +1,12 @@
 import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
 
 const fieldClass =
-  'w-full rounded border border-[#1b2b54] bg-[#0d1836] px-3 py-2 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-amber-500/60'
+  'w-full rounded border border-[var(--edge)] bg-[var(--input)] px-3 py-2 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-amber-500/60'
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="mb-3 block">
-      <span className="mb-1 block text-[11px] font-medium text-slate-400">{label}</span>
+      <span className="mb-1 block text-[11px] font-medium text-[var(--text-secondary)]">{label}</span>
       {children}
     </label>
   )
@@ -39,7 +39,38 @@ export function SecondaryButton(props: React.ButtonHTMLAttributes<HTMLButtonElem
     <button
       {...props}
       type={props.type ?? 'button'}
-      className={`rounded border border-[#23386d] bg-[#101c3d] px-4 py-2 text-xs text-slate-300 hover:border-amber-500/40 ${props.className ?? ''}`}
+      className={`rounded border border-[var(--edge-strong)] bg-[var(--surface-hover)] px-4 py-2 text-xs text-[var(--text-secondary)] hover:border-amber-500/40 ${props.className ?? ''}`}
     />
+  )
+}
+
+export function BilingualField({
+  labelEn,
+  labelAr,
+  valueEn,
+  valueAr,
+  onChangeEn,
+  onChangeAr,
+  required,
+}: {
+  labelEn: string
+  labelAr: string
+  valueEn: string
+  valueAr: string
+  onChangeEn: (v: string) => void
+  onChangeAr: (v: string) => void
+  required?: boolean
+}) {
+  return (
+    <div className="mb-3 grid grid-cols-2 gap-3">
+      <label className="block">
+        <span className="mb-1 block text-[11px] font-medium text-[var(--text-secondary)]">{labelEn}</span>
+        <TextInput value={valueEn} onChange={(e) => onChangeEn(e.target.value)} required={required} />
+      </label>
+      <label className="block" dir="rtl">
+        <span className="mb-1 block text-[11px] font-medium text-[var(--text-secondary)]">{labelAr}</span>
+        <TextInput value={valueAr} onChange={(e) => onChangeAr(e.target.value)} required={required} dir="rtl" />
+      </label>
+    </div>
   )
 }

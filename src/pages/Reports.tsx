@@ -1,91 +1,166 @@
-import { useMemo } from 'react'
-import { useAppStore, computeWorkerTotals, formatCurrency } from '../store/useAppStore'
+import { useMemo, useState } from 'react'
+import { useAppStore, requestCost, invoiceTotalPaid, formatMoney } from '../store/useAppStore'
+import { useTranslation } from '../i18n/useTranslation'
 import PageHeader from '../components/PageHeader'
-import type { WorkerStatus } from '../types'
 
-const STATUSES: WorkerStatus[] = ['In Process', 'Deployed', 'On Hold', 'Cancelled']
+type RangeOption = 'all' | '30' | '90' | 'year'
+
+function withinRange(dateStr: string, range: RangeOption): boolean {
+  if (range === 'all') return true
+  const date = new Date(dateStr)
+  const now = new Date()
+  if (range === 'year') return date.getFullYear() === now.getFullYear()
+  const days = range === '30' ? 30 : 90
+  const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000)
+  return date >= cutoff
+}
 
 export default function Reports() {
-  const workers = useAppStore((s) => s.workers)
+  const requests = useAppStore((s) => s.requests)
+  const employers = useAppStore((s) => s.employers)
+  const agencies = useAppStore((s) => s.agencies)
+  const invoices = useAppStore((s) => s.invoices)
+  const { t, tb, language } = useTranslation()
 
-  const statusCounts = useMemo(() => {
-    const counts = new Map<WorkerStatus, number>()
-    for (const s of STATUSES) counts.set(s, 0)
-    for (const w of workers) counts.set(w.status, (counts.get(w.status) ?? 0) + 1)
-    return counts
-  }, [workers])
+  // Defaults to "all time" so a fresh visit never silently shows zero
+  // just because records happen to fall outside a narrow default window.
+  const [range, setRange] = useState<RangeOption>('all')
 
-  const byClient = useMemo(() => {
-    const map = new Map<string, { count: number; income: number; expenses: number }>()
-    for (const w of workers) {
-      const totals = computeWorkerTotals(w)
-      const entry = map.get(w.client) ?? { count: 0, income: 0, expenses: 0 }
+  const scopedRequests = useMemo(() => requests.filter((r) => withinRange(r.createdOn, range)), [requests, range])
+  const scopedInvoices = useMemo(() => invoices.filter((i) => withinRange(i.issuedOn, range)), [invoices, range])
+
+  const byEmployer = useMemo(() => {
+    const map = new Map<string, { count: number; cost: number }>()
+    for (const r of scopedRequests) {
+      const employer = employers.find((e) => e.id === r.employerId)
+      const key = employer ? tb({ en: employer.englishName, ar: employer.arabicName }) : '—'
+      const entry = map.get(key) ?? { count: 0, cost: 0 }
       entry.count += 1
-      entry.income += totals.totalIncome
-      entry.expenses += totals.totalExpenses
-      map.set(w.client, entry)
+      entry.cost += requestCost(r)
+      map.set(key, entry)
     }
-    return Array.from(map.entries()).sort((a, b) => b[1].income - a[1].income)
-  }, [workers])
+    return Array.from(map.entries()).sort((a, b) => b[1].count - a[1].count)
+  }, [scopedRequests, employers, tb])
 
-  const grandTotal = workers.reduce(
-    (acc, w) => {
-      const t = computeWorkerTotals(w)
-      acc.income += t.totalIncome
-      acc.expenses += t.totalExpenses
-      return acc
-    },
-    { income: 0, expenses: 0 },
-  )
+  const byAgency = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const r of scopedRequests) {
+      const agency = agencies.find((a) => a.id === r.recruitmentAgencyId)
+      const key = agency ? tb({ en: agency.englishName, ar: agency.arabicName }) : '—'
+      map.set(key, (map.get(key) ?? 0) + 1)
+    }
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
+  }, [scopedRequests, agencies, tb])
+
+  const totalCost = scopedRequests.reduce((sum, r) => sum + requestCost(r), 0)
+  const totalPaid = scopedInvoices.reduce((sum, i) => sum + invoiceTotalPaid(i), 0)
+  const maxAgencyCount = Math.max(1, ...byAgency.map(([, c]) => c))
+
+  const rangeLabels: Record<RangeOption, string> = {
+    all: language === 'ar' ? 'كل الوقت' : 'All Time',
+    '30': language === 'ar' ? 'آخر 30 يومًا' : 'Last 30 Days',
+    '90': language === 'ar' ? 'آخر 90 يومًا' : 'Last 90 Days',
+    year: language === 'ar' ? 'هذا العام' : 'This Year',
+  }
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <PageHeader title="Reports" subtitle="Pipeline and financial performance overview" />
-
-      <div className="grid grid-cols-4 gap-4">
-        {STATUSES.map((s) => (
-          <div key={s} className="rounded-lg border border-[#162650] bg-[#0a142f] p-4 text-center">
-            <p className="text-2xl font-bold text-white">{statusCounts.get(s)}</p>
-            <p className="text-[11px] text-slate-400">{s}</p>
+      <PageHeader
+        title={t('nav_reports')}
+        subtitle={t('page_reports_subtitle')}
+        actions={
+          <div className="flex items-center gap-1">
+            {(Object.keys(rangeLabels) as RangeOption[]).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setRange(r)}
+                className={`rounded px-2.5 py-1.5 text-[11px] ${
+                  range === r ? 'bg-[var(--active)] text-amber-500' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
+                }`}
+              >
+                {rangeLabels[r]}
+              </button>
+            ))}
           </div>
-        ))}
+        }
+      />
+
+      <p className="text-[11px] text-[var(--text-muted)]">
+        {language === 'ar' ? 'عرض البيانات لـ' : 'Showing data for'} <strong className="text-[var(--text-secondary)]">{rangeLabels[range]}</strong> ·{' '}
+        {scopedRequests.length} {language === 'ar' ? 'طلب' : 'requests'}, {scopedInvoices.length} {language === 'ar' ? 'فاتورة' : 'invoices'}
+      </p>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-4 text-center">
+          <p className="text-2xl font-bold text-[var(--text-primary)]">{scopedRequests.length}</p>
+          <p className="text-[11px] text-[var(--text-muted)]">{language === 'ar' ? 'الطلبات' : 'Requests'}</p>
+        </div>
+        <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-4 text-center">
+          <p className="text-2xl font-bold text-rose-400">{formatMoney(totalCost)}</p>
+          <p className="text-[11px] text-[var(--text-muted)]">{language === 'ar' ? 'إجمالي التكلفة' : 'Total Cost'}</p>
+        </div>
+        <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-4 text-center">
+          <p className="text-2xl font-bold text-emerald-400">{formatMoney(totalPaid)}</p>
+          <p className="text-[11px] text-[var(--text-muted)]">{language === 'ar' ? 'إجمالي المدفوع' : 'Total Paid'}</p>
+        </div>
       </div>
 
-      <div className="rounded-lg border border-[#162650] bg-[#0a142f] p-4">
-        <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.3px] text-slate-300">Performance by Client</h2>
-        <table className="w-full text-left">
-          <thead>
-            <tr className="border-b border-[#14234b] text-[10.5px] font-bold uppercase text-slate-400">
-              <th className="py-2">Client</th>
-              <th className="py-2 text-right">Workers</th>
-              <th className="py-2 text-right">Income (SAR)</th>
-              <th className="py-2 text-right">Expenses (SAR)</th>
-              <th className="py-2 text-right">Net Profit (SAR)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {byClient.map(([client, data]) => (
-              <tr key={client} className="border-b border-[#122046] text-xs last:border-b-0">
-                <td className="py-2.5 text-slate-200">{client}</td>
-                <td className="py-2.5 text-right text-slate-400">{data.count}</td>
-                <td className="py-2.5 text-right text-emerald-400">{formatCurrency(data.income)}</td>
-                <td className="py-2.5 text-right text-rose-400">{formatCurrency(data.expenses)}</td>
-                <td className="py-2.5 text-right font-medium text-amber-400">
-                  {formatCurrency(data.income - data.expenses)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr className="border-t border-[#14234b] text-xs font-bold">
-              <td className="py-3 text-slate-300">Total</td>
-              <td className="py-3 text-right text-slate-300">{workers.length}</td>
-              <td className="py-3 text-right text-emerald-400">{formatCurrency(grandTotal.income)}</td>
-              <td className="py-3 text-right text-rose-400">{formatCurrency(grandTotal.expenses)}</td>
-              <td className="py-3 text-right text-amber-400">{formatCurrency(grandTotal.income - grandTotal.expenses)}</td>
-            </tr>
-          </tfoot>
-        </table>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-4">
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.3px] text-[var(--text-primary)]">
+            {language === 'ar' ? 'الأداء حسب صاحب العمل' : 'Performance by Employer'}
+          </h2>
+          {byEmployer.length === 0 ? (
+            <p className="py-6 text-center text-[11px] text-[var(--text-muted)]">
+              {language === 'ar' ? 'لا توجد بيانات لهذه الفترة.' : 'No data in this range.'}
+            </p>
+          ) : (
+            <table className="w-full text-start">
+              <thead>
+                <tr className="border-b border-[var(--edge-soft)] text-[10.5px] font-bold uppercase text-[var(--text-secondary)]">
+                  <th className="py-2">{language === 'ar' ? 'صاحب العمل' : 'Employer'}</th>
+                  <th className="py-2 text-end">{language === 'ar' ? 'الطلبات' : 'Requests'}</th>
+                  <th className="py-2 text-end">{language === 'ar' ? 'التكلفة' : 'Cost'}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {byEmployer.map(([name, data]) => (
+                  <tr key={name} className="border-b border-[var(--edge-soft2)] text-xs last:border-b-0">
+                    <td className="py-2 text-[var(--text-primary)]">{name}</td>
+                    <td className="py-2 text-end text-[var(--text-secondary)]">{data.count}</td>
+                    <td className="py-2 text-end text-rose-400">{formatMoney(data.cost)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-4">
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.3px] text-[var(--text-primary)]">
+            {language === 'ar' ? 'الطلبات حسب مكتب الاستقدام' : 'Requests by Recruitment Agency'}
+          </h2>
+          {byAgency.length === 0 ? (
+            <p className="py-6 text-center text-[11px] text-[var(--text-muted)]">
+              {language === 'ar' ? 'لا توجد بيانات لهذه الفترة.' : 'No data in this range.'}
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2.5">
+              {byAgency.map(([name, count]) => (
+                <div key={name} className="text-xs">
+                  <div className="mb-1 flex items-center justify-between text-[var(--text-secondary)]">
+                    <span className="text-[var(--text-primary)]">{name}</span>
+                    <span>{count}</span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-[var(--surface-hover)]">
+                    <div className="h-full rounded-full bg-amber-500" style={{ width: `${(count / maxAgencyCount) * 100}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
