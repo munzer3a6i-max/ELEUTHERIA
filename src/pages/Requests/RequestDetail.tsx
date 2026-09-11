@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Plus, Trash2, Paperclip, Receipt } from 'lucide-react'
+import { Plus, Pencil, Trash2, Paperclip, Receipt } from 'lucide-react'
 import { useAppStore, currentStatus, requestCost, formatMoney } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
-import { pipelineForType, nextStatus } from '../../data/statusPipelines'
-import Modal from '../../components/Modal'
-import { Field, SelectInput, TextInput, TextArea, PrimaryButton, SecondaryButton } from '../../components/form'
+import StatusUpdateModal from '../../components/StatusUpdateModal'
+import { TextArea, SecondaryButton } from '../../components/form'
+import type { StatusHistoryEntry } from '../../types'
 
 export default function RequestDetail() {
   const { id } = useParams<{ id: string }>()
@@ -39,9 +39,10 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
   const deleteRequest = useAppStore((s) => s.deleteRequest)
   const updateRequest = useAppStore((s) => s.updateRequest)
   const addStatusUpdate = useAppStore((s) => s.addStatusUpdate)
+  const updateStatusUpdate = useAppStore((s) => s.updateStatusUpdate)
   const deleteStatusUpdate = useAppStore((s) => s.deleteStatusUpdate)
   const { t, tb, language } = useTranslation()
-  const [statusModalOpen, setStatusModalOpen] = useState(false)
+  const [statusModal, setStatusModal] = useState<'add' | StatusHistoryEntry | null>(null)
 
   if (!request) {
     onDeleted()
@@ -112,7 +113,7 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
               </div>
               <button
                 type="button"
-                onClick={() => setStatusModalOpen(true)}
+                onClick={() => setStatusModal('add')}
                 className="flex items-center gap-1.5 rounded bg-amber-600 px-3 py-1.5 text-[11px] font-bold text-slate-950 hover:bg-amber-500"
               >
                 <Plus className="size-3.5" /> {language === 'ar' ? 'إضافة تحديث حالة' : 'Add New Status Update'}
@@ -139,6 +140,9 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
                     </div>
                     <div className="flex shrink-0 items-center gap-3">
                       <span className="font-bold text-amber-400">{formatMoney(h.cost)}</span>
+                      <button type="button" onClick={() => setStatusModal(h)} className="text-[var(--text-muted)] hover:text-amber-400">
+                        <Pencil className="size-3.5" />
+                      </button>
                       <button type="button" onClick={() => handleDeleteEntry(h.id)} className="text-[var(--text-muted)] hover:text-rose-400">
                         <Trash2 className="size-3.5" />
                       </button>
@@ -218,14 +222,19 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
         </div>
       </div>
 
-      {statusModalOpen && (
-        <AddStatusModal
+      {statusModal && (
+        <StatusUpdateModal
           requestType={request.type}
           currentStatusLabel={status}
-          onClose={() => setStatusModalOpen(false)}
+          initial={statusModal === 'add' ? undefined : statusModal}
+          onClose={() => setStatusModal(null)}
           onSubmit={(entry) => {
-            addStatusUpdate(requestId, entry)
-            setStatusModalOpen(false)
+            if (statusModal === 'add') {
+              addStatusUpdate(requestId, entry)
+            } else {
+              updateStatusUpdate(requestId, statusModal.id, entry)
+            }
+            setStatusModal(null)
           }}
         />
       )}
@@ -249,114 +258,5 @@ function DetailRow({ label, value }: { label: string; value: string }) {
       <span className="text-[var(--text-muted)]">{label}</span>
       <span className="text-[var(--text-primary)]">{value}</span>
     </div>
-  )
-}
-
-function AddStatusModal({
-  requestType,
-  currentStatusLabel,
-  onClose,
-  onSubmit,
-}: {
-  requestType: 'Domestic' | 'Profession'
-  currentStatusLabel: string | null
-  onClose: () => void
-  onSubmit: (entry: {
-    status: string
-    date: string
-    cost: number
-    paymentSourceId: string
-    responsibleEmployeeId: string
-    attachmentName: string | null
-    notes: string
-  }) => void
-}) {
-  const staff = useAppStore((s) => s.staff)
-  const allPaymentSources = useAppStore((s) => s.paymentSources)
-  const paymentSources = allPaymentSources.filter((p) => p.scopes.includes('Request Status'))
-  const { t, language } = useTranslation()
-  const pipeline = pipelineForType(requestType)
-  const suggested = nextStatus(requestType, currentStatusLabel)
-
-  const [status, setStatus] = useState(suggested?.label ?? pipeline[0]?.label ?? '')
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
-  const [cost, setCost] = useState(String(suggested?.defaultCost ?? 0))
-  const [paymentSourceId, setPaymentSourceId] = useState(paymentSources[0]?.id ?? '')
-  const [responsibleEmployeeId, setResponsibleEmployeeId] = useState(staff[0]?.id ?? '')
-  const [attachmentName, setAttachmentName] = useState<string | null>(null)
-  const [notes, setNotes] = useState('')
-
-  const selectedDef = pipeline.find((p) => p.label === status)
-
-  function handleStatusChange(label: string) {
-    setStatus(label)
-    const def = pipeline.find((p) => p.label === label)
-    if (def) setCost(String(def.defaultCost))
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!status || !paymentSourceId || !responsibleEmployeeId) return
-    onSubmit({ status, date, cost: Number(cost) || 0, paymentSourceId, responsibleEmployeeId, attachmentName, notes: notes.trim() })
-  }
-
-  return (
-    <Modal title={language === 'ar' ? 'إضافة تحديث حالة' : 'Add New Status Update'} onClose={onClose}>
-      <form onSubmit={handleSubmit}>
-        <Field label={t('label_status')}>
-          <SelectInput value={status} onChange={(e) => handleStatusChange(e.target.value)}>
-            {pipeline.map((p) => (
-              <option key={p.id} value={p.label}>
-                {p.label}
-                {p.isException ? ' (exception)' : ''}
-              </option>
-            ))}
-          </SelectInput>
-        </Field>
-        {selectedDef?.costNote && <p className="-mt-2 mb-3 text-[10px] text-[var(--text-muted)]">{selectedDef.costNote}</p>}
-        <div className="grid grid-cols-2 gap-3">
-          <Field label={t('label_date')}>
-            <TextInput type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
-          </Field>
-          <Field label={`${language === 'ar' ? 'التكلفة' : 'Cost'} (USD)`}>
-            <TextInput type="number" min={0} step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} />
-          </Field>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label={language === 'ar' ? 'مصدر الدفع' : 'Payment Source'}>
-            <SelectInput value={paymentSourceId} onChange={(e) => setPaymentSourceId(e.target.value)}>
-              {paymentSources.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </SelectInput>
-          </Field>
-          <Field label={language === 'ar' ? 'الموظف المسؤول' : 'Responsible Employee'}>
-            <SelectInput value={responsibleEmployeeId} onChange={(e) => setResponsibleEmployeeId(e.target.value)}>
-              {staff.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name.en}
-                </option>
-              ))}
-            </SelectInput>
-          </Field>
-        </div>
-        <Field label={language === 'ar' ? 'المرفق (اختياري)' : 'Attachment (optional)'}>
-          <input
-            type="file"
-            onChange={(e) => setAttachmentName(e.target.files?.[0]?.name ?? null)}
-            className="block w-full text-[11px] text-[var(--text-secondary)] file:me-2 file:rounded file:border-0 file:bg-[var(--surface-hover)] file:px-2 file:py-1 file:text-[11px] file:text-[var(--text-secondary)]"
-          />
-        </Field>
-        <Field label={language === 'ar' ? 'ملاحظات' : 'Notes'}>
-          <TextArea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
-        </Field>
-        <div className="mt-4 flex justify-end gap-2">
-          <SecondaryButton onClick={onClose}>{t('action_cancel')}</SecondaryButton>
-          <PrimaryButton type="submit">{t('action_add')}</PrimaryButton>
-        </div>
-      </form>
-    </Modal>
   )
 }

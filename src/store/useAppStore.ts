@@ -67,13 +67,16 @@ interface AppState {
   setTheme: (theme: Theme) => void
   updateSettings: (patch: Partial<Omit<AppSettings, 'language' | 'theme'>>) => void
 
-  addApplicant: (data: Omit<Applicant, 'id' | 'createdOn' | 'status' | 'experience' | 'education' | 'photoDataUrl' | 'cvFileName' | 'passportCopyFileName' | 'cvLinkedToWebsite'>) => string
+  addApplicant: (data: Omit<Applicant, 'id' | 'createdOn' | 'updatedOn' | 'updatedBy' | 'status' | 'experience' | 'education' | 'documents' | 'notes' | 'photoDataUrl' | 'cvFileName' | 'passportCopyFileName' | 'cvLinkedToWebsite'>) => string
   updateApplicant: (id: string, patch: Partial<Applicant>) => void
   deleteApplicant: (id: string) => void
   addExperience: (applicantId: string, entry: Omit<Applicant['experience'][number], 'id'>) => void
   deleteExperience: (applicantId: string, entryId: string) => void
   addEducation: (applicantId: string, entry: Omit<Applicant['education'][number], 'id'>) => void
   deleteEducation: (applicantId: string, entryId: string) => void
+  addApplicantDocument: (applicantId: string, doc: Omit<Applicant['documents'][number], 'id' | 'uploadedOn'>) => void
+  deleteApplicantDocument: (applicantId: string, docId: string) => void
+  addApplicantNote: (applicantId: string, text: string) => void
 
   addEmployer: (data: Omit<Employer, 'id' | 'createdOn' | 'status' | 'profileImageDataUrl'>) => string
   updateEmployer: (id: string, patch: Partial<Employer>) => void
@@ -87,6 +90,7 @@ interface AppState {
   updateRequest: (id: string, patch: Partial<RecruitmentRequest>) => void
   deleteRequest: (id: string) => void
   addStatusUpdate: (requestId: string, entry: Omit<StatusHistoryEntry, 'id'>) => void
+  updateStatusUpdate: (requestId: string, entryId: string, patch: Omit<StatusHistoryEntry, 'id'>) => void
   deleteStatusUpdate: (requestId: string, entryId: string) => void
 
   addInvoice: (data: Pick<Invoice, 'recruitmentRequestId' | 'employerId' | 'recruitmentAgencyId' | 'servicePrice'>) => string
@@ -153,13 +157,21 @@ export const useAppStore = create<AppState>()(
           cvLinkedToWebsite: false,
           experience: [],
           education: [],
+          documents: [],
+          notes: [],
           createdOn: todayIso(),
+          updatedOn: todayIso(),
+          updatedBy: 'Kylie',
         }
         set((s) => ({ applicants: [applicant, ...s.applicants] }))
         return id
       },
       updateApplicant: (id, patch) =>
-        set((s) => ({ applicants: s.applicants.map((a) => (a.id === id ? { ...a, ...patch } : a)) })),
+        set((s) => ({
+          applicants: s.applicants.map((a) =>
+            a.id === id ? { ...a, ...patch, updatedOn: todayIso(), updatedBy: 'Kylie' } : a,
+          ),
+        })),
       deleteApplicant: (id) => set((s) => ({ applicants: s.applicants.filter((a) => a.id !== id) })),
       addExperience: (applicantId, entry) =>
         set((s) => ({
@@ -183,6 +195,28 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           applicants: s.applicants.map((a) =>
             a.id === applicantId ? { ...a, education: a.education.filter((e) => e.id !== entryId) } : a,
+          ),
+        })),
+      addApplicantDocument: (applicantId, doc) =>
+        set((s) => ({
+          applicants: s.applicants.map((a) =>
+            a.id === applicantId
+              ? { ...a, documents: [...a.documents, { ...doc, id: newId('d'), uploadedOn: todayIso() }] }
+              : a,
+          ),
+        })),
+      deleteApplicantDocument: (applicantId, docId) =>
+        set((s) => ({
+          applicants: s.applicants.map((a) =>
+            a.id === applicantId ? { ...a, documents: a.documents.filter((d) => d.id !== docId) } : a,
+          ),
+        })),
+      addApplicantNote: (applicantId, text) =>
+        set((s) => ({
+          applicants: s.applicants.map((a) =>
+            a.id === applicantId
+              ? { ...a, notes: [{ id: newId('n'), author: 'Kylie', date: todayIso(), text }, ...a.notes] }
+              : a,
           ),
         })),
 
@@ -229,6 +263,18 @@ export const useAppStore = create<AppState>()(
           requests: s.requests.map((r) =>
             r.id === requestId
               ? { ...r, statusHistory: [...r.statusHistory, { ...entry, id: newId('sh') }], updatedOn: todayIso() }
+              : r,
+          ),
+        })),
+      updateStatusUpdate: (requestId, entryId, patch) =>
+        set((s) => ({
+          requests: s.requests.map((r) =>
+            r.id === requestId
+              ? {
+                  ...r,
+                  statusHistory: r.statusHistory.map((h) => (h.id === entryId ? { ...patch, id: h.id } : h)),
+                  updatedOn: todayIso(),
+                }
               : r,
           ),
         })),

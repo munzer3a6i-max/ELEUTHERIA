@@ -36,6 +36,20 @@ export interface EducationEntry {
   year: string
 }
 
+export interface ApplicantDocument {
+  id: string
+  name: string
+  category: string
+  uploadedOn: string
+}
+
+export interface ApplicantNote {
+  id: string
+  author: string
+  date: string
+  text: string
+}
+
 export interface Applicant {
   id: string
   englishName: string
@@ -59,8 +73,12 @@ export interface Applicant {
   cvLinkedToWebsite: boolean
   experience: ExperienceEntry[]
   education: EducationEntry[]
+  documents: ApplicantDocument[]
+  notes: ApplicantNote[]
   recruitmentAgencyId: string | null
   createdOn: string
+  updatedOn: string
+  updatedBy: string
 }
 
 export type EmployerStatus = 'Active' | 'Inactive'

@@ -71,3 +71,52 @@ export function nextStatus(type: 'Domestic' | 'Profession', currentLabel: string
   if (idx === -1 || idx === pipeline.length - 1) return null
   return pipeline[idx + 1]
 }
+
+export interface StageProgressItem {
+  order: number
+  label: string
+  date: string | null
+  status: 'completed' | 'current' | 'pending'
+}
+
+interface HistoryLike {
+  status: string
+  date: string
+}
+
+// Maps a request's logged status-history onto the full ordered pipeline, so
+// the stepper can show every possible step (not just the ones logged so far)
+// with completed / current / pending state. A trailing exception (Unfit,
+// Back Out, Rejected) is reported separately since it isn't part of the
+// ordered walk.
+export function computeStageProgress(
+  type: 'Domestic' | 'Profession',
+  history: HistoryLike[],
+): { steps: StageProgressItem[]; exception: { label: string; date: string } | null } {
+  const pipeline = pipelineForType(type)
+    .filter((s) => !s.isException)
+    .sort((a, b) => a.order - b.order)
+
+  const lastDateByLabel = new Map<string, string>()
+  for (const h of history) lastDateByLabel.set(h.status, h.date)
+
+  let maxLoggedOrder = 0
+  for (const step of pipeline) {
+    if (lastDateByLabel.has(step.label)) maxLoggedOrder = Math.max(maxLoggedOrder, step.order)
+  }
+  const effectiveCurrent = maxLoggedOrder === 0 ? (pipeline[0]?.order ?? 0) : maxLoggedOrder
+
+  const steps: StageProgressItem[] = pipeline.map((step) => ({
+    order: step.order,
+    label: step.label,
+    date: lastDateByLabel.get(step.label) ?? null,
+    status: step.order < effectiveCurrent ? 'completed' : step.order === effectiveCurrent ? 'current' : 'pending',
+  }))
+
+  const lastEntry = history[history.length - 1]
+  const exceptionDef = lastEntry
+    ? pipelineForType(type).find((s) => s.isException && s.label === lastEntry.status)
+    : undefined
+
+  return { steps, exception: exceptionDef ? { label: lastEntry.status, date: lastEntry.date } : null }
+}
