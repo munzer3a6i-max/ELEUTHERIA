@@ -1,7 +1,13 @@
 import { Check } from 'lucide-react'
-import { recruitmentStages } from '../../data/workerProfile'
+import type { Worker } from '../../types'
 
-export default function RecruitmentTimeline() {
+export default function RecruitmentTimeline({
+  worker,
+  onEditStages,
+}: {
+  worker: Worker
+  onEditStages: () => void
+}) {
   return (
     <div className="flex flex-col items-end gap-3.5 rounded-lg border border-[#162650] bg-[#0a142f] p-[15px]">
       <h2 className="w-full text-[11px] font-bold uppercase tracking-[0.55px] text-slate-300">
@@ -9,7 +15,7 @@ export default function RecruitmentTimeline() {
       </h2>
 
       <ol className="w-full border-l border-slate-600/60 pb-2.5">
-        {recruitmentStages.map((stage) => (
+        {worker.stages.map((stage) => (
           <li key={stage.order} className="relative w-full pb-4 pl-6 last:pb-0">
             <span
               className={`absolute -left-[10px] top-0.5 flex size-5 items-center justify-center rounded-full border ${
@@ -53,6 +59,7 @@ export default function RecruitmentTimeline() {
 
       <button
         type="button"
+        onClick={onEditStages}
         className="w-full rounded border border-amber-500/40 bg-[#111f42] px-3.5 py-1.5 text-xs font-bold tracking-[0.3px] text-amber-400 hover:border-amber-500/70"
       >
         Edit Stages

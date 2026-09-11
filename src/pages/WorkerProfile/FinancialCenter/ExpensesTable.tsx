@@ -1,10 +1,13 @@
+import { useState } from 'react'
 import { Check, Paperclip, Pencil, Trash2, Plus, LayoutGrid } from 'lucide-react'
-import { expenses, totalExpenses, formatCurrency } from '../../../data/workerProfile'
+import { useAppStore, computeWorkerTotals, formatCurrency } from '../../../store/useAppStore'
+import type { ExpenseRow, Worker } from '../../../types'
+import ExpenseFormModal from './ExpenseFormModal'
 
 const headers = [
   { label: '#', className: 'w-8' },
   { label: 'Stage / Description', className: 'w-32' },
-  { label: 'Date', className: 'w-16' },
+  { label: 'Date', className: 'w-24' },
   { label: 'Category', className: 'w-32' },
   { label: 'Reference / To', className: 'w-28' },
   { label: 'Amount (SAR)', className: 'w-20 text-right' },
@@ -13,7 +16,22 @@ const headers = [
   { label: 'Action', className: 'w-16 text-center' },
 ]
 
-export default function ExpensesTable() {
+export default function ExpensesTable({ worker }: { worker: Worker }) {
+  const addExpense = useAppStore((s) => s.addExpense)
+  const updateExpense = useAppStore((s) => s.updateExpense)
+  const deleteExpense = useAppStore((s) => s.deleteExpense)
+  const toggleExpensePaid = useAppStore((s) => s.toggleExpensePaid)
+
+  const [modalMode, setModalMode] = useState<'add' | 'quick-add' | ExpenseRow | null>(null)
+  const { totalExpenses } = computeWorkerTotals(worker)
+  const currentStage = worker.stages.find((s) => s.status === 'current')?.label ?? ''
+
+  function handleDelete(id: string, label: string) {
+    if (window.confirm(`Delete expense "${label}"?`)) {
+      deleteExpense(worker.id, id)
+    }
+  }
+
   return (
     <div className="rounded-lg border border-[#162650] bg-[#0a142f] p-[13px]">
       <div className="mb-3 flex items-center justify-between">
@@ -21,12 +39,14 @@ export default function ExpensesTable() {
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onClick={() => setModalMode('add')}
             className="flex items-center gap-1 rounded bg-amber-600 px-3 py-1.5 text-[11px] font-bold text-slate-950 hover:bg-amber-500"
           >
             <Plus className="size-3" /> Add Expense
           </button>
           <button
             type="button"
+            onClick={() => setModalMode('quick-add')}
             className="flex items-center gap-1 rounded border border-[#23386d] bg-[#101c3d] px-3 py-1.5 text-[11px] text-slate-300 hover:border-amber-500/40"
           >
             <LayoutGrid className="size-3" /> Quick Add by Stage
@@ -49,9 +69,9 @@ export default function ExpensesTable() {
             </tr>
           </thead>
           <tbody>
-            {expenses.map((row) => (
+            {worker.expenses.map((row, i) => (
               <tr key={row.id} className="border-b border-[#122046] last:border-b-0">
-                <td className="px-2 py-3.5 text-[10.5px] text-slate-400">{row.id}</td>
+                <td className="px-2 py-3.5 text-[10.5px] text-slate-400">{i + 1}</td>
                 <td className="px-2 py-3.5 text-[10.5px] text-slate-200">{row.stage}</td>
                 <td className="px-2 py-3.5 text-[10.5px] text-slate-400">{row.date}</td>
                 <td className="px-2 py-3.5 text-[10.5px] text-slate-400">{row.category}</td>
@@ -60,7 +80,16 @@ export default function ExpensesTable() {
                   {formatCurrency(row.amount)}
                 </td>
                 <td className="px-2 py-3.5 text-center">
-                  {row.paid && <Check className="mx-auto size-3.5 text-emerald-400" strokeWidth={2.5} />}
+                  <button
+                    type="button"
+                    onClick={() => toggleExpensePaid(worker.id, row.id)}
+                    title={row.paid ? 'Mark as unpaid' : 'Mark as paid'}
+                    className={`mx-auto flex size-4 items-center justify-center rounded border ${
+                      row.paid ? 'border-emerald-500 bg-emerald-950/60' : 'border-slate-600'
+                    }`}
+                  >
+                    {row.paid && <Check className="size-3 text-emerald-400" strokeWidth={2.5} />}
+                  </button>
                 </td>
                 <td className="px-2 py-3.5">
                   <span className="flex items-center gap-1 text-[10.5px] text-slate-400 hover:text-slate-200">
@@ -69,16 +98,27 @@ export default function ExpensesTable() {
                 </td>
                 <td className="px-2 py-3.5">
                   <div className="flex items-center justify-center gap-3 text-slate-400">
-                    <button type="button" className="hover:text-amber-400">
+                    <button type="button" onClick={() => setModalMode(row)} className="hover:text-amber-400">
                       <Pencil className="size-3" />
                     </button>
-                    <button type="button" className="hover:text-rose-400">
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(row.id, row.stage)}
+                      className="hover:text-rose-400"
+                    >
                       <Trash2 className="size-3" />
                     </button>
                   </div>
                 </td>
               </tr>
             ))}
+            {worker.expenses.length === 0 && (
+              <tr>
+                <td colSpan={9} className="px-2 py-6 text-center text-[11px] text-slate-500">
+                  No expenses recorded yet.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -89,6 +129,29 @@ export default function ExpensesTable() {
           {formatCurrency(totalExpenses)} <span className="text-xs">SAR</span>
         </span>
       </div>
+
+      {(modalMode === 'add' || modalMode === 'quick-add') && (
+        <ExpenseFormModal
+          title={modalMode === 'quick-add' ? `Add Expense — ${currentStage || 'Current Stage'}` : 'Add Expense'}
+          initial={modalMode === 'quick-add' ? { stage: currentStage } : undefined}
+          onClose={() => setModalMode(null)}
+          onSubmit={(data) => {
+            addExpense(worker.id, data)
+            setModalMode(null)
+          }}
+        />
+      )}
+      {modalMode && modalMode !== 'add' && modalMode !== 'quick-add' && (
+        <ExpenseFormModal
+          title="Edit Expense"
+          initial={modalMode}
+          onClose={() => setModalMode(null)}
+          onSubmit={(data) => {
+            updateExpense(worker.id, modalMode.id, data)
+            setModalMode(null)
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -18,39 +18,55 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import { useState } from 'react'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { useAppStore } from '../store/useAppStore'
 
-interface NavLinkProps {
+interface NavLinkItemProps {
+  to: string
   icon: React.ReactNode
   label: string
-  active?: boolean
   badge?: number
+  end?: boolean
 }
 
-function NavLink({ icon, label, active, badge }: NavLinkProps) {
+function NavItem({ to, icon, label, badge, end }: NavLinkItemProps) {
   return (
-    <a
-      href="#"
-      className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-xs transition-colors ${
-        active
-          ? 'bg-[#192b59] text-[#fbbf24] shadow-[0_1px_1px_rgba(0,0,0,0.05)]'
-          : 'text-[#94a3b8] hover:bg-[#101c3d] hover:text-[#cbd5e1]'
-      }`}
+    <NavLink
+      to={to}
+      end={end}
+      className={({ isActive }) =>
+        `flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-xs transition-colors ${
+          isActive
+            ? 'bg-[#192b59] text-[#fbbf24] shadow-[0_1px_1px_rgba(0,0,0,0.05)]'
+            : 'text-[#94a3b8] hover:bg-[#101c3d] hover:text-[#cbd5e1]'
+        }`
+      }
     >
       <span className="flex items-center gap-3">
         <span className="size-4 shrink-0">{icon}</span>
         {label}
       </span>
-      {badge !== undefined && (
+      {badge !== undefined && badge > 0 && (
         <span className="rounded-full bg-[#f59e0b] px-1.5 py-0.5 text-[10px] font-bold leading-none text-[#020617]">
           {badge}
         </span>
       )}
-    </a>
+    </NavLink>
   )
 }
 
 export default function Sidebar() {
   const [accountingOpen, setAccountingOpen] = useState(true)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const unreadCount = useAppStore((s) => s.notifications.filter((n) => !n.read).length)
+  const accountingActive = location.pathname.startsWith('/accounting')
+
+  function handleLogout() {
+    if (window.confirm('Log out of Eleutheria?')) {
+      navigate('/login')
+    }
+  }
 
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col justify-between border-r border-[#152347] bg-[#091124]">
@@ -72,17 +88,19 @@ export default function Sidebar() {
         </div>
 
         <nav className="flex flex-col gap-1 p-3">
-          <NavLink icon={<LayoutDashboard className="size-4" />} label="Dashboard" />
-          <NavLink icon={<Users className="size-4" />} label="Workers" active />
-          <NavLink icon={<Building2 className="size-4" />} label="Clients" />
-          <NavLink icon={<FileText className="size-4" />} label="Applications" />
-          <NavLink icon={<ListChecks className="size-4" />} label="Recruitment Stages" />
+          <NavItem to="/" end icon={<LayoutDashboard className="size-4" />} label="Dashboard" />
+          <NavItem to="/workers" icon={<Users className="size-4" />} label="Workers" />
+          <NavItem to="/clients" icon={<Building2 className="size-4" />} label="Clients" />
+          <NavItem to="/applications" icon={<FileText className="size-4" />} label="Applications" />
+          <NavItem to="/recruitment-stages" icon={<ListChecks className="size-4" />} label="Recruitment Stages" />
 
           <div className="w-full">
             <button
               type="button"
               onClick={() => setAccountingOpen((v) => !v)}
-              className="flex w-full items-center justify-between rounded-md px-3 py-2 text-xs text-[#94a3b8] hover:bg-[#101c3d] hover:text-[#cbd5e1]"
+              className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-xs ${
+                accountingActive ? 'text-[#fbbf24]' : 'text-[#94a3b8] hover:bg-[#101c3d] hover:text-[#cbd5e1]'
+              }`}
             >
               <span className="flex items-center gap-3">
                 <Wallet className="size-4" />
@@ -94,32 +112,25 @@ export default function Sidebar() {
             </button>
             {accountingOpen && (
               <div className="flex flex-col gap-1 py-1 pl-8 pr-2">
-                <a href="#" className="flex items-center gap-2.5 rounded px-2 py-1.5 text-[11px] text-[#94a3b8] hover:bg-[#101c3d] hover:text-[#cbd5e1]">
-                  <TrendingUp className="size-3.5" /> Income
-                </a>
-                <a href="#" className="flex items-center gap-2.5 rounded px-2 py-1.5 text-[11px] text-[#94a3b8] hover:bg-[#101c3d] hover:text-[#cbd5e1]">
-                  <TrendingDown className="size-3.5" /> Expenses
-                </a>
-                <a href="#" className="flex items-center gap-2.5 rounded px-2 py-1.5 text-[11px] text-[#94a3b8] hover:bg-[#101c3d] hover:text-[#cbd5e1]">
-                  <CreditCard className="size-3.5" /> Payments
-                </a>
-                <a href="#" className="flex items-center gap-2.5 rounded px-2 py-1.5 text-[11px] text-[#94a3b8] hover:bg-[#101c3d] hover:text-[#cbd5e1]">
-                  <FolderOpen className="size-3.5" /> Documents
-                </a>
+                <NavItem to="/accounting/income" icon={<TrendingUp className="size-3.5" />} label="Income" />
+                <NavItem to="/accounting/expenses" icon={<TrendingDown className="size-3.5" />} label="Expenses" />
+                <NavItem to="/accounting/payments" icon={<CreditCard className="size-3.5" />} label="Payments" />
+                <NavItem to="/accounting/documents" icon={<FolderOpen className="size-3.5" />} label="Documents" />
               </div>
             )}
           </div>
 
-          <a href="#" className="flex w-full items-center justify-between rounded-md px-3 py-2 text-xs text-[#94a3b8] hover:bg-[#101c3d] hover:text-[#cbd5e1]">
-            <span className="flex items-center gap-3">
-              <BarChart3 className="size-4" /> Reports
-            </span>
-            <ChevronDown className="size-3.5 -rotate-90" />
-          </a>
-          <NavLink icon={<UserCog className="size-4" />} label="Staff" />
-          <NavLink icon={<Bell className="size-4" />} label="Notifications" badge={8} />
-          <NavLink icon={<Settings className="size-4" />} label="Settings" />
-          <NavLink icon={<LogOut className="size-4" />} label="Log Out" />
+          <NavItem to="/reports" icon={<BarChart3 className="size-4" />} label="Reports" />
+          <NavItem to="/staff" icon={<UserCog className="size-4" />} label="Staff" />
+          <NavItem to="/notifications" icon={<Bell className="size-4" />} label="Notifications" badge={unreadCount} />
+          <NavItem to="/settings" icon={<Settings className="size-4" />} label="Settings" />
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-xs text-[#94a3b8] hover:bg-[#101c3d] hover:text-[#cbd5e1]"
+          >
+            <LogOut className="size-4" /> Log Out
+          </button>
         </nav>
       </div>
 
@@ -133,14 +144,7 @@ export default function Sidebar() {
           <div className="h-16 w-full opacity-40">
             <svg viewBox="0 0 220 64" className="h-full w-full" preserveAspectRatio="none">
               {[18, 40, 26, 54, 32, 46, 20, 60, 28, 44, 36, 50].map((h, i) => (
-                <rect
-                  key={i}
-                  x={i * 19}
-                  y={64 - h}
-                  width={14}
-                  height={h}
-                  fill="#f59e0b"
-                />
+                <rect key={i} x={i * 19} y={64 - h} width={14} height={h} fill="#f59e0b" />
               ))}
             </svg>
           </div>
