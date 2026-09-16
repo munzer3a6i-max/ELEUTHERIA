@@ -17,6 +17,9 @@ import type {
   Language,
   Theme,
   StaffRole,
+  PayrollEntry,
+  OfficeExpense,
+  LedgerStatus,
 } from '../types'
 import {
   seedApplicants,
@@ -30,6 +33,8 @@ import {
   seedProfessions,
   seedPaymentSources,
   seedNotifications,
+  seedPayroll,
+  seedOfficeExpenses,
 } from '../data/seed'
 
 function todayIso(): string {
@@ -43,6 +48,8 @@ function newId(prefix: string): string {
 interface AppSettings {
   companyName: string
   companyTagline: string
+  licenseNumber: string
+  address: string
   currency: string
   language: Language
   theme: Theme
@@ -59,6 +66,8 @@ interface AppState {
   cities: City[]
   professions: Profession[]
   paymentSources: PaymentSource[]
+  payroll: PayrollEntry[]
+  officeExpenses: OfficeExpense[]
   notifications: AppNotification[]
   settings: AppSettings
   invoiceSequence: number
@@ -113,6 +122,11 @@ interface AppState {
   updatePaymentSource: (id: string, patch: Partial<PaymentSource>) => void
   deletePaymentSource: (id: string) => void
 
+  addOfficeExpense: (data: Omit<OfficeExpense, 'id'>) => void
+  setOfficeExpenseStatus: (id: string, status: LedgerStatus) => void
+  deleteOfficeExpense: (id: string) => void
+  setPayrollStatus: (id: string, status: LedgerStatus) => void
+
   markNotificationRead: (id: string) => void
   markAllNotificationsRead: () => void
   addNotification: (title: string, detail: string) => void
@@ -131,11 +145,15 @@ export const useAppStore = create<AppState>()(
       cities: seedCities,
       professions: seedProfessions,
       paymentSources: seedPaymentSources,
+      payroll: seedPayroll,
+      officeExpenses: seedOfficeExpenses,
       notifications: seedNotifications,
       invoiceSequence: seedInvoices.length + 1,
       settings: {
         companyName: 'Mustaqdem',
         companyTagline: 'International Placement Services',
+        licenseNumber: 'DMW-622-LB-07032025-R',
+        address: 'Gedisco Center, Ermita, Manila',
         currency: 'USD',
         language: 'en',
         theme: 'dark',
@@ -332,6 +350,15 @@ export const useAppStore = create<AppState>()(
       deletePaymentSource: (id) =>
         set((s) => ({ paymentSources: s.paymentSources.filter((p) => p.id !== id) })),
 
+      addOfficeExpense: (data) =>
+        set((s) => ({ officeExpenses: [{ ...data, id: newId('oe') }, ...s.officeExpenses] })),
+      setOfficeExpenseStatus: (id, status) =>
+        set((s) => ({ officeExpenses: s.officeExpenses.map((e) => (e.id === id ? { ...e, status } : e)) })),
+      deleteOfficeExpense: (id) =>
+        set((s) => ({ officeExpenses: s.officeExpenses.filter((e) => e.id !== id) })),
+      setPayrollStatus: (id, status) =>
+        set((s) => ({ payroll: s.payroll.map((e) => (e.id === id ? { ...e, status } : e)) })),
+
       markNotificationRead: (id) =>
         set((s) => ({ notifications: s.notifications.map((n) => (n.id === id ? { ...n, read: true } : n)) })),
       markAllNotificationsRead: () =>
@@ -364,7 +391,15 @@ export function invoiceBalance(invoice: Invoice): number {
   return invoice.servicePrice - invoiceTotalPaid(invoice)
 }
 
-export function formatMoney(amount: number, currency = 'USD'): string {
+export function formatMoney(amount: number, currency = 'USD', fractionDigits = 2): string {
   const symbol = currency === 'USD' ? '$' : currency
-  return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  const value = Math.abs(amount).toLocaleString('en-US', {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  })
+  return `${amount < 0 ? '−' : ''}${symbol}${value}`
+}
+
+export function payrollTotal(entry: PayrollEntry): number {
+  return entry.basicSalary + entry.overtime + entry.allowances
 }

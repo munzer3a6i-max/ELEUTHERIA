@@ -205,3 +205,25 @@ export interface AppNotification {
   date: string
   read: boolean
 }
+
+export type LedgerStatus = 'Paid' | 'Pending'
+
+export interface PayrollEntry {
+  id: string
+  staffId: string
+  /** Pay period, formatted YYYY-MM. */
+  month: string
+  basicSalary: number
+  overtime: number
+  allowances: number
+  status: LedgerStatus
+}
+
+export interface OfficeExpense {
+  id: string
+  item: Bilingual
+  category: string
+  amount: number
+  date: string
+  status: LedgerStatus
+}

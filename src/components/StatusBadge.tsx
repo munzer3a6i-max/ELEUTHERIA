@@ -17,6 +17,10 @@ const colorMap: Record<string, string> = {
   Interview: 'border-blue-500/50 bg-blue-900/60 text-blue-300',
   Approved: 'border-emerald-500/40 bg-emerald-950/80 text-emerald-400',
   Rejected: 'border-rose-500/40 bg-rose-950/60 text-rose-400',
+  Paid: 'border-emerald-500/40 bg-emerald-950/80 text-emerald-400',
+  Pending: 'border-amber-500/40 bg-amber-950/60 text-amber-400',
+  مدفوع: 'border-emerald-500/40 bg-emerald-950/80 text-emerald-400',
+  'قيد الانتظار': 'border-amber-500/40 bg-amber-950/60 text-amber-400',
 }
 
 export default function StatusBadge({ status }: { status: string }) {

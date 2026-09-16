@@ -20,6 +20,16 @@
   --text-primary: #e2e8f0;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
+
+  /* Categorical chart slots — validated against the dark surface (#0a142f) with
+     the data-viz palette validator. Assign in slot order, never cycled. */
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #008300;
+  --series-rest: #64748b;
 }
 
 :root[data-theme='light'] {
@@ -36,6 +46,15 @@
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-muted: #94a3b8;
+
+  /* Same eight hues re-stepped for the light surface, not an automatic flip. */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+  --series-rest: #94a3b8;
 }
 
 html,

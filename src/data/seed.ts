@@ -10,6 +10,8 @@ import type {
   Profession,
   PaymentSource,
   AppNotification,
+  PayrollEntry,
+  OfficeExpense,
 } from '../types'
 
 export const seedCountries: Country[] = [
@@ -537,4 +539,38 @@ export const seedNotifications: AppNotification[] = [
   { id: 'note-1', title: 'Status updated', detail: 'Maricel S. Dela Cruz moved to Selected.', date: '2024-05-27', read: false },
   { id: 'note-2', title: 'Worker deployed', detail: 'Rosalinda P. Santos has been deployed successfully.', date: '2024-05-05', read: false },
   { id: 'note-3', title: 'Payment received', detail: 'Final payment received on invoice INV-2024-0001.', date: '2024-05-05', read: true },
+]
+
+// Monthly office payroll — a small Manila back office: one director and three
+// placement officers. The running month is still open, so its rows sit on
+// Pending until salaries are released.
+export const seedPayroll: PayrollEntry[] = [
+  { id: 'pay-1', staffId: 'st-kylie', month: '2024-04', basicSalary: 700, overtime: 60, allowances: 90, status: 'Paid' },
+  { id: 'pay-2', staffId: 'st-tess', month: '2024-04', basicSalary: 450, overtime: 40, allowances: 60, status: 'Paid' },
+  { id: 'pay-3', staffId: 'st-roz', month: '2024-04', basicSalary: 450, overtime: 0, allowances: 60, status: 'Paid' },
+  { id: 'pay-4', staffId: 'st-eman', month: '2024-04', basicSalary: 450, overtime: 70, allowances: 60, status: 'Paid' },
+  { id: 'pay-5', staffId: 'st-kylie', month: '2024-05', basicSalary: 700, overtime: 45, allowances: 90, status: 'Paid' },
+  { id: 'pay-6', staffId: 'st-tess', month: '2024-05', basicSalary: 450, overtime: 30, allowances: 60, status: 'Paid' },
+  { id: 'pay-7', staffId: 'st-roz', month: '2024-05', basicSalary: 450, overtime: 25, allowances: 60, status: 'Paid' },
+  { id: 'pay-8', staffId: 'st-eman', month: '2024-05', basicSalary: 450, overtime: 55, allowances: 60, status: 'Paid' },
+  { id: 'pay-9', staffId: 'st-kylie', month: '2024-06', basicSalary: 700, overtime: 0, allowances: 90, status: 'Paid' },
+  { id: 'pay-10', staffId: 'st-tess', month: '2024-06', basicSalary: 450, overtime: 20, allowances: 60, status: 'Pending' },
+  { id: 'pay-11', staffId: 'st-roz', month: '2024-06', basicSalary: 450, overtime: 0, allowances: 60, status: 'Pending' },
+  { id: 'pay-12', staffId: 'st-eman', month: '2024-06', basicSalary: 450, overtime: 35, allowances: 60, status: 'Pending' },
+]
+
+// Running costs of the office itself — kept apart from recruitment costs, which
+// belong to a request's status history.
+export const seedOfficeExpenses: OfficeExpense[] = [
+  { id: 'oe-1', item: { en: 'Office Rent', ar: 'إيجار المكتب' }, category: 'Rent', amount: 320, date: '2024-04-05', status: 'Paid' },
+  { id: 'oe-2', item: { en: 'Electricity', ar: 'الكهرباء' }, category: 'Utilities', amount: 72, date: '2024-04-12', status: 'Paid' },
+  { id: 'oe-3', item: { en: 'Water', ar: 'المياه' }, category: 'Utilities', amount: 14, date: '2024-04-12', status: 'Paid' },
+  { id: 'oe-4', item: { en: 'Internet & Phone', ar: 'الإنترنت والهاتف' }, category: 'Utilities', amount: 38, date: '2024-04-18', status: 'Paid' },
+  { id: 'oe-5', item: { en: 'Office Rent', ar: 'إيجار المكتب' }, category: 'Rent', amount: 320, date: '2024-05-05', status: 'Paid' },
+  { id: 'oe-6', item: { en: 'Electricity', ar: 'الكهرباء' }, category: 'Utilities', amount: 81, date: '2024-05-12', status: 'Paid' },
+  { id: 'oe-7', item: { en: 'Worker Accommodation', ar: 'سكن العمالة' }, category: 'Accommodation', amount: 180, date: '2024-05-14', status: 'Paid' },
+  { id: 'oe-8', item: { en: 'Office Supplies', ar: 'مستلزمات مكتبية' }, category: 'Supplies', amount: 46, date: '2024-05-22', status: 'Paid' },
+  { id: 'oe-9', item: { en: 'Office Rent', ar: 'إيجار المكتب' }, category: 'Rent', amount: 320, date: '2024-06-05', status: 'Paid' },
+  { id: 'oe-10', item: { en: 'Electricity', ar: 'الكهرباء' }, category: 'Utilities', amount: 68, date: '2024-06-12', status: 'Pending' },
+  { id: 'oe-11', item: { en: 'Courier & Documents', ar: 'الشحن والمستندات' }, category: 'Logistics', amount: 25, date: '2024-06-14', status: 'Pending' },
 ]

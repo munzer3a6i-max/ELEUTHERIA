@@ -11,7 +11,12 @@ export default function Settings() {
   const setLanguage = useAppStore((s) => s.setLanguage)
   const setTheme = useAppStore((s) => s.setTheme)
   const { t, language } = useTranslation()
-  const [form, setForm] = useState({ companyName: settings.companyName, companyTagline: settings.companyTagline })
+  const [form, setForm] = useState({
+    companyName: settings.companyName,
+    companyTagline: settings.companyTagline,
+    licenseNumber: settings.licenseNumber,
+    address: settings.address,
+  })
   const [saved, setSaved] = useState(false)
 
   function handleSubmit(e: React.FormEvent) {
@@ -70,6 +75,24 @@ export default function Settings() {
               value={form.companyTagline}
               onChange={(e) => {
                 setForm((f) => ({ ...f, companyTagline: e.target.value }))
+                setSaved(false)
+              }}
+            />
+          </Field>
+          <Field label={language === 'ar' ? 'رقم الترخيص' : 'Licence Number'}>
+            <TextInput
+              value={form.licenseNumber}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, licenseNumber: e.target.value }))
+                setSaved(false)
+              }}
+            />
+          </Field>
+          <Field label={language === 'ar' ? 'عنوان المكتب' : 'Office Address'}>
+            <TextInput
+              value={form.address}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, address: e.target.value }))
                 setSaved(false)
               }}
             />
