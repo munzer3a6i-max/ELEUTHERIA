@@ -30,7 +30,8 @@ export default function StageStepper({
         </div>
       )}
 
-      <ol className={`w-full border-s border-line pb-2.5 ${compact ? 'max-h-[420px] overflow-y-auto' : ''}`}>
+      <div className={`w-full ps-2.5 pe-1.5 ${compact ? 'max-h-[420px] overflow-y-auto' : ''}`}>
+        <ol className="w-full border-s border-line pb-2.5">
         {steps.map((stage) => (
           <li key={stage.order} className="relative w-full pb-4 ps-6 last:pb-0">
             <span
@@ -43,7 +44,7 @@ export default function StageStepper({
               }`}
             >
               {stage.status === 'completed' && <Check className="size-3 text-pos" strokeWidth={3} />}
-              {stage.status === 'current' && <span className="size-2 rounded-pill bg-white" />}
+              {stage.status === 'current' && <span className="size-2 rounded-pill bg-info" />}
             </span>
 
             <div className="flex items-start justify-between gap-2">
@@ -58,20 +59,31 @@ export default function StageStepper({
                 {stage.date && <p className="text-[9px] text-ink-3">{stage.date}</p>}
               </div>
               <span
-                className={`shrink-0 whitespace-nowrap rounded-control px-1.5 py-px text-[9px] ${
+                className={`chip shrink-0 ${
                   stage.status === 'completed'
-                    ? 'border border-pos/40 bg-pos-soft text-pos'
+                    ? 'chip-pos'
                     : stage.status === 'current'
-                      ? 'border border-info/40 bg-info-soft text-info'
-                      : 'border border-line-strong bg-raised/80 text-ink-3'
+                      ? 'chip-info'
+                      : 'chip-neutral'
                 }`}
               >
-                {stage.status === 'completed' ? 'Completed' : stage.status === 'current' ? 'Current' : 'Pending'}
+                {stage.status === 'completed'
+                  ? language === 'ar'
+                    ? 'مكتملة'
+                    : 'Completed'
+                  : stage.status === 'current'
+                    ? language === 'ar'
+                      ? 'الحالية'
+                      : 'Current'
+                    : language === 'ar'
+                      ? 'قيد الانتظار'
+                      : 'Pending'}
               </span>
             </div>
           </li>
-        ))}
-      </ol>
+          ))}
+        </ol>
+      </div>
 
       <button
         type="button"
