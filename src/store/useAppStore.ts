@@ -156,7 +156,7 @@ export const useAppStore = create<AppState>()(
       notifications: seedNotifications,
       invoiceSequence: seedInvoices.length + 1,
       settings: {
-        companyName: 'Mustaqdem',
+        companyName: 'Eleutheria',
         companyTagline: 'International Placement Services',
         licenseNumber: 'DMW-622-LB-07032025-R',
         address: 'Gedisco Center, Ermita, Manila',

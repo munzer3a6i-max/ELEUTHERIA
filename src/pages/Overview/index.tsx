@@ -19,6 +19,7 @@ import StatStrip from '../../components/StatStrip'
 import StatusBadge from '../../components/StatusBadge'
 import Card from '../../components/Card'
 import { useOverview } from './useOverview'
+import brandLogo from '../../assets/eleutheria-logo.png'
 import type { AlertKind } from './useOverview'
 
 const ALERT_ICON: Record<AlertKind, typeof AlertTriangle> = {
@@ -36,7 +37,8 @@ const ALERT_TONE: Record<AlertKind, string> = {
 }
 
 export default function Overview() {
-  const currency = useAppStore((s) => s.settings.currency)
+  const settings = useAppStore((s) => s.settings)
+  const currency = settings.currency
   const { t, language } = useTranslation()
   const { stages, alerts, activity, agencyLoad, counts } = useOverview()
 
@@ -51,6 +53,26 @@ export default function Overview() {
 
   return (
     <div className="flex flex-col gap-4 p-4">
+      <div className="panel flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-3">
+        <img
+          src={brandLogo}
+          alt={`${settings.companyName} ${settings.companyTagline}`}
+          width={672}
+          height={180}
+          className="h-14 w-auto"
+        />
+        <dl className="flex flex-wrap items-center gap-x-6 gap-y-1 text-[11px]">
+          <div className="flex items-center gap-1.5">
+            <dt className="text-ink-3">{t('fin_licence')}</dt>
+            <dd className="num text-ink-2">{settings.licenseNumber}</dd>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <dt className="text-ink-3">{language === 'ar' ? 'المكتب' : 'Office'}</dt>
+            <dd className="text-ink-2">{settings.address}</dd>
+          </div>
+        </dl>
+      </div>
+
       <PageHeader
         title={t('nav_dashboard')}
         subtitle={today}

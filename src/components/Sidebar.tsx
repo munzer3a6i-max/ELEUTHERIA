@@ -18,7 +18,6 @@ import {
   MapPin,
   Receipt,
   Settings,
-  ShieldCheck,
   UserCog,
   Users,
   Wallet,
@@ -26,6 +25,7 @@ import {
 import { useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
+import brandMark from '../assets/eleutheria-mark.png'
 import { useTranslation } from '../i18n/useTranslation'
 
 interface NavItemProps {
@@ -129,9 +129,7 @@ export default function Sidebar() {
     <aside className="flex h-full w-60 shrink-0 flex-col justify-between border-e border-line bg-sunken">
       <div className="flex min-h-0 flex-col">
         <div className="flex items-center gap-2.5 border-b border-line px-4 py-3.5">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-control border border-accent-line bg-accent-soft">
-            <ShieldCheck className="size-5 text-accent-text" strokeWidth={1.75} />
-          </span>
+          <img src={brandMark} alt="" width={40} height={40} className="size-10 shrink-0" />
           <div className="min-w-0">
             <p className="truncate text-[13px] font-semibold uppercase tracking-[0.08em] text-accent-text">
               {settings.companyName}
@@ -182,11 +180,6 @@ export default function Sidebar() {
         >
           <LogOut className="size-4" /> {t('nav_logout')}
         </button>
-        <p className="px-2.5 pt-2 text-[10px] leading-relaxed text-ink-3">
-          {settings.licenseNumber}
-          <br />
-          {settings.address}
-        </p>
       </div>
     </aside>
   )
