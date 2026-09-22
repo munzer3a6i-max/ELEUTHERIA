@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom'
 import { Check, HandCoins, Pencil, Plus, Trash2, Undo2, UserPlus, Users, Wallet } from 'lucide-react'
 import { useAppStore, formatMoney } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
+import { useCurrentUser } from '../../lib/useCurrentUser'
 import PageHeader from '../../components/PageHeader'
-import StatStrip from '../../components/StatStrip'
+import StatStrip, { type Stat } from '../../components/StatStrip'
 import StatusBadge from '../../components/StatusBadge'
 import Card from '../../components/Card'
 import Modal from '../../components/Modal'
@@ -35,6 +36,7 @@ export default function AgentsList() {
   const deleteAgent = useAppStore((s) => s.deleteAgent)
   const setCommissionStatus = useAppStore((s) => s.setCommissionStatus)
   const { t, tb, language } = useTranslation()
+  const { canEdit, canView } = useCurrentUser()
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editing, setEditing] = useState<Agent | 'new' | null>(null)
@@ -56,6 +58,22 @@ export default function AgentsList() {
   const direct = applicants.filter((a) => a.agentId === null).length
   const book = totals(commissions)
 
+  const moneyStats: Stat[] = [
+    {
+      label: t('agent_earned'),
+      value: formatMoney(book.earned, currency, 0),
+      note: t('agent_fee_rule'),
+      icon: <HandCoins className="size-4" />,
+    },
+    {
+      label: t('agent_owed'),
+      value: formatMoney(book.owed, currency, 0),
+      tone: book.owed > 0 ? 'warn' : undefined,
+      note: `${commissions.filter((c) => c.status === 'Pending').length} ${t('acc_pending').toLowerCase()}`,
+      icon: <Wallet className="size-4" />,
+    },
+  ]
+
   function handleDelete(agent: Agent) {
     if (window.confirm(`${t('agent_delete_confirm')}\n\n${tb(agent.name)}`)) deleteAgent(agent.id)
   }
@@ -66,9 +84,11 @@ export default function AgentsList() {
         title={t('agent_title')}
         subtitle={t('agent_subtitle')}
         actions={
-          <PrimaryButton onClick={() => setEditing('new')}>
-            <Plus className="size-3.5" /> {t('agent_add')}
-          </PrimaryButton>
+          canEdit('operations') && (
+            <PrimaryButton onClick={() => setEditing('new')}>
+              <Plus className="size-3.5" /> {t('agent_add')}
+            </PrimaryButton>
+          )
         }
       />
 
@@ -86,19 +106,8 @@ export default function AgentsList() {
             note: `${direct} ${t('agent_none').toLowerCase()}`,
             icon: <Users className="size-4" />,
           },
-          {
-            label: t('agent_earned'),
-            value: formatMoney(book.earned, currency, 0),
-            note: t('agent_fee_rule'),
-            icon: <HandCoins className="size-4" />,
-          },
-          {
-            label: t('agent_owed'),
-            value: formatMoney(book.owed, currency, 0),
-            tone: book.owed > 0 ? 'warn' : undefined,
-            note: `${commissions.filter((c) => c.status === 'Pending').length} ${t('acc_pending').toLowerCase()}`,
-            icon: <Wallet className="size-4" />,
-          },
+          // What the agents are owed is money, so it goes where money goes.
+          ...(canView('finance') ? moneyStats : []),
         ]}
       />
 
@@ -110,8 +119,8 @@ export default function AgentsList() {
               <th>{t('agent_area')}</th>
               <th>{t('label_phone')}</th>
               <th className="text-end">{t('agent_candidates')}</th>
-              <th className="text-end">{t('agent_earned')}</th>
-              <th className="text-end">{t('agent_owed')}</th>
+              {canView('finance') && <th className="text-end">{t('agent_earned')}</th>}
+              {canView('finance') && <th className="text-end">{t('agent_owed')}</th>}
               <th>{t('label_status')}</th>
               <th className="text-end">{t('label_action')}</th>
             </tr>
@@ -130,17 +139,21 @@ export default function AgentsList() {
                 <td>{row.agent.area}</td>
                 <td dir="ltr" className="num whitespace-nowrap text-[11.5px] rtl:text-end">{row.agent.phone}</td>
                 <td className="num text-end text-ink">{row.candidates}</td>
-                <td dir="ltr" className="num whitespace-nowrap text-end">
-                  {formatMoney(row.earned, currency, 0)}
-                </td>
-                <td dir="ltr" className={`num whitespace-nowrap text-end ${row.owed > 0 ? 'text-warn' : 'text-ink-3'}`}>
-                  {formatMoney(row.owed, currency, 0)}
-                </td>
+                {canView('finance') && (
+                  <td dir="ltr" className="num whitespace-nowrap text-end">
+                    {formatMoney(row.earned, currency, 0)}
+                  </td>
+                )}
+                {canView('finance') && (
+                  <td dir="ltr" className={`num whitespace-nowrap text-end ${row.owed > 0 ? 'text-warn' : 'text-ink-3'}`}>
+                    {formatMoney(row.owed, currency, 0)}
+                  </td>
+                )}
                 <td>
                   <StatusBadge status={row.agent.status} />
                 </td>
                 <td className="text-end">
-                  <span className="flex items-center justify-end gap-1">
+                  <span className="flex items-center justify-end gap-1" hidden={!canEdit('operations')}>
                     <button
                       type="button"
                       aria-label={t('action_edit')}
@@ -180,7 +193,7 @@ export default function AgentsList() {
 
       {selected && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-          <div className="lg:col-span-7">
+          <div className="lg:col-span-7" hidden={!canView('finance')}>
             <Card
               title={`${t('agent_commissions')} · ${tb(selected.agent.name)}`}
               subtitle={`${formatMoney(selected.paid, currency, 0)} ${t('agent_paid_out').toLowerCase()} · ${formatMoney(selected.owed, currency, 0)} ${t('agent_owed').toLowerCase()}`}
@@ -224,7 +237,7 @@ export default function AgentsList() {
                           {source && <span className="ms-2 text-[10.5px] text-ink-3">{source.name}</span>}
                         </td>
                         <td className="text-end">
-                          {commission.status === 'Pending' ? (
+                          {!canEdit('finance') ? null : commission.status === 'Pending' ? (
                             <button
                               type="button"
                               onClick={() =>

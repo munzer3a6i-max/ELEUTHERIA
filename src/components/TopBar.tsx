@@ -1,8 +1,10 @@
-import { Bell, Languages, LogOut, Menu, Moon, Search, Settings as SettingsIcon, Sun, User } from 'lucide-react'
+import { Bell, Languages, LogOut, Menu, Moon, Search, Settings as SettingsIcon, Sun, User, Users } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
 import { useTranslation } from '../i18n/useTranslation'
+import { useCurrentUser } from '../lib/useCurrentUser'
+import { ROLE_LABEL } from '../lib/permissions'
 
 export default function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
   const navigate = useNavigate()
@@ -12,10 +14,9 @@ export default function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
   const setLanguage = useAppStore((s) => s.setLanguage)
   const setTheme = useAppStore((s) => s.setTheme)
   const theme = useAppStore((s) => s.settings.theme)
-  const staff = useAppStore((s) => s.staff)
+  const signOut = useAppStore((s) => s.signOut)
   const { t, tb, language } = useTranslation()
-
-  const signedIn = staff[0]
+  const { member: signedIn, role, canView } = useCurrentUser()
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
@@ -97,9 +98,7 @@ export default function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
               <span className="block text-[12px] font-semibold leading-tight text-ink">
                 {signedIn ? tb(signedIn.name) : t('nav_staff')}
               </span>
-              <span className="block text-[10px] leading-tight text-ink-3">
-                {signedIn?.role === 'admin' ? (language === 'ar' ? 'مدير' : 'Administrator') : language === 'ar' ? 'موظف' : 'Staff'}
-              </span>
+              <span className="block text-[10px] leading-tight text-ink-3">{ROLE_LABEL[role][language]}</span>
             </span>
           </button>
 
@@ -107,21 +106,43 @@ export default function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
             <>
               <div className="fixed inset-0 z-10" onClick={() => setProfileOpen(false)} role="presentation" />
               <div className="absolute end-0 top-11 z-20 w-44 overflow-hidden rounded-panel border border-line bg-surface py-1 shadow-pop">
+                <p className="border-b border-line px-3 pb-2 pt-1.5">
+                  <span className="block text-[10px] text-ink-3">{t('perm_signed_in_as')}</span>
+                  <span className="block truncate text-[12px] font-semibold text-ink">
+                    {signedIn ? tb(signedIn.name) : t('nav_staff')}
+                  </span>
+                  <span className="block text-[10.5px] text-accent-text">{ROLE_LABEL[role][language]}</span>
+                </p>
+                {canView('system') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProfileOpen(false)
+                      navigate('/settings')
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-start text-[12px] text-ink-2 hover:bg-raised hover:text-ink"
+                  >
+                    <SettingsIcon className="size-3.5" /> {t('nav_settings')}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => {
                     setProfileOpen(false)
-                    navigate('/settings')
+                    navigate('/login')
                   }}
                   className="flex w-full items-center gap-2 px-3 py-2 text-start text-[12px] text-ink-2 hover:bg-raised hover:text-ink"
                 >
-                  <SettingsIcon className="size-3.5" /> {t('nav_settings')}
+                  <Users className="size-3.5" /> {t('perm_switch_user')}
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     setProfileOpen(false)
-                    if (window.confirm(language === 'ar' ? 'تسجيل الخروج من النظام؟' : 'Log out?')) navigate('/login')
+                    if (window.confirm(language === 'ar' ? 'تسجيل الخروج من النظام؟' : 'Log out?')) {
+                      signOut()
+                      navigate('/login')
+                    }
                   }}
                   className="flex w-full items-center gap-2 px-3 py-2 text-start text-[12px] text-neg hover:bg-neg-soft"
                 >

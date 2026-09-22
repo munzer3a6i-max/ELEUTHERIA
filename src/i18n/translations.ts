@@ -244,6 +244,15 @@ export const translations = {
   contract_expected: { en: 'Expected', ar: 'المتوقع' },
   contract_received: { en: 'Received', ar: 'المستلم' },
   contract_awaiting: { en: 'Awaiting', ar: 'قيد الاستلام' },
+  // Roles and access
+  perm_no_access: { en: 'You do not have access to this page', ar: 'ليس لديك صلاحية لهذه الصفحة' },
+  perm_read_only: { en: 'Read only for your role', ar: 'للاطلاع فقط حسب دورك' },
+  perm_role: { en: 'Role', ar: 'الدور' },
+  perm_signed_in_as: { en: 'Signed in as', ar: 'تم الدخول باسم' },
+  perm_switch_user: { en: 'Switch user', ar: 'تبديل المستخدم' },
+  perm_sign_in_as: { en: 'Choose who is working', ar: 'اختر من يعمل الآن' },
+  perm_finance_only: { en: 'Only an accountant or an administrator can change this.', ar: 'يمكن للمحاسب أو المسؤول فقط تعديل هذا.' },
+
   // Attachments
   attach_label: { en: 'Bill or receipt', ar: 'الفاتورة أو الإيصال' },
   attach_upload: { en: 'Attach a file', ar: 'إرفاق ملف' },

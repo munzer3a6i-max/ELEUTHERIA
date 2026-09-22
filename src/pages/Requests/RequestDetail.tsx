@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Receipt } from 'lucide-react'
 import { useAppStore, currentStatus, requestCost, formatMoney } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
+import { useCurrentUser } from '../../lib/useCurrentUser'
 import StatusUpdateModal from '../../components/StatusUpdateModal'
 import { AttachmentChip } from '../../components/AttachmentField'
 import { TextArea, SecondaryButton } from '../../components/form'
@@ -43,6 +44,7 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
   const updateStatusUpdate = useAppStore((s) => s.updateStatusUpdate)
   const deleteStatusUpdate = useAppStore((s) => s.deleteStatusUpdate)
   const { t, tb, language } = useTranslation()
+  const { canEdit } = useCurrentUser()
   const [statusModal, setStatusModal] = useState<'add' | StatusHistoryEntry | null>(null)
 
   if (!request) {
@@ -114,6 +116,7 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
               </div>
               <button
                 type="button"
+                hidden={!canEdit('operations')}
                 onClick={() => setStatusModal('add')}
                 className="flex items-center gap-1.5 rounded-control bg-accent px-3 py-1.5 text-[11px] font-bold text-accent-ink hover:bg-accent"
               >
@@ -141,12 +144,16 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
                     </div>
                     <div className="flex shrink-0 items-center gap-3">
                       <span className="font-bold text-accent-text">{formatMoney(h.cost)}</span>
-                      <button type="button" onClick={() => setStatusModal(h)} className="text-ink-3 hover:text-accent-text">
-                        <Pencil className="size-3.5" />
-                      </button>
-                      <button type="button" onClick={() => handleDeleteEntry(h.id)} className="text-ink-3 hover:text-neg">
-                        <Trash2 className="size-3.5" />
-                      </button>
+                      {canEdit('operations') && (
+                        <>
+                          <button type="button" onClick={() => setStatusModal(h)} className="text-ink-3 hover:text-accent-text">
+                            <Pencil className="size-3.5" />
+                          </button>
+                          <button type="button" onClick={() => handleDeleteEntry(h.id)} className="text-ink-3 hover:text-neg">
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 )
@@ -214,9 +221,11 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
                 <p className="mb-2 text-[11px] text-ink-3">
                   {language === 'ar' ? 'لا توجد فاتورة لهذا الطلب بعد.' : 'No invoice for this request yet.'}
                 </p>
-                <SecondaryButton onClick={handleCreateInvoice} className="w-full">
-                  {language === 'ar' ? 'إنشاء فاتورة' : 'Create Invoice'}
-                </SecondaryButton>
+                {canEdit('finance') && (
+                  <SecondaryButton onClick={handleCreateInvoice} className="w-full">
+                    {language === 'ar' ? 'إنشاء فاتورة' : 'Create Invoice'}
+                  </SecondaryButton>
+                )}
               </div>
             )}
           </div>

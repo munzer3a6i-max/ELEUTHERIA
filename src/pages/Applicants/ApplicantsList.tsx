@@ -3,6 +3,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { Plus, Search, Trash2, User } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
+import { useCurrentUser } from '../../lib/useCurrentUser'
 import PageHeader from '../../components/PageHeader'
 import StatusBadge from '../../components/StatusBadge'
 import Modal from '../../components/Modal'
@@ -20,6 +21,7 @@ export default function ApplicantsList() {
   const addApplicant = useAppStore((s) => s.addApplicant)
   const deleteApplicant = useAppStore((s) => s.deleteApplicant)
   const { t, tb, language } = useTranslation()
+  const { canEdit } = useCurrentUser()
   const navigate = useNavigate()
 
   const [searchParams, setSearchParams] = useSearchParams()
@@ -51,9 +53,11 @@ export default function ApplicantsList() {
         title={t('nav_applicants')}
         subtitle={`${applicants.length} ${language === 'ar' ? 'متقدم' : 'applicants'}`}
         actions={
-          <PrimaryButton onClick={() => setAddOpen(true)} className="flex items-center gap-1.5">
-            <Plus className="size-3.5" /> {language === 'ar' ? 'إضافة متقدم' : 'Add Applicant'}
-          </PrimaryButton>
+          canEdit('operations') && (
+            <PrimaryButton onClick={() => setAddOpen(true)} className="flex items-center gap-1.5">
+              <Plus className="size-3.5" /> {language === 'ar' ? 'إضافة متقدم' : 'Add Applicant'}
+            </PrimaryButton>
+          )
         }
       />
 
@@ -138,7 +142,12 @@ export default function ApplicantsList() {
                     <StatusBadge status={a.status} />
                   </td>
                   <td className="sticky end-0 bg-surface px-4 py-3 text-end">
-                    <button type="button" onClick={() => handleDelete(a.id, a.englishName)} className="text-ink-3 hover:text-neg">
+                    <button
+                      type="button"
+                      hidden={!canEdit('operations')}
+                      onClick={() => handleDelete(a.id, a.englishName)}
+                      className="text-ink-3 hover:text-neg"
+                    >
                       <Trash2 className="size-3.5" />
                     </button>
                   </td>

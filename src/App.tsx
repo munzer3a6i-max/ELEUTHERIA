@@ -1,6 +1,7 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Outlet } from 'react-router-dom'
 import AppShell from './layouts/AppShell'
 import RootEffects from './components/RootEffects'
+import RequireArea from './components/RequireArea'
 import Overview from './pages/Overview'
 import FinancialCenter from './pages/Accounting/FinancialCenter'
 import Login from './pages/Login'
@@ -31,6 +32,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route element={<AppShell />}>
+          <Route element={<RequireArea><Outlet /></RequireArea>}>
           <Route path="/" element={<Overview />} />
           <Route path="/applicants" element={<ApplicantsList />} />
           <Route path="/applicants/:id" element={<ApplicantProfile />} />
@@ -52,7 +54,8 @@ function App() {
           <Route path="/reports" element={<Reports />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="*" element={<NotFound />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
         </Route>
       </Routes>
     </>

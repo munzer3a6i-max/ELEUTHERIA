@@ -86,6 +86,19 @@ agency, for instance) when the facts say otherwise. Each backout keeps its own
 list of bills — ticket, accommodation, exit clearance — and only the ones the
 company carries reach the ledger, as an expense on the date of each bill.
 
+## The bill behind the number
+
+Office expenses, payroll entries, invoice payments, recruitment stage costs and
+backout bills each carry an attachment: a photo or a PDF of the actual bill,
+kept with the record and opened from the table it sits in. Office expenses and
+backout bills mark the rows that have none, and the expenses page totals what
+is being claimed without one — the figure to look at when the numbers and the
+paperwork should agree.
+
+Files live in the browser alongside everything else, so each is capped at 2 MB
+and refused when there is no room left to store it. That cap goes away with the
+database, where files belong in storage rather than in a record.
+
 ## Where it all lands
 
 The Accounting Reports income statement now separates the direct cost of a

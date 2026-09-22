@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { Camera, MoreHorizontal, User } from 'lucide-react'
 import { useAppStore, currentStatus, requestCost, invoiceTotalPaid, formatMoney } from '../../../store/useAppStore'
 import { useTranslation } from '../../../i18n/useTranslation'
+import { useCurrentUser } from '../../../lib/useCurrentUser'
 import type { Applicant, ApplicantStatus, RecruitmentRequest, Invoice } from '../../../types'
 
 function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -70,6 +71,7 @@ export default function Header({
   const setApplicantStatus = useAppStore((s) => s.setApplicantStatus)
   const employers = useAppStore((s) => s.employers)
   const { language } = useTranslation()
+  const { canEdit } = useCurrentUser()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const employer = activeRequest ? employers.find((e) => e.id === activeRequest.employerId) : undefined
@@ -116,6 +118,7 @@ export default function Header({
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
           <button
             type="button"
+            hidden={!canEdit('operations')}
             onClick={() => fileInputRef.current?.click()}
             className="mt-2 flex items-center gap-1 rounded-control border border-line-strong bg-raised px-2.5 py-1 text-[10px] text-ink-2 shadow-sm hover:border-accent-line"
           >
@@ -130,6 +133,7 @@ export default function Header({
             </h1>
             <select
               value={applicant.status}
+              disabled={!canEdit('operations')}
               onChange={(e) => handleStatusChange(e.target.value as ApplicantStatus)}
               aria-label={language === 'ar' ? 'حالة العاملة' : 'Worker status'}
               className={`rounded-control border px-2 py-0.5 text-[10px] font-bold focus:outline-none ${STATUS_TONE[applicant.status]}`}

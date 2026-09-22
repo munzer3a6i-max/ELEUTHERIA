@@ -6,7 +6,11 @@ export interface Bilingual {
 export type Language = 'en' | 'ar'
 export type Theme = 'dark' | 'light'
 
-export type StaffRole = 'admin' | 'user'
+/**
+ * What a member of staff may do. `accountant` changes the money and reads the
+ * rest; `data_entry` works the caseload and never sees the finance pages.
+ */
+export type StaffRole = 'admin' | 'accountant' | 'data_entry'
 export type StaffStatus = 'Active' | 'Inactive' | 'Suspended'
 
 export interface StaffMember {

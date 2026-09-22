@@ -5,6 +5,7 @@ import { useTranslation } from '../../i18n/useTranslation'
 import PageHeader from '../../components/PageHeader'
 import Modal from '../../components/Modal'
 import { BilingualField, Field, TextInput, SelectInput, PrimaryButton, SecondaryButton } from '../../components/form'
+import { ROLES, ROLE_LABEL, ROLE_SUMMARY } from '../../lib/permissions'
 import type { StaffMember, StaffRole } from '../../types'
 
 export default function StaffList() {
@@ -64,11 +65,17 @@ export default function StaffList() {
                       onChange={(e) => updateStaffRole(m.id, e.target.value as StaffRole)}
                       className="rounded-control border border-line bg-sunken px-2 py-1 text-[10.5px] text-ink focus:outline-none"
                     >
-                      <option value="admin">{language === 'ar' ? 'مسؤول' : 'Admin'}</option>
-                      <option value="user">{language === 'ar' ? 'مستخدم' : 'User'}</option>
+                      {ROLES.map((role) => (
+                        <option key={role} value={role}>
+                          {ROLE_LABEL[role][language]}
+                        </option>
+                      ))}
                     </select>
                   </td>
-                  <td className="px-4 py-3 text-ink-2">{m.email}</td>
+                  <td className="px-4 py-3 text-ink-2">
+                    <span className="block">{m.email}</span>
+                    <span className="block text-[10px] text-ink-3">{ROLE_SUMMARY[m.role][language]}</span>
+                  </td>
                   <td className="px-4 py-3 text-ink-2">{handled}</td>
                   <td className="px-4 py-3">
                     <button
@@ -116,7 +123,7 @@ function AddStaffModal({
   const { t, language } = useTranslation()
   const [nameEn, setNameEn] = useState('')
   const [nameAr, setNameAr] = useState('')
-  const [role, setRole] = useState<StaffRole>('user')
+  const [role, setRole] = useState<StaffRole>('data_entry')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
 
@@ -140,8 +147,11 @@ function AddStaffModal({
         />
         <Field label={language === 'ar' ? 'الدور' : 'Role'}>
           <SelectInput value={role} onChange={(e) => setRole(e.target.value as StaffRole)}>
-            <option value="admin">{language === 'ar' ? 'مسؤول (وصول كامل)' : 'Admin (full access)'}</option>
-            <option value="user">{language === 'ar' ? 'مستخدم (إدخال بيانات)' : 'User (data entry)'}</option>
+            {ROLES.map((option) => (
+              <option key={option} value={option}>
+                {ROLE_LABEL[option][language]} — {ROLE_SUMMARY[option][language]}
+              </option>
+            ))}
           </SelectInput>
         </Field>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

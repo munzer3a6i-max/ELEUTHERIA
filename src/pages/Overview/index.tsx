@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useAppStore, formatMoney } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
+import { useCurrentUser } from '../../lib/useCurrentUser'
 import PageHeader from '../../components/PageHeader'
 import StatStrip from '../../components/StatStrip'
 import StatusBadge from '../../components/StatusBadge'
@@ -48,7 +49,11 @@ export default function Overview() {
   const settings = useAppStore((s) => s.settings)
   const currency = settings.currency
   const { t, language } = useTranslation()
-  const { stages, alerts, activity, agencyLoad, counts } = useOverview()
+  const { canView, canEdit } = useCurrentUser()
+  const { stages, alerts: allAlerts, activity, agencyLoad, counts } = useOverview()
+  const alerts = canView('finance')
+    ? allAlerts
+    : allAlerts.filter((alert) => alert.kind === 'stalled' || alert.kind === 'passport')
 
   const today = new Date().toLocaleDateString(language === 'ar' ? 'ar' : 'en-GB', {
     weekday: 'long',
@@ -86,18 +91,24 @@ export default function Overview() {
         subtitle={today}
         actions={
           <>
-            <Link to="/applicants" className="btn btn-secondary">
-              <Plus className="size-3.5" />
-              {t('fin_add_worker')}
-            </Link>
-            <Link to="/recruitments" className="btn btn-secondary">
-              <ClipboardList className="size-3.5" />
-              {language === 'ar' ? 'طلب استقدام' : 'New request'}
-            </Link>
-            <Link to="/accounting" className="btn btn-primary">
-              <Landmark className="size-3.5" />
-              {t('fin_title')}
-            </Link>
+            {canEdit('operations') && (
+              <>
+                <Link to="/applicants" className="btn btn-secondary">
+                  <Plus className="size-3.5" />
+                  {t('fin_add_worker')}
+                </Link>
+                <Link to="/recruitments" className="btn btn-secondary">
+                  <ClipboardList className="size-3.5" />
+                  {language === 'ar' ? 'طلب استقدام' : 'New request'}
+                </Link>
+              </>
+            )}
+            {canView('finance') && (
+              <Link to="/accounting" className="btn btn-primary">
+                <Landmark className="size-3.5" />
+                {t('fin_title')}
+              </Link>
+            )}
           </>
         }
       />
@@ -124,13 +135,19 @@ export default function Overview() {
             tone: alerts.length > 0 ? 'warn' : undefined,
             icon: <AlertTriangle className="size-4" />,
           },
-          {
-            label: t('acc_outstanding'),
-            value: formatMoney(counts.receivables, currency, 0),
-            note: `${counts.openInvoices} ${language === 'ar' ? 'فاتورة مفتوحة' : 'open invoices'}`,
-            tone: counts.receivables > 0 ? 'warn' : undefined,
-            icon: <Receipt className="size-4" />,
-          },
+          // What is owed to us is a finance figure, so it shows to the people
+          // who work the money.
+          ...(canView('finance')
+            ? [
+                {
+                  label: t('acc_outstanding'),
+                  value: formatMoney(counts.receivables, currency, 0),
+                  note: `${counts.openInvoices} ${language === 'ar' ? 'فاتورة مفتوحة' : 'open invoices'}`,
+                  tone: (counts.receivables > 0 ? 'warn' : undefined) as 'warn' | undefined,
+                  icon: <Receipt className="size-4" />,
+                },
+              ]
+            : []),
         ]}
       />
 
@@ -238,9 +255,11 @@ export default function Overview() {
           <Card
             title={language === 'ar' ? 'العمالة حسب المكتب' : 'Workers by partner office'}
             action={
-              <Link to="/accounting/agency-accounts" className="text-[11px] text-accent-text hover:text-accent">
-                {t('fin_view_details')}
-              </Link>
+              canView('finance') && (
+                <Link to="/accounting/agency-accounts" className="text-[11px] text-accent-text hover:text-accent">
+                  {t('fin_view_details')}
+                </Link>
+              )
             }
           >
             <ul className="flex flex-col gap-3">

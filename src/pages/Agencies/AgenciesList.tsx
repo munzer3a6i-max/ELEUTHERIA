@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Check, FileSignature, Handshake, Pencil, Plus, Star, Trash2, Undo2 } from 'lucide-react'
 import { useAppStore, formatMoney } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
+import { useCurrentUser } from '../../lib/useCurrentUser'
 import { contractForAgency } from '../../lib/derivedBilling'
 import PageHeader from '../../components/PageHeader'
 import Card from '../../components/Card'
@@ -41,6 +42,7 @@ export default function AgenciesList() {
   const setAgencyChargeStatus = useAppStore((s) => s.setAgencyChargeStatus)
   const paymentSources = useAppStore((s) => s.paymentSources)
   const { t, tb, language } = useTranslation()
+  const { canEdit } = useCurrentUser()
 
   const [addOpen, setAddOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -68,9 +70,11 @@ export default function AgenciesList() {
         title={t('nav_agencies')}
         subtitle={t('page_agencies_subtitle')}
         actions={
-          <PrimaryButton onClick={() => setAddOpen(true)}>
-            <Plus className="size-3.5" /> {language === 'ar' ? 'إضافة مكتب' : 'Add Agency'}
-          </PrimaryButton>
+          canEdit('operations') && (
+            <PrimaryButton onClick={() => setAddOpen(true)}>
+              <Plus className="size-3.5" /> {language === 'ar' ? 'إضافة مكتب' : 'Add Agency'}
+            </PrimaryButton>
+          )
         }
       />
 
@@ -124,6 +128,7 @@ export default function AgenciesList() {
                     <button
                       type="button"
                       aria-label={t('action_delete')}
+                      hidden={!canEdit('operations')}
                       onClick={(e) => {
                         e.stopPropagation()
                         handleDelete(agency)
@@ -155,13 +160,15 @@ export default function AgenciesList() {
               title={`${t('contract_title')} · ${tb({ en: selected.englishName, ar: selected.arabicName })}`}
               subtitle={`${t('contract_half_selected')} · ${t('contract_half_visa')}`}
               action={
-                <button
-                  type="button"
-                  onClick={() => setContractFor({ agencyId: selected.id, contract: null })}
-                  className="btn btn-secondary h-7"
-                >
-                  <Plus className="size-3.5" /> {t('contract_add')}
-                </button>
+                canEdit('finance') && (
+                  <button
+                    type="button"
+                    onClick={() => setContractFor({ agencyId: selected.id, contract: null })}
+                    className="btn btn-secondary h-7"
+                  >
+                    <Plus className="size-3.5" /> {t('contract_add')}
+                  </button>
+                )
               }
               bodyClassName="p-0"
             >
@@ -187,7 +194,7 @@ export default function AgenciesList() {
                       </div>
                       <div className="mt-2 flex items-center justify-between gap-3">
                         <p className="min-w-0 truncate text-[11px] text-ink-3">{contract.notes}</p>
-                        <span className="flex shrink-0 items-center gap-2">
+                        <span className="flex shrink-0 items-center gap-2" hidden={!canEdit('finance')}>
                           <button
                             type="button"
                             aria-label={t('action_edit')}
@@ -260,7 +267,7 @@ export default function AgenciesList() {
                           <StatusBadge status={charge.status} />
                         </td>
                         <td className="text-end">
-                          {charge.status === 'Pending' ? (
+                          {!canEdit('finance') ? null : charge.status === 'Pending' ? (
                             <button
                               type="button"
                               onClick={() =>

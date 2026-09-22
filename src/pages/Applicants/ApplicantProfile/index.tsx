@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Printer, Send } from 'lucide-react'
 import { useAppStore, requestCost, invoiceTotalPaid, formatMoney } from '../../../store/useAppStore'
 import { useTranslation } from '../../../i18n/useTranslation'
+import { useCurrentUser } from '../../../lib/useCurrentUser'
 import Header from './Header'
 import ProfileTabs, { type ProfileTabKey } from './ProfileTabs'
 import StageStepper from './StageStepper'
@@ -38,6 +39,7 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
   const invoices = useAppStore((s) => s.invoices)
   const deleteApplicant = useAppStore((s) => s.deleteApplicant)
   const { t, language } = useTranslation()
+  const { canEdit } = useCurrentUser()
   const [activeTab, setActiveTab] = useState<ProfileTabKey>('financial')
 
   if (!applicant) {
@@ -97,13 +99,15 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
           >
             <Send className="size-3.5" /> {language === 'ar' ? 'إرسال للعميل' : 'Send to Client'}
           </button>
-          <button
-            type="button"
-            onClick={handleDeleteApplicant}
-            className="btn btn-danger"
-          >
-            {t('action_delete')}
-          </button>
+          {canEdit('operations') && (
+            <button
+              type="button"
+              onClick={handleDeleteApplicant}
+              className="btn btn-danger"
+            >
+              {t('action_delete')}
+            </button>
+          )}
         </div>
       </div>
 

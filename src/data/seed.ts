@@ -54,9 +54,9 @@ export const seedPaymentSources: PaymentSource[] = [
 
 export const seedStaff: StaffMember[] = [
   { id: 'st-kylie', name: { en: 'Kylie', ar: 'كايلي' }, phone: '+966 55 100 0001', email: 'kylie@mustaqdem.com', role: 'admin', status: 'Active' },
-  { id: 'st-tess', name: { en: 'Tess', ar: 'تيس' }, phone: '+966 55 100 0002', email: 'tess@mustaqdem.com', role: 'user', status: 'Active' },
-  { id: 'st-roz', name: { en: 'Roz', ar: 'روز' }, phone: '+966 55 100 0003', email: 'roz@mustaqdem.com', role: 'user', status: 'Active' },
-  { id: 'st-eman', name: { en: 'Eman', ar: 'إيمان' }, phone: '+966 55 100 0004', email: 'eman@mustaqdem.com', role: 'user', status: 'Active' },
+  { id: 'st-tess', name: { en: 'Tess', ar: 'تيس' }, phone: '+966 55 100 0002', email: 'tess@mustaqdem.com', role: 'accountant', status: 'Active' },
+  { id: 'st-roz', name: { en: 'Roz', ar: 'روز' }, phone: '+966 55 100 0003', email: 'roz@mustaqdem.com', role: 'data_entry', status: 'Active' },
+  { id: 'st-eman', name: { en: 'Eman', ar: 'إيمان' }, phone: '+966 55 100 0004', email: 'eman@mustaqdem.com', role: 'data_entry', status: 'Active' },
 ]
 
 export const seedAgencies: RecruitmentAgency[] = [

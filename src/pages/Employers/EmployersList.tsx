@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Plus, Trash2, Building2 } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
+import { useCurrentUser } from '../../lib/useCurrentUser'
 import PageHeader from '../../components/PageHeader'
 import Modal from '../../components/Modal'
 import { BilingualField, Field, TextInput, PrimaryButton, SecondaryButton } from '../../components/form'
@@ -14,6 +15,7 @@ export default function EmployersList() {
   const deleteEmployer = useAppStore((s) => s.deleteEmployer)
   const updateEmployer = useAppStore((s) => s.updateEmployer)
   const { t, tb, language } = useTranslation()
+  const { canEdit } = useCurrentUser()
   const [addOpen, setAddOpen] = useState(false)
 
   function handleDelete(id: string, name: string) {
@@ -26,9 +28,11 @@ export default function EmployersList() {
         title={t('nav_employers')}
         subtitle={t('page_employers_subtitle')}
         actions={
-          <PrimaryButton onClick={() => setAddOpen(true)} className="flex items-center gap-1.5">
-            <Plus className="size-3.5" /> {language === 'ar' ? 'إضافة صاحب عمل' : 'Add Employer'}
-          </PrimaryButton>
+          canEdit('operations') && (
+            <PrimaryButton onClick={() => setAddOpen(true)} className="flex items-center gap-1.5">
+              <Plus className="size-3.5" /> {language === 'ar' ? 'إضافة صاحب عمل' : 'Add Employer'}
+            </PrimaryButton>
+          )
         }
       />
 
@@ -51,7 +55,12 @@ export default function EmployersList() {
                     <p className="text-[11px] text-ink-3">{e.nationalAddressShortCode}</p>
                   </div>
                 </div>
-                <button type="button" onClick={() => handleDelete(e.id, e.englishName)} className="text-ink-3 hover:text-neg">
+                <button
+                  type="button"
+                  hidden={!canEdit('operations')}
+                  onClick={() => handleDelete(e.id, e.englishName)}
+                  className="text-ink-3 hover:text-neg"
+                >
                   <Trash2 className="size-3.5" />
                 </button>
               </div>

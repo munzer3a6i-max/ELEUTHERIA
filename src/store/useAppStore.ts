@@ -52,6 +52,115 @@ import {
 } from '../data/seed'
 import { syncDerivedBilling } from '../lib/derivedBilling'
 import { BACKOUT_STAGE } from '../data/businessRules'
+import { canEdit, type Area } from '../lib/permissions'
+
+/*
+  Which area each action belongs to. Hiding a button keeps an honest person out
+  of the wrong page; this table is what keeps everyone else out, because the
+  store refuses the call whatever the screen did. Anything not listed is
+  treated as system, so a new action is locked to admins until someone decides
+  where it belongs.
+*/
+const ACTION_AREA: Record<string, Area> = {
+  setLanguage: 'personal',
+  setTheme: 'personal',
+  signIn: 'personal',
+  signOut: 'personal',
+  markNotificationRead: 'personal',
+  markAllNotificationsRead: 'personal',
+  addNotification: 'personal',
+
+  addApplicant: 'operations',
+  updateApplicant: 'operations',
+  setApplicantStatus: 'operations',
+  deleteApplicant: 'operations',
+  addExperience: 'operations',
+  deleteExperience: 'operations',
+  addEducation: 'operations',
+  deleteEducation: 'operations',
+  addApplicantDocument: 'operations',
+  deleteApplicantDocument: 'operations',
+  addApplicantNote: 'operations',
+  addEmployer: 'operations',
+  updateEmployer: 'operations',
+  deleteEmployer: 'operations',
+  addAgency: 'operations',
+  updateAgency: 'operations',
+  deleteAgency: 'operations',
+  addAgent: 'operations',
+  updateAgent: 'operations',
+  deleteAgent: 'operations',
+  addRequest: 'operations',
+  updateRequest: 'operations',
+  deleteRequest: 'operations',
+  addStatusUpdate: 'operations',
+  updateStatusUpdate: 'operations',
+  deleteStatusUpdate: 'operations',
+
+  addInvoice: 'finance',
+  updateInvoiceStatus: 'finance',
+  addInvoicePayment: 'finance',
+  deleteInvoice: 'finance',
+  addOfficeExpense: 'finance',
+  updateOfficeExpense: 'finance',
+  setOfficeExpenseStatus: 'finance',
+  deleteOfficeExpense: 'finance',
+  addPayrollEntry: 'finance',
+  updatePayrollEntry: 'finance',
+  deletePayrollEntry: 'finance',
+  setPayrollStatus: 'finance',
+  rollForwardPayroll: 'finance',
+  setCommissionStatus: 'finance',
+  addAgencyContract: 'finance',
+  updateAgencyContract: 'finance',
+  deleteAgencyContract: 'finance',
+  setAgencyChargeStatus: 'finance',
+  updateBackout: 'finance',
+  deleteBackout: 'finance',
+  addBackoutCost: 'finance',
+  updateBackoutCost: 'finance',
+  deleteBackoutCost: 'finance',
+  setBackoutCostStatus: 'finance',
+
+  updateSettings: 'system',
+  addStaff: 'system',
+  updateStaffRole: 'system',
+  toggleStaffActive: 'system',
+  deleteStaff: 'system',
+  addCountry: 'system',
+  deleteCountry: 'system',
+  addCity: 'system',
+  deleteCity: 'system',
+  addProfession: 'system',
+  deleteProfession: 'system',
+  addPaymentSource: 'system',
+  updatePaymentSource: 'system',
+  deletePaymentSource: 'system',
+}
+
+/**
+ * Wraps every action so it checks the signed-in role before it runs. A refused
+ * call changes nothing and says so in the console rather than failing silently,
+ * because a write that quietly does nothing is worse than one that is blocked.
+ */
+function guarded<T extends object>(slice: T, role: () => StaffRole): T {
+  const out = {} as Record<string, unknown>
+  for (const [name, value] of Object.entries(slice)) {
+    if (typeof value !== 'function') {
+      out[name] = value
+      continue
+    }
+    const area = ACTION_AREA[name] ?? 'system'
+    out[name] = (...args: unknown[]) => {
+      if (!canEdit(role(), area)) {
+        console.warn(`${name} is a ${area} action and this role cannot make ${area} changes.`)
+        return undefined
+      }
+      return (value as (...a: unknown[]) => unknown)(...args)
+    }
+  }
+  return out as T
+}
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10)
@@ -112,6 +221,11 @@ interface AppState {
   notifications: AppNotification[]
   settings: AppSettings
   invoiceSequence: number
+  /** The member of staff working the app right now. */
+  currentStaffId: string
+
+  signIn: (staffId: string) => void
+  signOut: () => void
 
   setLanguage: (lang: Language) => void
   setTheme: (theme: Theme) => void
@@ -204,7 +318,8 @@ interface AppState {
 
 export const useAppStore = create<AppState>()(
   persist(
-    (set, get) => ({
+    (set, get) =>
+      guarded({
       applicants: seedApplicants,
       employers: seedEmployers,
       agencies: seedAgencies,
@@ -224,6 +339,7 @@ export const useAppStore = create<AppState>()(
       backouts: seedBackouts,
       notifications: seedNotifications,
       invoiceSequence: seedInvoices.length + 1,
+      currentStaffId: seedStaff[0].id,
       settings: {
         companyName: 'Eleutheria',
         companyTagline: 'International Placement Services',
@@ -233,6 +349,9 @@ export const useAppStore = create<AppState>()(
         language: 'en',
         theme: 'dark',
       },
+
+      signIn: (staffId) => set({ currentStaffId: staffId }),
+      signOut: () => set({ currentStaffId: '' }),
 
       setLanguage: (language) => set((s) => ({ settings: { ...s.settings, language } })),
       setTheme: (theme) => set((s) => ({ settings: { ...s.settings, theme } })),
@@ -646,10 +765,12 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           notifications: [{ id: newId('note'), title, detail, date: todayIso(), read: false }, ...s.notifications],
         })),
-    }),
+      },
+      // The role of whoever is signed in, read fresh on every call.
+      () => get().staff.find((m) => m.id === get().currentStaffId)?.role ?? 'data_entry'),
     {
       name: 'mustaqdem-store',
-      version: 3,
+      version: 4,
       // Older saved stores predate agents and predate keeping the bill itself.
       // Seed what is missing rather than leaving the new pages empty, carry
       // filenames over as attachments with no file, and let the sync re-derive
@@ -664,6 +785,12 @@ export const useAppStore = create<AppState>()(
         }
         return {
           ...state,
+          // 'user' was the only non-admin role before the accountant existed.
+          staff: (state.staff ?? seedStaff).map((member) => ({
+            ...member,
+            role: (member.role as string) === 'user' ? 'data_entry' : member.role,
+          })),
+          currentStaffId: state.currentStaffId ?? (state.staff ?? seedStaff)[0]?.id ?? '',
           agents: state.agents ?? seedAgents,
           agentCommissions: state.agentCommissions ?? [],
           agencyContracts: state.agencyContracts ?? seedAgencyContracts,

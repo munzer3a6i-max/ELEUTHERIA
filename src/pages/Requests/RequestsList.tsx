@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Trash2 } from 'lucide-react'
 import { useAppStore, currentStatus } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
+import { useCurrentUser } from '../../lib/useCurrentUser'
 import PageHeader from '../../components/PageHeader'
 import Modal from '../../components/Modal'
 import SearchableSelect from '../../components/SearchableSelect'
@@ -18,6 +19,7 @@ export default function RequestsList() {
   const deleteRequest = useAppStore((s) => s.deleteRequest)
   const addRequest = useAppStore((s) => s.addRequest)
   const { t, tb, language } = useTranslation()
+  const { canEdit } = useCurrentUser()
   const navigate = useNavigate()
 
   const [searchParams] = useSearchParams()
@@ -49,9 +51,11 @@ export default function RequestsList() {
         title={t('nav_recruitments')}
         subtitle={t('page_requests_subtitle')}
         actions={
-          <PrimaryButton onClick={() => setAddOpen(true)} className="flex items-center gap-1.5">
-            <Plus className="size-3.5" /> {language === 'ar' ? 'إنشاء طلب استقدام' : 'New Recruitment Request'}
-          </PrimaryButton>
+          canEdit('operations') && (
+            <PrimaryButton onClick={() => setAddOpen(true)} className="flex items-center gap-1.5">
+              <Plus className="size-3.5" /> {language === 'ar' ? 'إنشاء طلب استقدام' : 'New Recruitment Request'}
+            </PrimaryButton>
+          )
         }
       />
 
@@ -115,7 +119,12 @@ export default function RequestsList() {
                   <td className="px-4 py-3 text-ink-2">{officer ? tb(officer.name) : '-'}</td>
                   <td className="px-4 py-3 text-ink-2">{agency ? tb({ en: agency.englishName, ar: agency.arabicName }) : '-'}</td>
                   <td className="sticky end-0 bg-surface px-4 py-3 text-end">
-                    <button type="button" onClick={() => handleDelete(r.id)} className="text-ink-3 hover:text-neg">
+                    <button
+                      type="button"
+                      hidden={!canEdit('operations')}
+                      onClick={() => handleDelete(r.id)}
+                      className="text-ink-3 hover:text-neg"
+                    >
                       <Trash2 className="size-3.5" />
                     </button>
                   </td>

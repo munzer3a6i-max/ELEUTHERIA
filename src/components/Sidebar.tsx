@@ -30,6 +30,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
 import brandMark from '../assets/eleutheria-mark.png'
 import { useTranslation } from '../i18n/useTranslation'
+import { useCurrentUser } from '../lib/useCurrentUser'
 
 interface NavItemProps {
   to: string
@@ -131,6 +132,7 @@ export default function Sidebar({
   const { t, language } = useTranslation()
   const unreadCount = useAppStore((s) => s.notifications.filter((n) => !n.read).length)
   const settings = useAppStore((s) => s.settings)
+  const { canView } = useCurrentUser()
   const addonsActive = location.pathname.startsWith('/addons')
   const accountingActive = location.pathname.startsWith('/accounting')
 
@@ -193,30 +195,42 @@ export default function Sidebar({
           <NavItem to="/agencies" icon={<Handshake className="size-4" />} label={t('nav_agencies')} />
           <NavItem to="/agents" icon={<UserPlus className="size-4" />} label={t('nav_agents')} />
           <NavItem to="/recruitments" icon={<ClipboardList className="size-4" />} label={t('nav_recruitments')} />
-          <NavItem to="/invoices" icon={<Receipt className="size-4" />} label={t('nav_invoices')} />
+          {canView('finance') && (
+            <NavItem to="/invoices" icon={<Receipt className="size-4" />} label={t('nav_invoices')} />
+          )}
 
-          <GroupLabel>{language === 'ar' ? 'المالية' : 'Finance'}</GroupLabel>
-          <NavGroup icon={<Calculator className="size-4" />} label={t('nav_accounting')} active={accountingActive}>
+          {canView('finance') && (
+            <>
+              <GroupLabel>{language === 'ar' ? 'المالية' : 'Finance'}</GroupLabel>
+              <NavGroup icon={<Calculator className="size-4" />} label={t('nav_accounting')} active={accountingActive}>
             <NavItem to="/accounting" end icon={<Landmark className="size-3.5" />} label={t('fin_title')} />
             <NavItem to="/accounting/payroll" icon={<Banknote className="size-3.5" />} label={t('acc_payroll_title')} />
             <NavItem to="/accounting/agency-accounts" icon={<Building2 className="size-3.5" />} label={t('acc_agency_accounts_title')} />
             <NavItem to="/accounting/office-expenses" icon={<Building className="size-3.5" />} label={t('acc_office_expenses_title')} />
             <NavItem to="/accounting/backouts" icon={<PlaneLanding className="size-3.5" />} label={t('backout_title')} />
             <NavItem to="/accounting/reports" icon={<FileSpreadsheet className="size-3.5" />} label={t('acc_reports_title')} />
-          </NavGroup>
-          <NavItem to="/reports" icon={<BarChart3 className="size-4" />} label={t('nav_reports')} />
+              </NavGroup>
+              <NavItem to="/reports" icon={<BarChart3 className="size-4" />} label={t('nav_reports')} />
+            </>
+          )}
 
           <GroupLabel>{language === 'ar' ? 'النظام' : 'System'}</GroupLabel>
-          <NavItem to="/staff" icon={<UserCog className="size-4" />} label={t('nav_staff')} />
-          <NavGroup icon={<Wallet className="size-4" />} label={t('nav_addons')} active={addonsActive}>
+          {canView('system') && (
+            <>
+              <NavItem to="/staff" icon={<UserCog className="size-4" />} label={t('nav_staff')} />
+              <NavGroup icon={<Wallet className="size-4" />} label={t('nav_addons')} active={addonsActive}>
             <NavItem to="/addons/countries" icon={<Globe2 className="size-3.5" />} label={language === 'ar' ? 'الدول' : 'Countries'} />
             <NavItem to="/addons/cities" icon={<MapPin className="size-3.5" />} label={language === 'ar' ? 'المدن' : 'Cities'} />
             <NavItem to="/addons/professions" icon={<Briefcase className="size-3.5" />} label={language === 'ar' ? 'المهن' : 'Professions'} />
             <NavItem to="/addons/payment-sources" icon={<Wallet className="size-3.5" />} label={language === 'ar' ? 'مصادر الدفع' : 'Payment Sources'} />
-            <NavItem to="/addons/statuses" icon={<ListChecks className="size-3.5" />} label={language === 'ar' ? 'الحالات' : 'Statuses'} />
-          </NavGroup>
+                <NavItem to="/addons/statuses" icon={<ListChecks className="size-3.5" />} label={language === 'ar' ? 'الحالات' : 'Statuses'} />
+              </NavGroup>
+            </>
+          )}
           <NavItem to="/notifications" icon={<Bell className="size-4" />} label={t('nav_notifications')} badge={unreadCount} />
-          <NavItem to="/settings" icon={<Settings className="size-4" />} label={t('nav_settings')} />
+          {canView('system') && (
+            <NavItem to="/settings" icon={<Settings className="size-4" />} label={t('nav_settings')} />
+          )}
         </nav>
       </div>
 
