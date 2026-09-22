@@ -15,6 +15,9 @@ export const VISA_ISSUED_STAGE = 'Visa Stamping'
 export const SELECTION_STAGE = 'Selected'
 export const DEPLOYMENT_STAGE = 'Deployed'
 
+/** Logging this stage opens a backout, and marks the worker as one. */
+export const BACKOUT_STAGE = 'Back Out'
+
 /**
  * Paid to a candidate who came to us directly, at selection and again at
  * deployment. An agent's fee replaces it when one introduced her, which is why
@@ -32,7 +35,12 @@ export function monthsBetween(from: string, to: string): number {
   return end.getDate() < start.getDate() ? Math.max(0, months - 1) : Math.max(0, months)
 }
 
-/** Inside the guarantee window the company carries the return. */
-export function liabilityFor(deployedOn: string, returnedOn: string): 'Company' | 'Employer' {
+/**
+ * Inside the guarantee window the company carries the return. A worker who
+ * backed out before deployment never reached an employer, so whatever was
+ * spent on her is ours too.
+ */
+export function liabilityFor(deployedOn: string | null, returnedOn: string): 'Company' | 'Employer' {
+  if (!deployedOn) return 'Company'
   return monthsBetween(deployedOn, returnedOn) < GUARANTEE_MONTHS ? 'Company' : 'Employer'
 }

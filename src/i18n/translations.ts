@@ -221,6 +221,8 @@ export const translations = {
   backout_auto_note: { en: 'A backout is opened automatically when a deployed worker is logged as Back Out.', ar: 'تُفتح حالة التراجع تلقائيًا عند تسجيل عاملة مغادرة كحالة تراجع.' },
   backout_months: { en: 'months', ar: 'أشهر' },
   backout_month: { en: 'month', ar: 'شهر' },
+  backout_never_deployed: { en: 'Never deployed', ar: 'لم تغادر' },
+  backout_before_deployment: { en: 'She pulled out before deployment, so what was already spent on her is ours.', ar: 'تراجعت قبل المغادرة، لذلك ما أُنفق عليها يقع علينا.' },
   backout_opened_from_log: { en: 'Opened from the stage log', ar: 'تُفتح من سجل المراحل' },
 
   // Agency contracts
@@ -242,6 +244,17 @@ export const translations = {
   contract_expected: { en: 'Expected', ar: 'المتوقع' },
   contract_received: { en: 'Received', ar: 'المستلم' },
   contract_awaiting: { en: 'Awaiting', ar: 'قيد الاستلام' },
+  // Attachments
+  attach_label: { en: 'Bill or receipt', ar: 'الفاتورة أو الإيصال' },
+  attach_upload: { en: 'Attach a file', ar: 'إرفاق ملف' },
+  attach_view: { en: 'Open attachment', ar: 'فتح المرفق' },
+  attach_none: { en: 'No file attached', ar: 'لا يوجد ملف مرفق' },
+  attach_name_only: { en: 'Name only, file not stored', ar: 'الاسم فقط، الملف غير محفوظ' },
+  attach_missing: { en: 'Missing a bill', ar: 'بدون فاتورة' },
+  attach_column: { en: 'Bill', ar: 'الفاتورة' },
+  attach_receipt: { en: 'Receipt for this payment', ar: 'إيصال هذه الدفعة' },
+  attach_payslip: { en: 'Payslip or transfer slip', ar: 'قسيمة الراتب أو إشعار التحويل' },
+
   contract_delete_confirm: { en: 'Delete this contract? Unsettled charges under it are removed.', ar: 'حذف هذا العقد؟ تُحذف المستحقات غير المسددة المرتبطة به.' },
 } as const
 

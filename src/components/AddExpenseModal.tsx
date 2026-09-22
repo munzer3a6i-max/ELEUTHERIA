@@ -3,7 +3,8 @@ import { useAppStore } from '../store/useAppStore'
 import { useTranslation } from '../i18n/useTranslation'
 import Modal from './Modal'
 import { BilingualField, Field, PrimaryButton, SecondaryButton, SelectInput, TextInput } from './form'
-import type { LedgerStatus, OfficeExpense } from '../types'
+import AttachmentField from './AttachmentField'
+import type { Attachment, LedgerStatus, OfficeExpense } from '../types'
 
 const CATEGORIES = ['Rent', 'Utilities', 'Supplies', 'Accommodation', 'Logistics', 'Other']
 
@@ -26,6 +27,7 @@ export default function AddExpenseModal({
     date: expense?.date ?? new Date().toISOString().slice(0, 10),
     status: expense?.status ?? ('Paid' as LedgerStatus),
   })
+  const [attachment, setAttachment] = useState<Attachment | null>(expense?.attachment ?? null)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -37,6 +39,7 @@ export default function AddExpenseModal({
       amount,
       date: form.date,
       status: form.status,
+      attachment,
     }
     if (expense) updateOfficeExpense(expense.id, payload)
     else addOfficeExpense(payload)
@@ -87,6 +90,7 @@ export default function AddExpenseModal({
             </SelectInput>
           </Field>
         </div>
+        <AttachmentField value={attachment} onChange={setAttachment} />
         <div className="mt-2 flex items-center justify-end gap-2">
           <SecondaryButton onClick={onClose}>{t('action_cancel')}</SecondaryButton>
           <PrimaryButton type="submit">{t('action_save')}</PrimaryButton>

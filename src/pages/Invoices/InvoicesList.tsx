@@ -7,7 +7,8 @@ import PageHeader from '../../components/PageHeader'
 import StatusBadge from '../../components/StatusBadge'
 import Modal from '../../components/Modal'
 import { Field, SelectInput, TextInput, PrimaryButton, SecondaryButton } from '../../components/form'
-import type { InvoiceStatus } from '../../types'
+import AttachmentField from '../../components/AttachmentField'
+import type { Attachment, InvoiceStatus } from '../../types'
 
 const STATUS_FILTERS: (InvoiceStatus | 'All')[] = ['All', 'Issued', 'Partial Payment', 'Completed']
 
@@ -144,6 +145,7 @@ function LogPaymentModal({ invoiceId, onClose }: { invoiceId: string; onClose: (
   const [amount, setAmount] = useState('')
   const [sourceId, setSourceId] = useState(paymentSources[0]?.id ?? '')
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+  const [attachment, setAttachment] = useState<Attachment | null>(null)
 
   if (!invoice) return null
   const balance = invoiceBalance(invoice)
@@ -151,7 +153,7 @@ function LogPaymentModal({ invoiceId, onClose }: { invoiceId: string; onClose: (
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!amount || !sourceId) return
-    addInvoicePayment(invoiceId, { date, amount: Number(amount), sourceId })
+    addInvoicePayment(invoiceId, { date, amount: Number(amount), sourceId, attachment })
     onClose()
   }
 
@@ -176,6 +178,7 @@ function LogPaymentModal({ invoiceId, onClose }: { invoiceId: string; onClose: (
             ))}
           </SelectInput>
         </Field>
+        <AttachmentField value={attachment} onChange={setAttachment} label={t('attach_receipt')} />
         <div className="mt-4 flex justify-end gap-2">
           <SecondaryButton onClick={onClose}>{t('action_cancel')}</SecondaryButton>
           <PrimaryButton type="submit">{language === 'ar' ? 'تسجيل الدفعة' : 'Log Payment'}</PrimaryButton>

@@ -45,7 +45,17 @@ function ageFromDob(dob: string): number | null {
   return Math.floor((Date.now() - birth.getTime()) / (1000 * 60 * 60 * 24 * 365.25))
 }
 
-const STATUS_OPTIONS: ApplicantStatus[] = ['Available', 'Unavailable', 'Selected', 'Deployed']
+const STATUS_OPTIONS: ApplicantStatus[] = ['Available', 'Unavailable', 'Selected', 'Deployed', 'Back Out']
+
+// The control carries the same meaning as the chip beside every other status
+// in the app: green is placed and well, red is a worker who pulled out.
+const STATUS_TONE: Record<ApplicantStatus, string> = {
+  Available: 'border-pos/40 bg-pos-soft text-pos',
+  Deployed: 'border-pos/40 bg-pos-soft text-pos',
+  Selected: 'border-info/40 bg-info-soft text-info',
+  Unavailable: 'border-line-strong bg-raised text-ink-2',
+  'Back Out': 'border-neg/40 bg-neg-soft text-neg',
+}
 
 export default function Header({
   applicant,
@@ -57,6 +67,7 @@ export default function Header({
   invoice: Invoice | null
 }) {
   const updateApplicant = useAppStore((s) => s.updateApplicant)
+  const setApplicantStatus = useAppStore((s) => s.setApplicantStatus)
   const employers = useAppStore((s) => s.employers)
   const { language } = useTranslation()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -67,6 +78,18 @@ export default function Header({
   const totalIncome = invoice ? invoiceTotalPaid(invoice) : 0
   const netProfit = totalIncome - totalExpenses
   const profitMargin = totalIncome === 0 ? 0 : (netProfit / totalIncome) * 100
+
+  function handleStatusChange(status: ApplicantStatus) {
+    // Back Out is written as a stage on her request; that is what opens her
+    // backout and lets bills be filed against it.
+    if (setApplicantStatus(applicant.id, status) === 'no-request') {
+      window.alert(
+        language === 'ar'
+          ? 'لا يوجد طلب استقدام لهذه العاملة، لذلك لا يمكن تسجيل تراجعها. أنشئ طلبًا أولًا.'
+          : 'This worker has no recruitment request, so a backout cannot be opened. Create a request first.',
+      )
+    }
+  }
 
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -107,8 +130,9 @@ export default function Header({
             </h1>
             <select
               value={applicant.status}
-              onChange={(e) => updateApplicant(applicant.id, { status: e.target.value as ApplicantStatus })}
-              className="rounded-control border border-pos/40 bg-pos-soft px-2 py-0.5 text-[10px] font-bold text-pos focus:outline-none"
+              onChange={(e) => handleStatusChange(e.target.value as ApplicantStatus)}
+              aria-label={language === 'ar' ? 'حالة العاملة' : 'Worker status'}
+              className={`rounded-control border px-2 py-0.5 text-[10px] font-bold focus:outline-none ${STATUS_TONE[applicant.status]}`}
             >
               {STATUS_OPTIONS.map((s) => (
                 <option key={s} value={s} className="bg-surface text-ink">

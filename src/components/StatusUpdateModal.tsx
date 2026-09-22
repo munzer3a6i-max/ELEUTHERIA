@@ -5,7 +5,8 @@ import { pipelineForType, nextStatus } from '../data/statusPipelines'
 import { CASH_ASSISTANCE, DEPLOYMENT_STAGE, SELECTION_STAGE } from '../data/businessRules'
 import Modal from './Modal'
 import { Field, SelectInput, TextInput, TextArea, PrimaryButton, SecondaryButton } from './form'
-import type { StatusHistoryEntry } from '../types'
+import AttachmentField from './AttachmentField'
+import type { Attachment, StatusHistoryEntry } from '../types'
 
 /**
  * The fee an agent earns at a milestone is booked as their commission, so the
@@ -52,7 +53,7 @@ export default function StatusUpdateModal({
   )
   const [paymentSourceId, setPaymentSourceId] = useState(initial?.paymentSourceId ?? paymentSources[0]?.id ?? '')
   const [responsibleEmployeeId, setResponsibleEmployeeId] = useState(initial?.responsibleEmployeeId ?? staff[0]?.id ?? '')
-  const [attachmentName, setAttachmentName] = useState<string | null>(initial?.attachmentName ?? null)
+  const [attachment, setAttachment] = useState<Attachment | null>(initial?.attachment ?? null)
   const [notes, setNotes] = useState(initial?.notes ?? '')
 
   const selectedDef = pipeline.find((p) => p.label === status)
@@ -69,7 +70,7 @@ export default function StatusUpdateModal({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!status || !paymentSourceId || !responsibleEmployeeId) return
-    onSubmit({ status, date, cost: Number(cost) || 0, paymentSourceId, responsibleEmployeeId, attachmentName, notes: notes.trim() })
+    onSubmit({ status, date, cost: Number(cost) || 0, paymentSourceId, responsibleEmployeeId, attachment, notes: notes.trim() })
   }
 
   return (
@@ -128,14 +129,7 @@ export default function StatusUpdateModal({
             </SelectInput>
           </Field>
         </div>
-        <Field label={language === 'ar' ? 'المرفق (اختياري)' : 'Attachment (optional)'}>
-          <input
-            type="file"
-            onChange={(e) => setAttachmentName(e.target.files?.[0]?.name ?? attachmentName)}
-            className="block w-full text-[11px] text-ink-2 file:me-2 file:rounded-control file:border-0 file:bg-raised file:px-2 file:py-1 file:text-[11px] file:text-ink-2"
-          />
-          {attachmentName && <p className="mt-1 text-[10px] text-ink-3">{attachmentName}</p>}
-        </Field>
+        <AttachmentField value={attachment} onChange={setAttachment} />
         <Field label={language === 'ar' ? 'ملاحظات' : 'Notes'}>
           <TextArea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
         </Field>

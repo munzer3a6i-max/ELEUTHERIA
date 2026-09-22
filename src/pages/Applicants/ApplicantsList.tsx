@@ -9,7 +9,7 @@ import Modal from '../../components/Modal'
 import { BilingualField, Field, TextInput, SelectInput, PrimaryButton, SecondaryButton } from '../../components/form'
 import type { ApplicantStatus, RequestType, Gender } from '../../types'
 
-const STATUS_FILTERS: (ApplicantStatus | 'All')[] = ['All', 'Available', 'Unavailable', 'Selected', 'Deployed']
+const STATUS_FILTERS: (ApplicantStatus | 'All')[] = ['All', 'Available', 'Unavailable', 'Selected', 'Deployed', 'Back Out']
 const TYPE_FILTERS: (RequestType | 'All')[] = ['All', 'Domestic', 'Profession']
 
 export default function ApplicantsList() {

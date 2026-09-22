@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Paperclip, Pencil, Trash2, Plus } from 'lucide-react'
+import { Pencil, Trash2, Plus } from 'lucide-react'
 import { useAppStore, requestCost, formatMoney } from '../../../../store/useAppStore'
 import { useTranslation } from '../../../../i18n/useTranslation'
 import StatusUpdateModal from '../../../../components/StatusUpdateModal'
+import { AttachmentChip } from '../../../../components/AttachmentField'
 import type { RecruitmentRequest, StatusHistoryEntry } from '../../../../types'
 
 export default function ExpensesTable({ request }: { request: RecruitmentRequest }) {
@@ -64,7 +65,7 @@ export default function ExpensesTable({ request }: { request: RecruitmentRequest
                   <td className="px-2 py-3.5 text-end text-[10.5px] text-ink">{formatMoney(row.cost)}</td>
                   <td className="px-2 py-3.5">
                     <div className="flex items-center justify-center gap-3 text-ink-3">
-                      {row.attachmentName && <Paperclip className="size-3" />}
+                      <AttachmentChip attachment={row.attachment} />
                       <button type="button" onClick={() => setStatusModal(row)} className="hover:text-accent-text">
                         <Pencil className="size-3" />
                       </button>

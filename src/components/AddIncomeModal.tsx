@@ -3,6 +3,8 @@ import { useAppStore, formatMoney, invoiceBalance } from '../store/useAppStore'
 import { useTranslation } from '../i18n/useTranslation'
 import Modal from './Modal'
 import { Field, PrimaryButton, SecondaryButton, SelectInput, TextInput } from './form'
+import AttachmentField from './AttachmentField'
+import type { Attachment } from '../types'
 
 export default function AddIncomeModal({ onClose, currency }: { onClose: () => void; currency: string }) {
   const invoices = useAppStore((s) => s.invoices)
@@ -19,12 +21,13 @@ export default function AddIncomeModal({ onClose, currency }: { onClose: () => v
     date: new Date().toISOString().slice(0, 10),
     sourceId: sources[0]?.id ?? '',
   })
+  const [attachment, setAttachment] = useState<Attachment | null>(null)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const amount = Number(form.amount)
     if (!form.invoiceId || !Number.isFinite(amount) || amount <= 0) return
-    addInvoicePayment(form.invoiceId, { date: form.date, amount, sourceId: form.sourceId })
+    addInvoicePayment(form.invoiceId, { date: form.date, amount, sourceId: form.sourceId, attachment })
     onClose()
   }
 
@@ -86,6 +89,7 @@ export default function AddIncomeModal({ onClose, currency }: { onClose: () => v
               ))}
             </SelectInput>
           </Field>
+          <AttachmentField value={attachment} onChange={setAttachment} label={t('attach_receipt')} />
           <div className="mt-2 flex items-center justify-end gap-2">
             <SecondaryButton onClick={onClose}>{t('action_cancel')}</SecondaryButton>
             <PrimaryButton type="submit">{t('action_save')}</PrimaryButton>

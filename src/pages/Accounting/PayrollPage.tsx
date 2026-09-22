@@ -8,6 +8,7 @@ import StatusBadge from '../../components/StatusBadge'
 import Card from '../../components/Card'
 import { monthLabel, nextMonth } from '../../lib/financials'
 import PayrollEntryModal from './PayrollEntryModal'
+import { AttachmentChip } from '../../components/AttachmentField'
 import type { PayrollEntry } from '../../types'
 
 export default function PayrollPage() {
@@ -164,6 +165,7 @@ export default function PayrollPage() {
                   <th className="px-3 py-2.5 text-end">{t('fin_allowances')}</th>
                   <th className="px-3 py-2.5 text-end">{t('acc_net_pay')}</th>
                   <th className="px-3 py-2.5 text-start">{t('label_status')}</th>
+                  <th className="px-3 py-2.5 text-start">{t('attach_column')}</th>
                   <th className="px-3 py-2.5 text-end">{t('label_action')}</th>
                 </tr>
               </thead>
@@ -209,6 +211,13 @@ export default function PayrollPage() {
                         </button>
                       </td>
                       <td className="px-3 py-2.5">
+                        {entry.attachment ? (
+                          <AttachmentChip attachment={entry.attachment} />
+                        ) : (
+                          <span className="chip chip-warn">{t('attach_missing')}</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5">
                         <span className="flex items-center justify-end gap-2.5">
                           <button
                             type="button"
@@ -236,7 +245,7 @@ export default function PayrollPage() {
                 })}
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-3 py-10 text-center text-xs text-ink-3">
+                    <td colSpan={9} className="px-3 py-10 text-center text-xs text-ink-3">
                       {t('acc_no_rows')}
                     </td>
                   </tr>
@@ -252,7 +261,7 @@ export default function PayrollPage() {
                     <td className="whitespace-nowrap px-3 py-2.5 text-end num">{formatMoney(totals.overtime, currency, 0)}</td>
                     <td className="whitespace-nowrap px-3 py-2.5 text-end num">{formatMoney(totals.allowances, currency, 0)}</td>
                     <td className="whitespace-nowrap px-3 py-2.5 text-end num">{formatMoney(gross, currency, 0)}</td>
-                    <td colSpan={2} />
+                    <td colSpan={3} />
                   </tr>
                 </tfoot>
               )}

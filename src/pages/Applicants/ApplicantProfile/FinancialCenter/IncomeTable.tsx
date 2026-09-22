@@ -4,7 +4,8 @@ import { useAppStore, invoiceTotalPaid, invoiceBalance, formatMoney } from '../.
 import { useTranslation } from '../../../../i18n/useTranslation'
 import Modal from '../../../../components/Modal'
 import { Field, SelectInput, TextInput, PrimaryButton, SecondaryButton } from '../../../../components/form'
-import type { Invoice } from '../../../../types'
+import AttachmentField, { AttachmentChip } from '../../../../components/AttachmentField'
+import type { Attachment, Invoice } from '../../../../types'
 
 export default function IncomeTable({ invoice, onCreateInvoice }: { invoice: Invoice | null; onCreateInvoice: () => void }) {
   const { t, language } = useTranslation()
@@ -64,7 +65,12 @@ export default function IncomeTable({ invoice, onCreateInvoice }: { invoice: Inv
               <tr key={p.id} className="border-t border-line first:border-t-0">
                 <td className="px-2 py-3.5 text-[10.5px] text-ink-3">{i + 1}</td>
                 <td className="px-2 py-3.5 text-[10.5px] text-ink-2">{p.date}</td>
-                <td className="px-2 py-3.5 text-end text-[10.5px] text-ink">{formatMoney(p.amount)}</td>
+                <td className="px-2 py-3.5 text-end text-[10.5px] text-ink">
+                  <span className="inline-flex items-center gap-1.5">
+                    {formatMoney(p.amount)}
+                    <AttachmentChip attachment={p.attachment} />
+                  </span>
+                </td>
               </tr>
             ))}
             {invoice.payments.length === 0 && (
@@ -99,6 +105,7 @@ function LogPaymentModal({ invoiceId, onClose }: { invoiceId: string; onClose: (
   const [amount, setAmount] = useState('')
   const [sourceId, setSourceId] = useState(paymentSources[0]?.id ?? '')
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+  const [attachment, setAttachment] = useState<Attachment | null>(null)
 
   if (!invoice) return null
   const balance = invoiceBalance(invoice)
@@ -106,7 +113,7 @@ function LogPaymentModal({ invoiceId, onClose }: { invoiceId: string; onClose: (
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!amount || !sourceId) return
-    addInvoicePayment(invoiceId, { date, amount: Number(amount), sourceId })
+    addInvoicePayment(invoiceId, { date, amount: Number(amount), sourceId, attachment })
     onClose()
   }
 
@@ -131,6 +138,7 @@ function LogPaymentModal({ invoiceId, onClose }: { invoiceId: string; onClose: (
             ))}
           </SelectInput>
         </Field>
+        <AttachmentField value={attachment} onChange={setAttachment} label={t('attach_receipt')} />
         <div className="mt-4 flex justify-end gap-2">
           <SecondaryButton onClick={onClose}>{t('action_cancel')}</SecondaryButton>
           <PrimaryButton type="submit">{language === 'ar' ? 'إضافة الدفعة' : 'Add Payment'}</PrimaryButton>

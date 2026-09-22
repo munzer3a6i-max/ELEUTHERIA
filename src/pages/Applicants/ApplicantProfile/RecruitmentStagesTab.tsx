@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Paperclip } from 'lucide-react'
+import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { useAppStore, formatMoney } from '../../../store/useAppStore'
 import { useTranslation } from '../../../i18n/useTranslation'
 import StatusUpdateModal from '../../../components/StatusUpdateModal'
+import { AttachmentChip } from '../../../components/AttachmentField'
 import StageStepper from './StageStepper'
 import PlacementMoney from './PlacementMoney'
 import type { RecruitmentRequest, StatusHistoryEntry } from '../../../types'
@@ -75,9 +76,9 @@ export default function RecruitmentStagesTab({
                     {h.date} · {resp ? tb(resp.name) : '-'} · {source?.name ?? '-'}
                   </p>
                   {h.notes && <p className="mt-1 text-ink-2">{h.notes}</p>}
-                  {h.attachmentName && (
+                  {h.attachment && (
                     <span className="mt-1 flex items-center gap-1 text-[10px] text-ink-3">
-                      <Paperclip className="size-3" /> {h.attachmentName}
+                      <AttachmentChip attachment={h.attachment} /> {h.attachment.name}
                     </span>
                   )}
                 </div>

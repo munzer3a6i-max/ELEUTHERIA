@@ -14,6 +14,7 @@ import type {
   PaymentSource,
   AppNotification,
   StatusHistoryEntry,
+  ApplicantStatus,
   Language,
   Theme,
   StaffRole,
@@ -24,6 +25,7 @@ import type {
   AgentCommission,
   AgencyContract,
   AgencyCharge,
+  Attachment,
   Backout,
   BackoutCost,
   SettlementStatus,
@@ -49,6 +51,7 @@ import {
   seedBackouts,
 } from '../data/seed'
 import { syncDerivedBilling } from '../lib/derivedBilling'
+import { BACKOUT_STAGE } from '../data/businessRules'
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10)
@@ -65,6 +68,15 @@ function newId(prefix: string): string {
  */
 function withBilling<T extends Partial<AppState>>(state: AppState, changes: T) {
   return { ...changes, ...syncDerivedBilling({ ...state, ...changes }) }
+}
+
+/** The request a worker's own status change should be written against. */
+function latestRequestFor(requests: RecruitmentRequest[], applicantId: string): RecruitmentRequest | null {
+  return (
+    requests
+      .filter((r) => r.applicantId === applicantId)
+      .sort((a, b) => (a.createdOn < b.createdOn ? 1 : -1))[0] ?? null
+  )
 }
 
 interface AppSettings {
@@ -107,6 +119,12 @@ interface AppState {
 
   addApplicant: (data: Omit<Applicant, 'id' | 'createdOn' | 'updatedOn' | 'updatedBy' | 'status' | 'experience' | 'education' | 'documents' | 'notes' | 'photoDataUrl' | 'cvFileName' | 'passportCopyFileName' | 'cvLinkedToWebsite'>) => string
   updateApplicant: (id: string, patch: Partial<Applicant>) => void
+  /**
+   * Moving a worker to Back Out writes the stage on her request, which is what
+   * opens her backout and its bills. Returns 'no-request' when she has no
+   * recruitment request to write against, so the screen can say why.
+   */
+  setApplicantStatus: (id: string, status: ApplicantStatus) => 'ok' | 'no-request'
   deleteApplicant: (id: string) => void
   addExperience: (applicantId: string, entry: Omit<Applicant['experience'][number], 'id'>) => void
   deleteExperience: (applicantId: string, entryId: string) => void
@@ -249,6 +267,59 @@ export const useAppStore = create<AppState>()(
             ),
           }),
         ),
+      setApplicantStatus: (id, status) => {
+        const state = get()
+        const applicant = state.applicants.find((a) => a.id === id)
+        if (!applicant || applicant.status === status) return 'ok'
+
+        const request = latestRequestFor(state.requests, id)
+        const goingOut = status === 'Back Out'
+        const leavingBackout = applicant.status === 'Back Out' && !goingOut
+        if (goingOut && !request) return 'no-request'
+
+        let requests = state.requests
+        if (request && goingOut && !request.statusHistory.some((h) => h.status === BACKOUT_STAGE)) {
+          const entry: StatusHistoryEntry = {
+            id: newId('sh'),
+            status: BACKOUT_STAGE,
+            date: todayIso(),
+            cost: 0,
+            paymentSourceId: state.paymentSources[0]?.id ?? '',
+            responsibleEmployeeId: state.staff[0]?.id ?? '',
+            attachment: null,
+            notes: '',
+          }
+          requests = state.requests.map((r) =>
+            r.id === request.id
+              ? { ...r, statusHistory: [...r.statusHistory, entry], updatedOn: todayIso() }
+              : r,
+          )
+        } else if (request && leavingBackout) {
+          // Taking the flag off is only allowed while nothing has been spent on
+          // bringing her home; bills are a record, not a toggle.
+          const recorded = state.backouts.find((b) => b.requestId === request.id)
+          if (recorded && recorded.costs.length > 0) return 'ok'
+          requests = state.requests.map((r) =>
+            r.id === request.id
+              ? {
+                  ...r,
+                  statusHistory: r.statusHistory.filter((h) => h.status !== BACKOUT_STAGE),
+                  updatedOn: todayIso(),
+                }
+              : r,
+          )
+        }
+
+        set((s) =>
+          withBilling(s, {
+            requests,
+            applicants: s.applicants.map((a) =>
+              a.id === id ? { ...a, status, updatedOn: todayIso(), updatedBy: 'Kylie' } : a,
+            ),
+          }),
+        )
+        return 'ok'
+      },
       deleteApplicant: (id) =>
         set((s) =>
           withBilling(s, {
@@ -361,15 +432,23 @@ export const useAppStore = create<AppState>()(
           }),
         ),
       addStatusUpdate: (requestId, entry) =>
-        set((s) =>
-          withBilling(s, {
-            requests: s.requests.map((r) =>
-              r.id === requestId
-                ? { ...r, statusHistory: [...r.statusHistory, { ...entry, id: newId('sh') }], updatedOn: todayIso() }
-                : r,
-            ),
-          }),
-        ),
+        set((s) => {
+          const requests = s.requests.map((r) =>
+            r.id === requestId
+              ? { ...r, statusHistory: [...r.statusHistory, { ...entry, id: newId('sh') }], updatedOn: todayIso() }
+              : r,
+          )
+          // Logging the stage is what makes her a backout worker, wherever it
+          // was logged from, so her own record says so too.
+          const applicantId = s.requests.find((r) => r.id === requestId)?.applicantId
+          const applicants =
+            entry.status === BACKOUT_STAGE && applicantId
+              ? s.applicants.map((a) =>
+                  a.id === applicantId ? { ...a, status: 'Back Out' as ApplicantStatus } : a,
+                )
+              : s.applicants
+          return withBilling(s, { requests, applicants })
+        }),
       updateStatusUpdate: (requestId, entryId, patch) =>
         set((s) =>
           withBilling(s, {
@@ -570,19 +649,50 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'mustaqdem-store',
-      version: 2,
-      // A store persisted before agents existed has no agents, contracts or
-      // backouts. Seed those in rather than leaving the pages empty, then let
-      // the sync re-derive what the history says is owed.
+      version: 3,
+      // Older saved stores predate agents and predate keeping the bill itself.
+      // Seed what is missing rather than leaving the new pages empty, carry
+      // filenames over as attachments with no file, and let the sync re-derive
+      // what the history says is owed.
       migrate: (persisted) => {
-        const state = persisted as Partial<AppState>
+        const state = persisted as Partial<AppState> & Record<string, unknown>
+        const carried = (value: unknown): Attachment | null => {
+          if (value && typeof value === 'object') return value as Attachment
+          if (typeof value === 'string' && value)
+            return { name: value, type: '', size: 0, dataUrl: '', uploadedOn: '' }
+          return null
+        }
         return {
           ...state,
           agents: state.agents ?? seedAgents,
           agentCommissions: state.agentCommissions ?? [],
           agencyContracts: state.agencyContracts ?? seedAgencyContracts,
           agencyCharges: state.agencyCharges ?? [],
-          backouts: state.backouts ?? [],
+          backouts: (state.backouts ?? []).map((backout) => ({
+            ...backout,
+            costs: backout.costs.map((cost) => ({ ...cost, attachment: carried(cost.attachment) })),
+          })),
+          requests: (state.requests ?? []).map((request) => ({
+            ...request,
+            statusHistory: request.statusHistory.map((entry) => ({
+              ...entry,
+              attachment: carried(
+                entry.attachment ?? (entry as unknown as { attachmentName?: string }).attachmentName,
+              ),
+            })),
+          })),
+          invoices: (state.invoices ?? []).map((invoice) => ({
+            ...invoice,
+            payments: invoice.payments.map((payment) => ({
+              ...payment,
+              attachment: carried(payment.attachment),
+            })),
+          })),
+          payroll: (state.payroll ?? []).map((entry) => ({ ...entry, attachment: carried(entry.attachment) })),
+          officeExpenses: (state.officeExpenses ?? []).map((expense) => ({
+            ...expense,
+            attachment: carried(expense.attachment),
+          })),
         } as AppState
       },
       onRehydrateStorage: () => (state) => {

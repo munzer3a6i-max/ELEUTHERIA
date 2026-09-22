@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Building, Coins, Pencil, Plus, Search, Trash2, Wallet } from 'lucide-react'
+import { Building, Coins, Paperclip, Pencil, Plus, Search, Trash2, Wallet } from 'lucide-react'
 import { useAppStore, formatMoney } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
 import PageHeader from '../../components/PageHeader'
@@ -7,6 +7,7 @@ import StatStrip from '../../components/StatStrip'
 import StatusBadge from '../../components/StatusBadge'
 import Card from '../../components/Card'
 import AddExpenseModal from '../../components/AddExpenseModal'
+import { AttachmentChip } from '../../components/AttachmentField'
 import PeriodSelect from '../../components/PeriodSelect'
 import { periodRange } from '../../lib/financials'
 import type { PeriodKey } from '../../lib/financials'
@@ -52,6 +53,9 @@ export default function OfficeExpensesPage() {
   }, [officeExpenses, period, category, status, query])
 
   const total = rows.reduce((sum, e) => sum + e.amount, 0)
+  const unbilled = rows
+    .filter((expense) => !expense.attachment)
+    .reduce((acc, expense) => ({ count: acc.count + 1, amount: acc.amount + expense.amount }), { count: 0, amount: 0 })
   const paid = rows.filter((e) => e.status === 'Paid').reduce((sum, e) => sum + e.amount, 0)
 
   const byCategory = useMemo(() => {
@@ -101,6 +105,15 @@ export default function OfficeExpensesPage() {
             value: byCategory[0]?.[0] ?? '-',
             note: byCategory[0] ? formatMoney(byCategory[0][1], currency, 0) : undefined,
             icon: <Building className="size-4" />,
+          },
+          {
+            // The figure that matters for keeping people honest: money claimed
+            // with nothing filed behind it.
+            label: t('attach_missing'),
+            value: formatMoney(unbilled.amount, currency, 0),
+            note: `${unbilled.count} ${language === 'ar' ? 'بند' : 'of'} ${rows.length}`,
+            tone: unbilled.count > 0 ? 'warn' : undefined,
+            icon: <Paperclip className="size-4" />,
           },
         ]}
       />
@@ -152,6 +165,7 @@ export default function OfficeExpensesPage() {
                   <th className="px-3 py-2.5 text-start">{t('label_date')}</th>
                   <th className="px-3 py-2.5 text-end">{t('label_amount')}</th>
                   <th className="px-3 py-2.5 text-start">{t('label_status')}</th>
+                  <th className="px-3 py-2.5 text-start">{t('attach_column')}</th>
                   <th className="px-3 py-2.5 text-end">{t('label_action')}</th>
                 </tr>
               </thead>
@@ -173,6 +187,13 @@ export default function OfficeExpensesPage() {
                       >
                         <StatusBadge status={expense.status} />
                       </button>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      {expense.attachment ? (
+                        <AttachmentChip attachment={expense.attachment} />
+                      ) : (
+                        <span className="chip chip-warn">{t('attach_missing')}</span>
+                      )}
                     </td>
                     <td className="px-3 py-2.5">
                       <span className="flex items-center justify-end gap-2.5">
@@ -201,7 +222,7 @@ export default function OfficeExpensesPage() {
                 ))}
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-3 py-10 text-center text-xs text-ink-3">
+                    <td colSpan={8} className="px-3 py-10 text-center text-xs text-ink-3">
                       {t('acc_no_rows')}
                     </td>
                   </tr>
@@ -214,7 +235,7 @@ export default function OfficeExpensesPage() {
                       {t('fin_total')}
                     </td>
                     <td className="whitespace-nowrap px-3 py-2.5 text-end num">{formatMoney(total, currency, 0)}</td>
-                    <td colSpan={2} />
+                    <td colSpan={3} />
                   </tr>
                 </tfoot>
               )}

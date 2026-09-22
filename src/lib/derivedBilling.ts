@@ -15,6 +15,7 @@
 */
 
 import {
+  BACKOUT_STAGE,
   DEPLOYMENT_STAGE,
   SELECTION_STAGE,
   VISA_ISSUED_STAGE,
@@ -172,11 +173,14 @@ export function syncDerivedBilling(input: BillingInput): BillingOutput {
       }
     }
 
-    // --- a worker who left after deployment --------------------------------
-    const deployedOn = stageDate(request, DEPLOYMENT_STAGE)
-    const backedOutOn = stageDate(request, 'Back Out')
+    // --- a worker who pulled out --------------------------------------------
+    // Usually after deployment, but she can also walk away mid-pipeline, and
+    // the money already spent on her is just as real either way.
+    const backedOutOn = stageDate(request, BACKOUT_STAGE)
+    const deployedOnRaw = stageDate(request, DEPLOYMENT_STAGE)
+    const deployedOn = deployedOnRaw && backedOutOn && backedOutOn >= deployedOnRaw ? deployedOnRaw : null
     const existingBackout = backoutByRequest.get(request.id)
-    if (deployedOn && backedOutOn && backedOutOn >= deployedOn) {
+    if (backedOutOn) {
       keptBackouts.add(request.id)
       if (existingBackout) {
         // Dates follow the history; everything the office typed in stays.

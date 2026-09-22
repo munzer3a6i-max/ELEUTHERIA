@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Check, PlaneLanding, Plus, Trash2, TriangleAlert, Undo2, Wallet } from 'lucide-react'
 import { useAppStore, formatMoney } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
@@ -10,6 +10,7 @@ import StatStrip from '../../components/StatStrip'
 import StatusBadge from '../../components/StatusBadge'
 import Card from '../../components/Card'
 import Modal from '../../components/Modal'
+import AttachmentField, { AttachmentChip } from '../../components/AttachmentField'
 import {
   BilingualField,
   Field,
@@ -19,7 +20,7 @@ import {
   PrimaryButton,
   SecondaryButton,
 } from '../../components/form'
-import type { Backout, BackoutLiability } from '../../types'
+import type { Attachment, Backout, BackoutLiability } from '../../types'
 
 const CATEGORIES = ['Travel', 'Accommodation', 'Government', 'Medical', 'Other']
 
@@ -33,29 +34,36 @@ export default function BackoutsPage() {
   const setBackoutCostStatus = useAppStore((s) => s.setBackoutCostStatus)
   const { t, tb, language } = useTranslation()
 
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
   const [billFor, setBillFor] = useState<Backout | null>(null)
+  const workerParam = searchParams.get('worker')
 
   const rows = useMemo(
     () =>
       backouts.map((backout) => ({
         backout,
         applicant: applicants.find((a) => a.id === backout.applicantId) ?? null,
-        months: monthsBetween(backout.deployedOn, backout.returnedOn),
+        months: backout.deployedOn ? monthsBetween(backout.deployedOn, backout.returnedOn) : null,
         total: backoutTotal(backout),
         unpaid: backoutTotal(backout, 'Pending'),
       })),
     [backouts, applicants],
   )
 
-  const selected = rows.find((r) => r.backout.id === selectedId) ?? rows[0] ?? null
+  const selected =
+    rows.find((r) => r.backout.id === workerParam || r.applicant?.id === workerParam) ?? rows[0] ?? null
+
+  function select(backoutId: string) {
+    setSearchParams(backoutId ? { worker: backoutId } : {}, { replace: true })
+  }
   const ourCost = rows
     .filter((r) => r.backout.liability === 'Company')
     .reduce((sum, r) => sum + r.total, 0)
   const unpaid = rows.reduce((sum, r) => sum + r.unpaid, 0)
 
-  /** "1 month", "6 months" — the figure is read aloud in conversations. */
-  function served(months: number): string {
+  /** "1 month", "6 months", or nothing at all when she never travelled. */
+  function served(months: number | null): string {
+    if (months === null) return t('backout_never_deployed')
     return `${months} ${months === 1 ? t('backout_month') : t('backout_months')}`
   }
 
@@ -116,7 +124,7 @@ export default function BackoutsPage() {
             {rows.map((row) => (
               <tr
                 key={row.backout.id}
-                onClick={() => setSelectedId(row.backout.id)}
+                onClick={() => select(row.backout.id)}
                 className={`cursor-pointer ${row.backout.id === selected?.backout.id ? 'bg-accent-soft/40' : ''}`}
               >
                 <td>
@@ -133,7 +141,7 @@ export default function BackoutsPage() {
                   )}
                   <span className="block text-[10.5px] text-ink-3">{row.applicant?.profession}</span>
                 </td>
-                <td className="num whitespace-nowrap">{row.backout.deployedOn}</td>
+                <td className="num whitespace-nowrap">{row.backout.deployedOn ?? '-'}</td>
                 <td className="num whitespace-nowrap">{row.backout.returnedOn}</td>
                 <td className="num whitespace-nowrap text-end text-ink">{served(row.months)}</td>
                 <td>
@@ -182,6 +190,7 @@ export default function BackoutsPage() {
                     <th>{t('label_date')}</th>
                     <th className="text-end">{t('label_amount')}</th>
                     <th>{t('label_status')}</th>
+                    <th>{t('attach_column')}</th>
                     <th className="text-end">{t('label_action')}</th>
                   </tr>
                 </thead>
@@ -196,6 +205,13 @@ export default function BackoutsPage() {
                       </td>
                       <td>
                         <StatusBadge status={cost.status} />
+                      </td>
+                      <td>
+                        {cost.attachment ? (
+                          <AttachmentChip attachment={cost.attachment} />
+                        ) : (
+                          <span className="chip chip-warn">{t('attach_missing')}</span>
+                        )}
                       </td>
                       <td className="text-end">
                         <span className="flex items-center justify-end gap-2">
@@ -227,7 +243,7 @@ export default function BackoutsPage() {
                   ))}
                   {selected.backout.costs.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-4 py-10 text-center text-ink-3">
+                      <td colSpan={7} className="px-4 py-10 text-center text-ink-3">
                         {t('acc_no_rows')}
                       </td>
                     </tr>
@@ -240,7 +256,7 @@ export default function BackoutsPage() {
                       <td dir="ltr" className="num text-end">
                         {formatMoney(selected.total, currency)}
                       </td>
-                      <td colSpan={2} />
+                      <td colSpan={3} />
                     </tr>
                   </tfoot>
                 )}
@@ -274,7 +290,11 @@ export default function BackoutsPage() {
                     : 'border-line bg-sunken text-ink-3'
                 }`}
               >
-                {selected.months < GUARANTEE_MONTHS ? t('backout_within_guarantee') : t('backout_outside_guarantee')}
+                {selected.months === null
+                  ? t('backout_before_deployment')
+                  : selected.months < GUARANTEE_MONTHS
+                    ? t('backout_within_guarantee')
+                    : t('backout_outside_guarantee')}
               </p>
 
               <Field label={t('backout_liability')}>
@@ -329,6 +349,7 @@ function BillModal({ backout, onClose }: { backout: Backout; onClose: () => void
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [status, setStatus] = useState<'Pending' | 'Paid'>('Pending')
   const [sourceId, setSourceId] = useState('')
+  const [attachment, setAttachment] = useState<Attachment | null>(null)
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -340,6 +361,7 @@ function BillModal({ backout, onClose }: { backout: Backout; onClose: () => void
       date,
       status,
       paymentSourceId: status === 'Paid' ? sourceId || null : null,
+      attachment,
     })
     onClose()
   }
@@ -397,6 +419,7 @@ function BillModal({ backout, onClose }: { backout: Backout; onClose: () => void
             </SelectInput>
           </Field>
         )}
+        <AttachmentField value={attachment} onChange={setAttachment} />
         <div className="mt-4 flex justify-end gap-2">
           <SecondaryButton onClick={onClose}>{t('action_cancel')}</SecondaryButton>
           <PrimaryButton type="submit">{t('backout_add_bill')}</PrimaryButton>

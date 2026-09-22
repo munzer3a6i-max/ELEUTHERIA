@@ -18,8 +18,23 @@ export interface StaffMember {
   status: StaffStatus
 }
 
+/**
+ * A file kept with the record it belongs to — a receipt, an invoice, a payslip.
+ * The bytes live in the record as a data URL so a bill can always be produced
+ * for the money it claims to explain.
+ */
+export interface Attachment {
+  name: string
+  /** MIME type as the browser reported it, for choosing how to open the file. */
+  type: string
+  size: number
+  /** Empty for records that were kept before files themselves were stored. */
+  dataUrl: string
+  uploadedOn: string
+}
+
 export type RequestType = 'Domestic' | 'Profession'
-export type ApplicantStatus = 'Available' | 'Unavailable' | 'Selected' | 'Deployed'
+export type ApplicantStatus = 'Available' | 'Unavailable' | 'Selected' | 'Deployed' | 'Back Out'
 export type Gender = 'Male' | 'Female'
 
 export interface ExperienceEntry {
@@ -136,7 +151,8 @@ export interface StatusHistoryEntry {
   cost: number
   paymentSourceId: string
   responsibleEmployeeId: string
-  attachmentName: string | null
+  /** The receipt for this stage's cost. */
+  attachment: Attachment | null
   notes: string
 }
 
@@ -162,6 +178,8 @@ export interface InvoicePayment {
   date: string
   amount: number
   sourceId: string
+  /** Proof the money arrived: a transfer slip or a signed receipt. */
+  attachment: Attachment | null
 }
 
 export interface Invoice {
@@ -219,6 +237,8 @@ export interface PayrollEntry {
   overtime: number
   allowances: number
   status: LedgerStatus
+  /** The payslip or transfer slip for this month. */
+  attachment: Attachment | null
 }
 
 export interface OfficeExpense {
@@ -228,6 +248,8 @@ export interface OfficeExpense {
   amount: number
   date: string
   status: LedgerStatus
+  /** The bill this expense is claiming. */
+  attachment: Attachment | null
 }
 
 
@@ -330,6 +352,8 @@ export interface BackoutCost {
   date: string
   status: SettlementStatus
   paymentSourceId: string | null
+  /** The bill for this line of the return. */
+  attachment: Attachment | null
 }
 
 /**
@@ -341,7 +365,8 @@ export interface Backout {
   id: string
   requestId: string
   applicantId: string
-  deployedOn: string
+  /** Null when she backed out before ever leaving, so nothing was served. */
+  deployedOn: string | null
   returnedOn: string
   reason: string
   liability: BackoutLiability

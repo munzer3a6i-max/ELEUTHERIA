@@ -118,8 +118,11 @@ export default function PlacementMoney({ request }: { request: RecruitmentReques
               {formatMoney(backoutTotal(backout), currency, 0)}
             </span>
           </p>
-          <Link to="/accounting/backouts" className="mt-2 inline-block text-[11px] text-accent-text hover:text-accent">
-            {t('fin_view_details')}
+          <Link
+            to={`/accounting/backouts?worker=${backout.id}`}
+            className="mt-2 inline-block text-[11px] text-accent-text hover:text-accent"
+          >
+            {backout.costs.length === 0 ? t('backout_add_bill') : t('backout_bills')}
           </Link>
         </section>
       )}

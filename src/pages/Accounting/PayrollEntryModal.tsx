@@ -3,7 +3,8 @@ import { useAppStore } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
 import Modal from '../../components/Modal'
 import { Field, PrimaryButton, SecondaryButton, SelectInput, TextInput } from '../../components/form'
-import type { LedgerStatus, PayrollEntry } from '../../types'
+import AttachmentField from '../../components/AttachmentField'
+import type { Attachment, LedgerStatus, PayrollEntry } from '../../types'
 
 export default function PayrollEntryModal({
   entry,
@@ -27,6 +28,7 @@ export default function PayrollEntryModal({
     allowances: String(entry?.allowances ?? '0'),
     status: entry?.status ?? ('Pending' as LedgerStatus),
   })
+  const [attachment, setAttachment] = useState<Attachment | null>(entry?.attachment ?? null)
 
   const number = (value: string) => {
     const parsed = Number(value)
@@ -44,6 +46,7 @@ export default function PayrollEntryModal({
       overtime: number(form.overtime),
       allowances: number(form.allowances),
       status: form.status,
+      attachment,
     }
     if (entry) updatePayrollEntry(entry.id, payload)
     else addPayrollEntry(payload)
@@ -104,6 +107,8 @@ export default function PayrollEntryModal({
             </SelectInput>
           </Field>
         </div>
+
+        <AttachmentField value={attachment} onChange={setAttachment} label={t('attach_payslip')} />
 
         <p className="mb-3 flex items-center justify-between rounded-control border border-line bg-sunken px-3 py-2 text-xs">
           <span className="text-ink-2">{t('acc_net_pay')}</span>
