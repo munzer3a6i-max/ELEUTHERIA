@@ -1,60 +1,131 @@
 @import 'tailwindcss';
 
+/*
+  ELEUTHERIA design tokens.
+
+  One neutral family (cool navy graphite), one brand accent (gold), and a small
+  set of state colours that are only ever used to mean something: money in,
+  money out, needs attention, informational. Every pairing below was checked
+  against WCAG AA on the surface it sits on.
+
+  Radius is a three-step system and nothing else: panels 12px, controls 8px,
+  pills full. Elevation is flat by default; shadows belong to overlays only.
+*/
+
 @theme {
-  --font-sans: 'Roboto Condensed', system-ui, sans-serif;
-  --font-heading: 'Roboto Condensed', system-ui, sans-serif;
-  --font-arabic: 'Tajawal', 'Roboto Condensed', system-ui, sans-serif;
+  --font-sans: 'Geist Variable', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, 'SFMono-Regular', monospace;
+  --font-arabic: 'Cairo Variable', 'Geist Variable', system-ui, sans-serif;
+
+  --color-page: #070b14;
+  --color-sunken: #0a1020;
+  --color-surface: #0d1526;
+  --color-raised: #131d33;
+  --color-line: #1c2942;
+  --color-line-strong: #2a3a58;
+
+  --color-ink: #e6edf7;
+  --color-ink-2: #9fb0c9;
+  --color-ink-3: #8492aa;
+
+  --color-accent: #d9b263;
+  --color-accent-ink: #1a1204;
+  --color-accent-text: #d9b263;
+  --color-accent-soft: #241c0c;
+  --color-accent-line: #4a3a18;
+
+  --color-pos: #3fb27f;
+  --color-pos-soft: #0c2419;
+  --color-neg: #e0645f;
+  --color-neg-soft: #2a1414;
+  --color-warn: #d9a441;
+  --color-warn-soft: #251c0b;
+  --color-info: #6ea0e0;
+  --color-info-soft: #101f33;
+
+  --color-focus: #d9b263;
+
+  --radius-panel: 12px;
+  --radius-control: 8px;
+  --radius-pill: 999px;
+
+  --shadow-overlay: 0 24px 60px -20px rgb(3 7 18 / 0.75), 0 2px 8px rgb(3 7 18 / 0.5);
+  --shadow-pop: 0 12px 32px -12px rgb(3 7 18 / 0.7);
 }
 
-:root {
-  --page: #060b18;
-  --sidebar: #091124;
-  --surface: #0a142f;
-  --surface-hover: #101c3d;
-  --input: #0d1836;
-  --active: #192b59;
-  --edge: #162650;
-  --edge-soft: #14234b;
-  --edge-soft2: #122046;
-  --edge-strong: #23386d;
-  --text-primary: #e2e8f0;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+:root[data-theme='light'] {
+  --color-page: #f4f6fa;
+  --color-sunken: #eceff5;
+  --color-surface: #ffffff;
+  --color-raised: #f7f9fc;
+  --color-line: #e2e7f0;
+  --color-line-strong: #cbd4e2;
 
-  /* Categorical chart slots — validated against the dark surface (#0a142f) with
-     the data-viz palette validator. Assign in slot order, never cycled. */
+  --color-ink: #121a2a;
+  --color-ink-2: #4c5a72;
+  --color-ink-3: #5d6b82;
+
+  --color-accent: #c9922a;
+  --color-accent-ink: #1a1204;
+  --color-accent-text: #8a6516;
+  --color-accent-soft: #fbf3e2;
+  --color-accent-line: #e6d3a8;
+
+  --color-pos: #137a52;
+  --color-pos-soft: #e6f4ee;
+  --color-neg: #c0392f;
+  --color-neg-soft: #fdecea;
+  --color-warn: #8a6516;
+  --color-warn-soft: #fbf1dd;
+  --color-info: #2160b8;
+  --color-info-soft: #e8f0fb;
+
+  --color-focus: #8a6516;
+
+  --shadow-overlay: 0 24px 60px -20px rgb(18 26 42 / 0.18), 0 2px 8px rgb(18 26 42 / 0.08);
+  --shadow-pop: 0 12px 32px -12px rgb(18 26 42 / 0.16);
+}
+
+/*
+  Categorical chart slots, kept from the validated data-viz palette and
+  re-checked against the surfaces above. Assigned by entity, never cycled.
+*/
+:root {
   --series-1: #3987e5;
   --series-2: #d95926;
   --series-3: #199e70;
   --series-4: #c98500;
   --series-5: #d55181;
   --series-6: #008300;
-  --series-rest: #64748b;
+  --series-rest: #8492aa;
 }
 
 :root[data-theme='light'] {
-  --page: #f1f5f9;
-  --sidebar: #ffffff;
-  --surface: #ffffff;
-  --surface-hover: #f1f5f9;
-  --input: #f8fafc;
-  --active: #fef3c7;
-  --edge: #e2e8f0;
-  --edge-soft: #edf1f7;
-  --edge-soft2: #edf1f7;
-  --edge-strong: #cbd5e1;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-
-  /* Same eight hues re-stepped for the light surface, not an automatic flip. */
   --series-1: #2a78d6;
   --series-2: #eb6834;
   --series-3: #1baf7a;
   --series-4: #eda100;
   --series-5: #e87ba4;
   --series-6: #008300;
-  --series-rest: #94a3b8;
+  --series-rest: #5d6b82;
+}
+
+/* Legacy aliases: older markup still reads these names. */
+:root,
+:root[data-theme='light'] {
+  --page: var(--color-page);
+  --sidebar: var(--color-sunken);
+  --surface: var(--color-surface);
+  --surface-hover: var(--color-raised);
+  --input: var(--color-sunken);
+  --active: var(--color-accent-soft);
+  --edge: var(--color-line);
+  --edge-soft: var(--color-line);
+  --edge-soft2: var(--color-line);
+  --edge-strong: var(--color-line-strong);
+  --text-primary: var(--color-ink);
+  --text-secondary: var(--color-ink-2);
+  --text-muted: var(--color-ink-3);
 }
 
 html,
@@ -65,21 +136,312 @@ body,
 
 body {
   margin: 0;
-  background: var(--page);
-  color: var(--text-primary);
+  background: var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.5;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+[dir='rtl'] body,
 [dir='rtl'] {
   font-family: var(--font-arabic);
+}
+
+/* Numbers are read in columns all day: one mono face, aligned digits. */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'zero' 1;
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Scrollbars follow the surface instead of the operating system default. */
+* {
+  scrollbar-color: var(--color-line-strong) transparent;
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ink-3);
+  background-clip: content-box;
+}
+
+@layer components {
+  /* The one panel shell. Flat surface, hairline edge, no drop shadow. */
+  .panel {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-panel);
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .panel-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--color-ink);
+  }
+
+  .panel-subtitle {
+    margin-top: 2px;
+    font-size: 11px;
+    color: var(--color-ink-3);
+  }
+
+  /*
+    One table treatment for every list in the app. A single hairline between
+    rows, never a border above and below each row.
+  */
+  .data-table {
+    width: 100%;
+    text-align: start;
+    border-collapse: collapse;
+  }
+
+  .data-table thead th {
+    padding: 0.625rem 0.75rem;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--color-ink-3);
+    text-align: start;
+    white-space: nowrap;
+    background: var(--color-sunken);
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .data-table tbody td {
+    padding: 0.625rem 0.75rem;
+    font-size: 12.5px;
+    color: var(--color-ink-2);
+    vertical-align: middle;
+  }
+
+  .data-table tbody tr + tr td {
+    border-top: 1px solid var(--color-line);
+  }
+
+  .data-table tbody tr:hover td {
+    background: var(--color-raised);
+  }
+
+  .data-table tfoot td {
+    padding: 0.625rem 0.75rem;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--color-ink);
+    background: var(--color-sunken);
+    border-top: 1px solid var(--color-line-strong);
+  }
+
+  /* Buttons: one radius, one hierarchy, a real pressed state. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    height: 32px;
+    padding: 0 0.75rem;
+    border-radius: var(--radius-control);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    transition:
+      background-color 0.12s ease,
+      border-color 0.12s ease,
+      color 0.12s ease,
+      transform 0.06s ease;
+  }
+
+  .btn:active:not(:disabled) {
+    transform: translateY(0.5px);
+  }
+
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--color-accent) 88%, white);
+  }
+
+  .btn-secondary {
+    background: var(--color-surface);
+    border-color: var(--color-line-strong);
+    color: var(--color-ink);
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--color-raised);
+    border-color: var(--color-accent-line);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--color-ink-2);
+  }
+
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--color-raised);
+    color: var(--color-ink);
+  }
+
+  .btn-danger {
+    background: transparent;
+    border-color: var(--color-line-strong);
+    color: var(--color-neg);
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background: var(--color-neg-soft);
+    border-color: var(--color-neg);
+  }
+
+  /* Form controls share the button height so rows of filters line up. */
+  .field {
+    width: 100%;
+    height: 34px;
+    padding: 0 0.625rem;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-sunken);
+    color: var(--color-ink);
+    font-size: 12.5px;
+    font-family: inherit;
+  }
+
+  textarea.field {
+    height: auto;
+    padding: 0.5rem 0.625rem;
+  }
+
+  .field::placeholder {
+    color: var(--color-ink-3);
+  }
+
+  .field:hover {
+    border-color: var(--color-accent-line);
+  }
+
+  .field:focus {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 1px;
+    border-color: transparent;
+  }
+
+  /* State chips. Colour plus wording, never colour alone. */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    height: 20px;
+    padding: 0 0.5rem;
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+
+  .chip-pos {
+    background: var(--color-pos-soft);
+    border-color: color-mix(in oklab, var(--color-pos) 35%, transparent);
+    color: var(--color-pos);
+  }
+
+  .chip-neg {
+    background: var(--color-neg-soft);
+    border-color: color-mix(in oklab, var(--color-neg) 35%, transparent);
+    color: var(--color-neg);
+  }
+
+  .chip-warn {
+    background: var(--color-warn-soft);
+    border-color: color-mix(in oklab, var(--color-warn) 35%, transparent);
+    color: var(--color-warn);
+  }
+
+  .chip-info {
+    background: var(--color-info-soft);
+    border-color: color-mix(in oklab, var(--color-info) 35%, transparent);
+    color: var(--color-info);
+  }
+
+  .chip-neutral {
+    background: var(--color-raised);
+    border-color: var(--color-line-strong);
+    color: var(--color-ink-2);
+  }
+
+  .chip-accent {
+    background: var(--color-accent-soft);
+    border-color: var(--color-accent-line);
+    color: var(--color-accent-text);
+  }
+}
+
+/* Motion is hover and press feedback only, and it stops on request. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @media print {
   aside,
   header {
     display: none !important;
+  }
+
+  .panel {
+    border-color: #d0d5dd;
   }
 }

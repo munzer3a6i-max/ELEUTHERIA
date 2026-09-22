@@ -107,10 +107,10 @@ export function formatRange(range: DateRange | null, transactions: Transaction[]
   const locale = language === 'ar' ? 'ar' : 'en-GB'
   const fmt = (value: string) =>
     new Date(value).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })
-  if (range) return `${fmt(range.from)} – ${fmt(range.to)}`
-  if (transactions.length === 0) return '—'
+  if (range) return `${fmt(range.from)} - ${fmt(range.to)}`
+  if (transactions.length === 0) return '-'
   const dates = transactions.map((tx) => tx.date).sort()
-  return `${fmt(dates[0])} – ${fmt(dates[dates.length - 1])}`
+  return `${fmt(dates[0])} - ${fmt(dates[dates.length - 1])}`
 }
 
 export function useFinancials(period: PeriodKey): Financials {
@@ -156,7 +156,7 @@ export function useFinancials(period: PeriodKey): Financials {
           kind: 'expense',
           source: 'recruitment',
           title: entry.status,
-          detail: applicant ? pick({ en: applicant.englishName, ar: applicant.arabicName }) : '—',
+          detail: applicant ? pick({ en: applicant.englishName, ar: applicant.arabicName }) : '-',
           date: entry.date,
           amount: entry.cost,
           agencyId: request.recruitmentAgencyId,
@@ -211,12 +211,12 @@ export function useFinancials(period: PeriodKey): Financials {
 
     const agencyAccounts: AgencyAccount[] = agencies.map((agency) => {
       const agencyApplicants = applicants.filter((a) => a.recruitmentAgencyId === agency.id)
-      const country = agencyApplicants[0]?.country ?? '—'
+      const country = agencyApplicants[0]?.country ?? '-'
       const rows = transactions.filter((tx) => tx.agencyId === agency.id)
       return {
         agency,
         country,
-        currency: CURRENCY_BY_COUNTRY[country] ?? '—',
+        currency: CURRENCY_BY_COUNTRY[country] ?? '-',
         workers: agencyApplicants.length,
         income: sum(rows, 'income'),
         totalPaid: sum(rows, 'expense'),

@@ -105,9 +105,9 @@ export default function PayrollEntryModal({
           </Field>
         </div>
 
-        <p className="mb-3 flex items-center justify-between rounded border border-[var(--edge)] bg-[var(--input)] px-3 py-2 text-xs">
-          <span className="text-[var(--text-secondary)]">{t('acc_net_pay')}</span>
-          <span dir="ltr" className="font-bold tabular-nums text-[var(--text-primary)]">
+        <p className="mb-3 flex items-center justify-between rounded-control border border-line bg-sunken px-3 py-2 text-xs">
+          <span className="text-ink-2">{t('acc_net_pay')}</span>
+          <span dir="ltr" className="font-bold num text-ink">
             {total.toLocaleString('en-US')}
           </span>
         </p>

@@ -95,7 +95,7 @@ export default function PayrollPage() {
               value={month}
               onChange={(e) => setSelectedMonth(e.target.value)}
               aria-label={t('acc_month')}
-              className="rounded border border-[var(--edge-strong)] bg-[var(--input)] px-2.5 py-2 text-[11px] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-amber-500/60"
+              className="rounded-control border border-line-strong bg-sunken px-2.5 py-2 text-[11px] text-ink focus:outline-none focus:ring-1 focus:ring-focus"
             >
               {months.map((key) => (
                 <option key={key} value={key}>
@@ -107,17 +107,17 @@ export default function PayrollPage() {
               type="button"
               onClick={openNextMonth}
               disabled={!month}
-              className="flex items-center gap-1.5 rounded border border-[var(--edge-strong)] bg-[var(--surface)] px-3 py-2 text-[11px] text-[var(--text-primary)] hover:border-amber-500/40 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-control border border-line-strong bg-surface px-3 py-2 text-[11px] text-ink hover:border-accent-line disabled:opacity-50"
             >
-              <CalendarPlus className="size-3.5 text-amber-400" /> {t('acc_roll_forward')}
+              <CalendarPlus className="size-3.5 text-accent-text" /> {t('acc_roll_forward')}
             </button>
             <button
               type="button"
               onClick={markAllPaid}
               disabled={paid === gross || rows.length === 0}
-              className="flex items-center gap-1.5 rounded border border-[var(--edge-strong)] bg-[var(--surface)] px-3 py-2 text-[11px] text-[var(--text-primary)] hover:border-amber-500/40 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-control border border-line-strong bg-surface px-3 py-2 text-[11px] text-ink hover:border-accent-line disabled:opacity-50"
             >
-              <CheckCheck className="size-3.5 text-emerald-400" /> {t('acc_mark_all_paid')}
+              <CheckCheck className="size-3.5 text-pos" /> {t('acc_mark_all_paid')}
             </button>
             <button
               type="button"
@@ -125,7 +125,7 @@ export default function PayrollPage() {
                 setEditing(null)
                 setModalOpen(true)
               }}
-              className="flex items-center gap-1.5 rounded bg-amber-600 px-3 py-2 text-[11px] font-bold text-slate-950 hover:bg-amber-500"
+              className="flex items-center gap-1.5 rounded-control bg-accent px-3 py-2 text-[11px] font-bold text-accent-ink hover:bg-accent"
             >
               <Plus className="size-3.5" /> {t('acc_add_entry')}
             </button>
@@ -136,11 +136,11 @@ export default function PayrollPage() {
       <StatStrip
         stats={[
           { label: t('acc_gross_payroll'), value: formatMoney(gross, currency, 0), icon: <Coins className="size-4" /> },
-          { label: t('acc_paid'), value: formatMoney(paid, currency, 0), accent: 'text-emerald-400', icon: <Wallet className="size-4" /> },
+          { label: t('acc_paid'), value: formatMoney(paid, currency, 0), tone: 'pos', icon: <Wallet className="size-4" /> },
           {
             label: t('acc_pending'),
             value: formatMoney(gross - paid, currency, 0),
-            accent: 'text-amber-400',
+            tone: 'warn',
             icon: <Wallet className="size-4" />,
           },
           { label: t('acc_headcount'), value: String(rows.length), icon: <Users className="size-4" /> },
@@ -150,13 +150,13 @@ export default function PayrollPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="lg:col-span-8">
           <Card
-            title={`${t('acc_payroll_title')} · ${month ? monthLabel(month, language) : '—'}`}
+            title={`${t('acc_payroll_title')} · ${month ? monthLabel(month, language) : '-'}`}
             subtitle={t('acc_payroll_subtitle')}
             bodyClassName="overflow-x-auto"
           >
-            <table className="w-full text-start">
+            <table className="data-table">
               <thead>
-                <tr className="border-b border-[var(--edge-soft)] text-[10px] font-bold uppercase text-[var(--text-secondary)]">
+                <tr>
                   <th className="w-8 px-3 py-2.5 text-start">#</th>
                   <th className="px-3 py-2.5 text-start">{t('acc_employee')}</th>
                   <th className="px-3 py-2.5 text-end">{t('fin_basic_salary')}</th>
@@ -171,13 +171,13 @@ export default function PayrollPage() {
                 {rows.map((entry, index) => {
                   const member = staff.find((m) => m.id === entry.staffId)
                   return (
-                    <tr key={entry.id} className="border-b border-[var(--edge-soft2)] text-xs last:border-b-0 hover:bg-[var(--surface-hover)]">
-                      <td className="px-3 py-2.5 tabular-nums text-[var(--text-muted)]">{index + 1}</td>
+                    <tr key={entry.id} className="text-xs">
+                      <td className="px-3 py-2.5 num text-ink-3">{index + 1}</td>
                       <td className="px-3 py-2.5">
-                        <span className="block font-medium text-[var(--text-primary)]">
+                        <span className="block font-medium text-ink">
                           {member ? tb(member.name) : entry.staffId}
                         </span>
-                        <span className="block text-[10px] text-[var(--text-muted)]">
+                        <span className="block text-[10px] text-ink-3">
                           {member?.role === 'admin'
                             ? language === 'ar'
                               ? 'مدير'
@@ -187,16 +187,16 @@ export default function PayrollPage() {
                               : 'Staff'}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-end tabular-nums text-[var(--text-primary)]">
+                      <td className="whitespace-nowrap px-3 py-2.5 text-end num text-ink">
                         {formatMoney(entry.basicSalary, currency, 0)}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-end tabular-nums text-[var(--text-secondary)]">
+                      <td className="whitespace-nowrap px-3 py-2.5 text-end num text-ink-2">
                         {formatMoney(entry.overtime, currency, 0)}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-end tabular-nums text-[var(--text-secondary)]">
+                      <td className="whitespace-nowrap px-3 py-2.5 text-end num text-ink-2">
                         {formatMoney(entry.allowances, currency, 0)}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-end font-bold tabular-nums text-[var(--text-primary)]">
+                      <td className="whitespace-nowrap px-3 py-2.5 text-end font-bold num text-ink">
                         {formatMoney(payrollTotal(entry), currency, 0)}
                       </td>
                       <td className="px-3 py-2.5">
@@ -217,7 +217,7 @@ export default function PayrollPage() {
                               setModalOpen(true)
                             }}
                             title={t('action_edit')}
-                            className="text-[var(--text-muted)] hover:text-amber-400"
+                            className="text-ink-3 hover:text-accent-text"
                           >
                             <Pencil className="size-3.5" />
                           </button>
@@ -225,7 +225,7 @@ export default function PayrollPage() {
                             type="button"
                             onClick={() => handleDelete(entry)}
                             title={t('action_delete')}
-                            className="text-[var(--text-muted)] hover:text-rose-400"
+                            className="text-ink-3 hover:text-neg"
                           >
                             <Trash2 className="size-3.5" />
                           </button>
@@ -236,7 +236,7 @@ export default function PayrollPage() {
                 })}
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-3 py-10 text-center text-xs text-[var(--text-muted)]">
+                    <td colSpan={8} className="px-3 py-10 text-center text-xs text-ink-3">
                       {t('acc_no_rows')}
                     </td>
                   </tr>
@@ -244,14 +244,14 @@ export default function PayrollPage() {
               </tbody>
               {rows.length > 0 && (
                 <tfoot>
-                  <tr className="bg-[var(--surface-hover)] text-xs font-bold text-[var(--text-primary)]">
+                  <tr>
                     <td className="px-3 py-2.5" colSpan={2}>
                       {t('fin_total')}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-end tabular-nums">{formatMoney(totals.basic, currency, 0)}</td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-end tabular-nums">{formatMoney(totals.overtime, currency, 0)}</td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-end tabular-nums">{formatMoney(totals.allowances, currency, 0)}</td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-end tabular-nums">{formatMoney(gross, currency, 0)}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-end num">{formatMoney(totals.basic, currency, 0)}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-end num">{formatMoney(totals.overtime, currency, 0)}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-end num">{formatMoney(totals.allowances, currency, 0)}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-end num">{formatMoney(gross, currency, 0)}</td>
                     <td colSpan={2} />
                   </tr>
                 </tfoot>
@@ -270,22 +270,22 @@ export default function PayrollPage() {
                     <button
                       type="button"
                       onClick={() => setSelectedMonth(row.month)}
-                      className={`w-full rounded px-2.5 py-2 text-start transition-colors ${
-                        row.month === month ? 'bg-[var(--active)]' : 'hover:bg-[var(--surface-hover)]'
+                      className={`w-full rounded-control px-2.5 py-2 text-start transition-colors ${
+                        row.month === month ? 'bg-accent-soft' : 'hover:bg-raised'
                       }`}
                     >
                       <span className="flex items-baseline justify-between gap-2 text-xs">
-                        <span className={row.month === month ? 'font-bold text-amber-400' : 'text-[var(--text-primary)]'}>
+                        <span className={row.month === month ? 'font-bold text-accent-text' : 'text-ink'}>
                           {monthLabel(row.month, language)}
                         </span>
-                        <span dir="ltr" className="font-bold tabular-nums text-[var(--text-primary)]">
+                        <span dir="ltr" className="font-bold num text-ink">
                           {formatMoney(row.gross, currency, 0)}
                         </span>
                       </span>
-                      <span className="mt-1.5 flex h-1.5 w-full overflow-hidden rounded-full bg-[var(--edge-soft)]">
-                        <span className="h-full rounded-full bg-emerald-500" style={{ width: `${share}%` }} />
+                      <span className="mt-1.5 flex h-1.5 w-full overflow-hidden rounded-pill bg-[var(--edge-soft)]">
+                        <span className="h-full rounded-pill bg-pos" style={{ width: `${share}%` }} />
                       </span>
-                      <span className="mt-1 block text-[10px] text-[var(--text-muted)]">
+                      <span className="mt-1 block text-[10px] text-ink-3">
                         {row.people} {t('acc_headcount')} · {Math.round(share)}% {t('acc_paid')}
                       </span>
                     </button>
@@ -293,7 +293,7 @@ export default function PayrollPage() {
                 )
               })}
               {history.length === 0 && (
-                <li className="px-2 py-8 text-center text-xs text-[var(--text-muted)]">{t('acc_no_rows')}</li>
+                <li className="px-2 py-8 text-center text-xs text-ink-3">{t('acc_no_rows')}</li>
               )}
             </ul>
           </Card>

@@ -1,42 +1,51 @@
-import { Coins, Wallet, TrendingUp, TrendingDown, Users, Minus } from 'lucide-react'
-import { formatMoney } from '../../store/useAppStore'
-import { useTranslation } from '../../i18n/useTranslation'
-import type { Financials } from '../../lib/financials'
+import { ArrowDownRight, ArrowUpRight, Coins, Minus, Users, Wallet } from 'lucide-react'
+import { formatMoney } from '../../../store/useAppStore'
+import { useTranslation } from '../../../i18n/useTranslation'
+import type { Financials } from '../../../lib/financials'
 
 function percentChange(current: number, previous: number): number | null {
   if (previous === 0) return null
   return ((current - previous) / Math.abs(previous)) * 100
 }
 
+/**
+ * Figures carry their own weight: a neutral surface, the number in mono, and
+ * colour reserved for direction. The period's headline result gets the accent
+ * rail so the eye lands on one tile, not four competing ones.
+ */
 function Tile({
   icon,
   label,
   value,
   note,
   direction,
-  gradient,
+  valueTone,
+  lead = false,
 }: {
   icon: React.ReactNode
   label: string
   value: string
   note: string
   direction: 'up' | 'down' | 'flat'
-  gradient: string
+  valueTone?: string
+  lead?: boolean
 }) {
-  const Arrow = direction === 'up' ? TrendingUp : direction === 'down' ? TrendingDown : Minus
+  const Arrow = direction === 'up' ? ArrowUpRight : direction === 'down' ? ArrowDownRight : Minus
+  const noteTone = direction === 'up' ? 'text-pos' : direction === 'down' ? 'text-neg' : 'text-ink-3'
   return (
-    <div className={`flex items-center gap-3.5 rounded-lg bg-gradient-to-br p-4 text-white shadow-sm ${gradient}`}>
-      <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white/15">{icon}</span>
-      <div className="min-w-0">
-        <p className="text-[11px] font-medium text-white/75">{label}</p>
-        <p dir="ltr" className="truncate text-xl font-bold leading-tight rtl:text-end">
-          {value}
-        </p>
-        <p className="mt-0.5 flex items-center gap-1 text-[10px] text-white/70">
-          <Arrow className="size-3 shrink-0" aria-hidden="true" />
-          {note}
-        </p>
+    <div className={`panel relative overflow-hidden px-4 py-3.5 ${lead ? 'border-accent-line' : ''}`}>
+      {lead && <span aria-hidden="true" className="absolute inset-y-0 start-0 w-[3px] bg-accent" />}
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-[11px] font-medium text-ink-3">{label}</p>
+        <span className="shrink-0 text-ink-3">{icon}</span>
       </div>
+      <p dir="ltr" className={`num mt-2 truncate text-[26px] font-medium leading-none rtl:text-end ${valueTone ?? 'text-ink'}`}>
+        {value}
+      </p>
+      <p className={`mt-2 flex items-center gap-1 text-[11px] ${noteTone}`}>
+        <Arrow className="size-3 shrink-0" aria-hidden="true" />
+        <span className="truncate">{note}</span>
+      </p>
     </div>
   )
 }
@@ -68,38 +77,38 @@ export default function KpiCards({
   const profit = note(netProfit, previous?.net)
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <Tile
-        icon={<Coins className="size-5" />}
+        icon={<Coins className="size-4" />}
         label={t('fin_total_income')}
         value={formatMoney(totalIncome, currency, 0)}
         note={income.text}
         direction={income.direction}
-        gradient="from-[#12306f] to-[#1d4ed8]"
+        valueTone="text-pos"
       />
       <Tile
-        icon={<Wallet className="size-5" />}
+        icon={<Wallet className="size-4" />}
         label={t('fin_total_expenses')}
         value={formatMoney(totalExpenses, currency, 0)}
         note={expenses.text}
-        direction={expenses.direction}
-        gradient="from-[#7f1d1d] to-[#be123c]"
+        direction={expenses.direction === 'up' ? 'down' : expenses.direction === 'down' ? 'up' : 'flat'}
+        valueTone="text-neg"
       />
       <Tile
-        icon={netProfit >= 0 ? <TrendingUp className="size-5" /> : <TrendingDown className="size-5" />}
+        lead
+        icon={<ArrowUpRight className="size-4" />}
         label={t('fin_net_profit')}
         value={formatMoney(netProfit, currency, 0)}
         note={profit.text}
         direction={profit.direction}
-        gradient={netProfit >= 0 ? 'from-[#064e3b] to-[#047857]' : 'from-[#3f2d13] to-[#92400e]'}
+        valueTone={netProfit >= 0 ? 'text-ink' : 'text-neg'}
       />
       <Tile
-        icon={<Users className="size-5" />}
+        icon={<Users className="size-4" />}
         label={t('fin_total_workers')}
         value={String(workers)}
         note={`${activeWorkers} ${t('fin_active_workers')}`}
         direction="flat"
-        gradient="from-[#4c1d95] to-[#6d28d9]"
       />
     </div>
   )

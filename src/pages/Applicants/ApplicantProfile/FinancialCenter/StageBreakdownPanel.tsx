@@ -73,32 +73,32 @@ export default function StageBreakdownPanel({ request, invoice }: { request: Rec
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-[13px]">
-        <h2 className="border-b border-[var(--edge-soft)] pb-1.5 text-[11px] font-bold uppercase tracking-[0.55px] text-[var(--text-secondary)]">
+      <div className="rounded-panel border border-line bg-surface p-[13px]">
+        <h2 className="border-b border-line pb-1.5 text-[11px] font-semibold text-ink-3">
           {language === 'ar' ? 'الحساب الإجمالي' : 'Total Calculation'}
         </h2>
         <div className="flex flex-col gap-1.5 pt-2">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-[var(--text-secondary)]">{language === 'ar' ? 'إجمالي المصروفات' : 'Total Expenses'}</span>
-            <span className="text-[11px] font-bold text-rose-500">{formatMoney(totalExpenses)}</span>
+            <span className="text-[11px] text-ink-2">{language === 'ar' ? 'إجمالي المصروفات' : 'Total Expenses'}</span>
+            <span className="text-[11px] font-bold text-neg">{formatMoney(totalExpenses)}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-[var(--text-secondary)]">{language === 'ar' ? 'إجمالي الدخل' : 'Total Income'}</span>
-            <span className="text-[11px] font-bold text-emerald-400">{formatMoney(totalIncome)}</span>
+            <span className="text-[11px] text-ink-2">{language === 'ar' ? 'إجمالي الدخل' : 'Total Income'}</span>
+            <span className="text-[11px] font-bold text-pos">{formatMoney(totalIncome)}</span>
           </div>
-          <div className="flex items-center justify-between border-t border-[var(--edge-soft2)] pt-1.5">
-            <span className="text-[11px] font-bold text-amber-400">{language === 'ar' ? 'صافي الربح' : 'Net Profit'}</span>
-            <span className="text-[11px] font-bold text-amber-400">{formatMoney(netProfit)}</span>
+          <div className="flex items-center justify-between border-t border-line pt-1.5">
+            <span className="text-[11px] font-bold text-accent-text">{language === 'ar' ? 'صافي الربح' : 'Net Profit'}</span>
+            <span className="text-[11px] font-bold text-accent-text">{formatMoney(netProfit)}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-[var(--text-secondary)]">{language === 'ar' ? 'هامش الربح' : 'Profit Margin'}</span>
-            <span className="text-[11px] font-bold text-sky-400">{profitMargin.toFixed(2)}%</span>
+            <span className="text-[11px] text-ink-2">{language === 'ar' ? 'هامش الربح' : 'Profit Margin'}</span>
+            <span className="text-[11px] font-bold text-info">{profitMargin.toFixed(2)}%</span>
           </div>
         </div>
       </div>
 
-      <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-[13px]">
-        <h2 className="border-b border-[var(--edge-soft)] pb-1.5 text-[11px] font-bold uppercase leading-4 tracking-[0.55px] text-[var(--text-secondary)]">
+      <div className="rounded-panel border border-line bg-surface p-[13px]">
+        <h2 className="border-b border-line pb-1.5 text-[12px] font-semibold text-ink">
           {language === 'ar' ? 'المصروفات حسب المرحلة' : 'Expenses by Stage'}
         </h2>
 
@@ -110,20 +110,20 @@ export default function StageBreakdownPanel({ request, invoice }: { request: Rec
           {slices.map((slice) => (
             <div key={slice.label} className="flex items-center justify-between">
               <span className="flex items-center gap-1.5">
-                <span className="size-2 rounded-full" style={{ backgroundColor: slice.color }} />
-                <span className="text-[10px] text-[var(--text-primary)]">{slice.label}</span>
+                <span className="size-2 rounded-pill" style={{ backgroundColor: slice.color }} />
+                <span className="text-[10px] text-ink">{slice.label}</span>
               </span>
-              <span className="text-[10px] text-[var(--text-secondary)]">{formatMoney(slice.amount)}</span>
+              <span className="text-[10px] text-ink-2">{formatMoney(slice.amount)}</span>
             </div>
           ))}
           {slices.length === 0 && (
-            <p className="text-[10px] text-[var(--text-muted)]">{language === 'ar' ? 'لا توجد مصروفات بعد.' : 'No expenses yet.'}</p>
+            <p className="text-[10px] text-ink-3">{language === 'ar' ? 'لا توجد مصروفات بعد.' : 'No expenses yet.'}</p>
           )}
         </div>
 
-        <div className="flex items-center justify-between border-t border-[var(--edge-soft)] pt-2">
-          <span className="text-[11px] font-bold text-[var(--text-secondary)]">{language === 'ar' ? 'الإجمالي' : 'Total'}</span>
-          <span className="text-[11px] font-bold text-amber-400">{formatMoney(totalExpenses)}</span>
+        <div className="flex items-center justify-between border-t border-line pt-2">
+          <span className="text-[11px] font-bold text-ink-2">{language === 'ar' ? 'الإجمالي' : 'Total'}</span>
+          <span className="text-[11px] font-bold text-accent-text">{formatMoney(totalExpenses)}</span>
         </div>
       </div>
     </div>

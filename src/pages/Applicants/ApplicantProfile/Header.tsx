@@ -7,8 +7,8 @@ import type { Applicant, ApplicantStatus, RecruitmentRequest, Invoice } from '..
 function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex h-4 items-center">
-      <span className="w-28 shrink-0 text-[11px] text-[var(--text-muted)]">{label}</span>
-      <span className="text-[11px] text-[var(--text-primary)]">{value}</span>
+      <span className="w-28 shrink-0 text-[11px] text-ink-3">{label}</span>
+      <span className="text-[11px] text-ink">{value}</span>
     </div>
   )
 }
@@ -27,7 +27,7 @@ function MoneyLine({
   border?: boolean
 }) {
   return (
-    <div className={`flex w-full items-center justify-between ${border ? 'border-t border-[var(--edge-soft)] pt-[7px]' : ''}`}>
+    <div className={`flex w-full items-center justify-between ${border ? 'border-t border-line pt-[7px]' : ''}`}>
       <span className={`text-xs ${bold ? 'font-bold' : ''}`} style={{ color: bold ? color : 'var(--text-secondary)' }}>
         {label}
       </span>
@@ -79,14 +79,14 @@ export default function Header({
 
   return (
     <div className="grid grid-cols-12 gap-4">
-      <div className="col-span-8 flex items-center gap-5 rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-[17px]">
+      <div className="col-span-8 flex items-center gap-5 rounded-panel border border-line bg-surface p-[17px]">
         <div className="flex flex-col items-center">
-          <div className="flex size-24 items-center justify-center overflow-hidden rounded-full border-2 border-amber-500/50 bg-[var(--surface-hover)] p-1 shadow-md">
-            <div className="flex size-full items-center justify-center overflow-hidden rounded-full bg-[var(--surface-hover)]">
+          <div className="flex size-24 items-center justify-center overflow-hidden rounded-pill border-2 border-accent-line bg-raised p-1 shadow-md">
+            <div className="flex size-full items-center justify-center overflow-hidden rounded-pill bg-raised">
               {applicant.photoDataUrl ? (
                 <img src={applicant.photoDataUrl} alt={applicant.englishName} className="size-full object-cover" />
               ) : (
-                <User className="size-10 text-[var(--text-muted)]" />
+                <User className="size-10 text-ink-3" />
               )}
             </div>
           </div>
@@ -94,7 +94,7 @@ export default function Header({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="mt-2 flex items-center gap-1 rounded border border-[var(--edge-strong)] bg-[var(--surface-hover)] px-2.5 py-1 text-[10px] text-[var(--text-secondary)] shadow-sm hover:border-amber-500/40"
+            className="mt-2 flex items-center gap-1 rounded-control border border-line-strong bg-raised px-2.5 py-1 text-[10px] text-ink-2 shadow-sm hover:border-accent-line"
           >
             <Camera className="size-3" /> {language === 'ar' ? 'تغيير الصورة' : 'Change Photo'}
           </button>
@@ -102,16 +102,16 @@ export default function Header({
 
         <div className="flex-1">
           <div className="mb-2.5 flex items-center gap-3">
-            <h1 className="text-lg font-bold uppercase tracking-[0.45px] text-[var(--text-primary)]">
+            <h1 className="text-lg font-semibold tracking-[-0.01em] text-ink">
               {language === 'ar' ? applicant.arabicName || applicant.englishName : applicant.englishName}
             </h1>
             <select
               value={applicant.status}
               onChange={(e) => updateApplicant(applicant.id, { status: e.target.value as ApplicantStatus })}
-              className="rounded border border-emerald-500/40 bg-emerald-950/80 px-2 py-0.5 text-[10px] font-bold text-emerald-400 focus:outline-none"
+              className="rounded-control border border-pos/40 bg-pos-soft px-2 py-0.5 text-[10px] font-bold text-pos focus:outline-none"
             >
               {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s} className="bg-slate-900 text-slate-200">
+                <option key={s} value={s} className="bg-surface text-ink">
                   {s}
                 </option>
               ))}
@@ -120,35 +120,35 @@ export default function Header({
           <div className="grid grid-cols-2 gap-x-6 gap-y-1">
             <MetaRow
               label={language === 'ar' ? 'رقم الملف' : 'File No.'}
-              value={activeRequest?.mosanedNumber || (activeRequest ? (language === 'ar' ? 'لم يُعيّن بعد' : 'Not yet assigned') : '—')}
+              value={activeRequest?.mosanedNumber || (activeRequest ? (language === 'ar' ? 'لم يُعيّن بعد' : 'Not yet assigned') : '-')}
             />
-            <MetaRow label={language === 'ar' ? 'صاحب العمل' : 'Client'} value={employer ? employer.englishName : '—'} />
+            <MetaRow label={language === 'ar' ? 'صاحب العمل' : 'Client'} value={employer ? employer.englishName : '-'} />
             <MetaRow label={language === 'ar' ? 'الجنسية' : 'Nationality'} value={applicant.country} />
             <MetaRow
               label={language === 'ar' ? 'نوع العقد' : 'Contract Type'}
-              value={activeRequest ? `${activeRequest.contractDurationMonths} ${language === 'ar' ? 'شهر' : 'months'}` : '—'}
+              value={activeRequest ? `${activeRequest.contractDurationMonths} ${language === 'ar' ? 'شهر' : 'months'}` : '-'}
             />
-            <MetaRow label={language === 'ar' ? 'العمر' : 'Age'} value={age !== null ? `${age} ${language === 'ar' ? 'سنة' : 'yrs'}` : '—'} />
+            <MetaRow label={language === 'ar' ? 'العمر' : 'Age'} value={age !== null ? `${age} ${language === 'ar' ? 'سنة' : 'yrs'}` : '-'} />
             <MetaRow
               label={language === 'ar' ? 'المرحلة الحالية' : 'Current Stage'}
               value={
-                <span className="rounded border border-blue-500/50 bg-blue-900/60 px-2.5 py-0.5 text-[10px] text-blue-300">
-                  {activeRequest ? (currentStatus(activeRequest) ?? (language === 'ar' ? 'لم يبدأ' : 'Not started')) : '—'}
+                <span className="rounded-control border border-info/40 bg-info-soft px-2.5 py-0.5 text-[10px] text-info">
+                  {activeRequest ? (currentStatus(activeRequest) ?? (language === 'ar' ? 'لم يبدأ' : 'Not started')) : '-'}
                 </span>
               }
             />
             <MetaRow label={language === 'ar' ? 'رقم الجواز' : 'Passport No.'} value={applicant.passportNo} />
-            <MetaRow label={language === 'ar' ? 'رقم الجوال' : 'Mobile No.'} value={applicant.phone || '—'} />
+            <MetaRow label={language === 'ar' ? 'رقم الجوال' : 'Mobile No.'} value={applicant.phone || '-'} />
           </div>
         </div>
       </div>
 
-      <div className="col-span-4 flex flex-col justify-between rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-[17px]">
-        <div className="flex items-center justify-between border-b border-[var(--edge-soft)] pb-[9px]">
-          <h2 className="text-[11px] font-bold uppercase tracking-[0.55px] text-[var(--text-secondary)]">
+      <div className="col-span-4 flex flex-col justify-between rounded-panel border border-line bg-surface p-[17px]">
+        <div className="flex items-center justify-between border-b border-line pb-[9px]">
+          <h2 className="text-[11px] font-semibold text-ink-3">
             {language === 'ar' ? 'الملخص المالي' : 'Financial Summary'}
           </h2>
-          <button type="button" className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
+          <button type="button" className="text-ink-3 hover:text-ink-2">
             <MoreHorizontal className="size-3.5" />
           </button>
         </div>
@@ -157,11 +157,11 @@ export default function Header({
           <MoneyLine label={language === 'ar' ? 'إجمالي الدخل' : 'Total Income'} amount={totalIncome} color="#34d399" />
           <MoneyLine label={language === 'ar' ? 'صافي الربح' : 'Net Profit'} amount={netProfit} color="#fbbf24" bold border />
           <div className="flex w-full items-center justify-between">
-            <span className="text-xs text-[var(--text-secondary)]">{language === 'ar' ? 'هامش الربح' : 'Profit Margin'}</span>
-            <span className="text-xs font-bold text-sky-400">{profitMargin.toFixed(2)}%</span>
+            <span className="text-xs text-ink-2">{language === 'ar' ? 'هامش الربح' : 'Profit Margin'}</span>
+            <span className="text-xs font-bold text-info">{profitMargin.toFixed(2)}%</span>
           </div>
         </div>
-        <div className="border-t border-[var(--edge-soft2)] pt-[5px] text-end text-[9px] text-[var(--text-muted)]">
+        <div className="border-t border-line pt-[5px] text-end text-[9px] text-ink-3">
           {language === 'ar' ? 'محدث' : 'Updated'} {applicant.updatedOn} {language === 'ar' ? 'بواسطة' : 'by'} {applicant.updatedBy}
         </div>
       </div>

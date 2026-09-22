@@ -21,8 +21,8 @@ export default function ApplicantProfile() {
   if (!applicant) {
     return (
       <div className="flex flex-col items-center gap-3 p-10 text-center">
-        <p className="text-sm text-[var(--text-primary)]">{language === 'ar' ? 'المتقدم غير موجود.' : 'Applicant not found.'}</p>
-        <Link to="/applicants" className="text-xs text-amber-400 hover:text-amber-300">
+        <p className="text-sm text-ink">{language === 'ar' ? 'المتقدم غير موجود.' : 'Applicant not found.'}</p>
+        <Link to="/applicants" className="text-xs text-accent-text hover:text-accent">
           {language === 'ar' ? 'العودة إلى المتقدمين' : 'Back to Applicants'}
         </Link>
       </div>
@@ -58,7 +58,7 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
   function handleSendToClient() {
     const cost = activeRequest ? requestCost(activeRequest) : 0
     const paid = invoice ? invoiceTotalPaid(invoice) : 0
-    const subject = encodeURIComponent(`Applicant Summary — ${applicant!.englishName}`)
+    const subject = encodeURIComponent(`Applicant Summary - ${applicant!.englishName}`)
     const body = encodeURIComponent(
       `Applicant: ${applicant!.englishName}\nPassport No.: ${applicant!.passportNo}\n\n` +
         `Total Expenses: ${formatMoney(cost)}\nTotal Income: ${formatMoney(paid)}\nNet: ${formatMoney(paid - cost)}`,
@@ -75,32 +75,32 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="flex items-center justify-between">
-        <nav className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
-          <Link to="/applicants" className="hover:text-[var(--text-primary)]">
+        <nav className="flex items-center gap-1.5 text-xs text-ink-2">
+          <Link to="/applicants" className="hover:text-ink">
             {t('nav_applicants')}
           </Link>
           <span>/</span>
-          <span className="text-[var(--text-primary)]">{applicant.englishName}</span>
+          <span className="text-ink">{applicant.englishName}</span>
         </nav>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handlePrint}
-            className="flex items-center gap-1.5 rounded border border-[var(--edge-strong)] bg-[var(--surface-hover)] px-3 py-1.5 text-[11px] text-[var(--text-secondary)] hover:border-amber-500/40"
+            className="flex items-center gap-1.5 rounded-control border border-line-strong bg-raised px-3 py-1.5 text-[11px] text-ink-2 hover:border-accent-line"
           >
             <Printer className="size-3.5" /> {language === 'ar' ? 'طباعة' : 'Print'}
           </button>
           <button
             type="button"
             onClick={handleSendToClient}
-            className="flex items-center gap-1.5 rounded border border-[var(--edge-strong)] bg-[var(--surface-hover)] px-3 py-1.5 text-[11px] text-[var(--text-secondary)] hover:border-amber-500/40"
+            className="flex items-center gap-1.5 rounded-control border border-line-strong bg-raised px-3 py-1.5 text-[11px] text-ink-2 hover:border-accent-line"
           >
             <Send className="size-3.5" /> {language === 'ar' ? 'إرسال للعميل' : 'Send to Client'}
           </button>
           <button
             type="button"
             onClick={handleDeleteApplicant}
-            className="rounded border border-rose-900 bg-rose-950/60 px-3 py-1.5 text-[11px] text-rose-400 hover:border-rose-700"
+            className="rounded-control border border-neg/40 bg-neg-soft px-3 py-1.5 text-[11px] text-neg hover:border-neg"
           >
             {t('action_delete')}
           </button>
@@ -129,9 +129,9 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
       {activeTab === 'documents' && <DocumentsTab applicant={applicant} />}
       {activeTab === 'notes' && <NotesTab applicant={applicant} />}
 
-      <div className="flex items-center justify-between border-t border-[var(--edge)] pt-3 text-[10px] text-[var(--text-muted)]">
+      <div className="flex items-center justify-between border-t border-line pt-3 text-[10px] text-ink-3">
         <p>
-          <span className="text-[var(--text-secondary)]">{language === 'ar' ? 'ملاحظة:' : 'Note:'}</span>{' '}
+          <span className="text-ink-2">{language === 'ar' ? 'ملاحظة:' : 'Note:'}</span>{' '}
           {language === 'ar' ? 'جميع المبالغ بالدولار الأمريكي' : 'All amounts are in US Dollars (USD)'}
         </p>
         <p>

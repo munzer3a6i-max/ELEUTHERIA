@@ -33,7 +33,7 @@ export default function Reports() {
     const map = new Map<string, { count: number; cost: number }>()
     for (const r of scopedRequests) {
       const employer = employers.find((e) => e.id === r.employerId)
-      const key = employer ? tb({ en: employer.englishName, ar: employer.arabicName }) : '—'
+      const key = employer ? tb({ en: employer.englishName, ar: employer.arabicName }) : '-'
       const entry = map.get(key) ?? { count: 0, cost: 0 }
       entry.count += 1
       entry.cost += requestCost(r)
@@ -46,7 +46,7 @@ export default function Reports() {
     const map = new Map<string, number>()
     for (const r of scopedRequests) {
       const agency = agencies.find((a) => a.id === r.recruitmentAgencyId)
-      const key = agency ? tb({ en: agency.englishName, ar: agency.arabicName }) : '—'
+      const key = agency ? tb({ en: agency.englishName, ar: agency.arabicName }) : '-'
       map.set(key, (map.get(key) ?? 0) + 1)
     }
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
@@ -75,8 +75,8 @@ export default function Reports() {
                 key={r}
                 type="button"
                 onClick={() => setRange(r)}
-                className={`rounded px-2.5 py-1.5 text-[11px] ${
-                  range === r ? 'bg-[var(--active)] text-amber-500' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
+                className={`rounded-control px-2.5 py-1.5 text-[11px] ${
+                  range === r ? 'bg-accent-soft text-accent-text' : 'text-ink-2 hover:bg-raised'
                 }`}
               >
                 {rangeLabels[r]}
@@ -86,39 +86,39 @@ export default function Reports() {
         }
       />
 
-      <p className="text-[11px] text-[var(--text-muted)]">
-        {language === 'ar' ? 'عرض البيانات لـ' : 'Showing data for'} <strong className="text-[var(--text-secondary)]">{rangeLabels[range]}</strong> ·{' '}
+      <p className="text-[11px] text-ink-3">
+        {language === 'ar' ? 'عرض البيانات لـ' : 'Showing data for'} <strong className="text-ink-2">{rangeLabels[range]}</strong> ·{' '}
         {scopedRequests.length} {language === 'ar' ? 'طلب' : 'requests'}, {scopedInvoices.length} {language === 'ar' ? 'فاتورة' : 'invoices'}
       </p>
 
       <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-4 text-center">
-          <p className="text-2xl font-bold text-[var(--text-primary)]">{scopedRequests.length}</p>
-          <p className="text-[11px] text-[var(--text-muted)]">{language === 'ar' ? 'الطلبات' : 'Requests'}</p>
+        <div className="rounded-panel border border-line bg-surface p-4 text-center">
+          <p className="text-2xl font-bold text-ink">{scopedRequests.length}</p>
+          <p className="text-[11px] text-ink-3">{language === 'ar' ? 'الطلبات' : 'Requests'}</p>
         </div>
-        <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-4 text-center">
-          <p className="text-2xl font-bold text-rose-400">{formatMoney(totalCost)}</p>
-          <p className="text-[11px] text-[var(--text-muted)]">{language === 'ar' ? 'إجمالي التكلفة' : 'Total Cost'}</p>
+        <div className="rounded-panel border border-line bg-surface p-4 text-center">
+          <p className="text-2xl font-bold text-neg">{formatMoney(totalCost)}</p>
+          <p className="text-[11px] text-ink-3">{language === 'ar' ? 'إجمالي التكلفة' : 'Total Cost'}</p>
         </div>
-        <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-4 text-center">
-          <p className="text-2xl font-bold text-emerald-400">{formatMoney(totalPaid)}</p>
-          <p className="text-[11px] text-[var(--text-muted)]">{language === 'ar' ? 'إجمالي المدفوع' : 'Total Paid'}</p>
+        <div className="rounded-panel border border-line bg-surface p-4 text-center">
+          <p className="text-2xl font-bold text-pos">{formatMoney(totalPaid)}</p>
+          <p className="text-[11px] text-ink-3">{language === 'ar' ? 'إجمالي المدفوع' : 'Total Paid'}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-4">
-          <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.3px] text-[var(--text-primary)]">
+        <div className="rounded-panel border border-line bg-surface p-4">
+          <h2 className="mb-3 panel-title">
             {language === 'ar' ? 'الأداء حسب صاحب العمل' : 'Performance by Employer'}
           </h2>
           {byEmployer.length === 0 ? (
-            <p className="py-6 text-center text-[11px] text-[var(--text-muted)]">
+            <p className="py-6 text-center text-[11px] text-ink-3">
               {language === 'ar' ? 'لا توجد بيانات لهذه الفترة.' : 'No data in this range.'}
             </p>
           ) : (
-            <table className="w-full text-start">
+            <table className="data-table">
               <thead>
-                <tr className="border-b border-[var(--edge-soft)] text-[10.5px] font-bold uppercase text-[var(--text-secondary)]">
+                <tr>
                   <th className="py-2">{language === 'ar' ? 'صاحب العمل' : 'Employer'}</th>
                   <th className="py-2 text-end">{language === 'ar' ? 'الطلبات' : 'Requests'}</th>
                   <th className="py-2 text-end">{language === 'ar' ? 'التكلفة' : 'Cost'}</th>
@@ -126,10 +126,10 @@ export default function Reports() {
               </thead>
               <tbody>
                 {byEmployer.map(([name, data]) => (
-                  <tr key={name} className="border-b border-[var(--edge-soft2)] text-xs last:border-b-0">
-                    <td className="py-2 text-[var(--text-primary)]">{name}</td>
-                    <td className="py-2 text-end text-[var(--text-secondary)]">{data.count}</td>
-                    <td className="py-2 text-end text-rose-400">{formatMoney(data.cost)}</td>
+                  <tr key={name} className="text-xs">
+                    <td className="py-2 text-ink">{name}</td>
+                    <td className="py-2 text-end text-ink-2">{data.count}</td>
+                    <td className="py-2 text-end text-neg">{formatMoney(data.cost)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -137,24 +137,24 @@ export default function Reports() {
           )}
         </div>
 
-        <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-4">
-          <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.3px] text-[var(--text-primary)]">
+        <div className="rounded-panel border border-line bg-surface p-4">
+          <h2 className="mb-3 panel-title">
             {language === 'ar' ? 'الطلبات حسب مكتب الاستقدام' : 'Requests by Recruitment Agency'}
           </h2>
           {byAgency.length === 0 ? (
-            <p className="py-6 text-center text-[11px] text-[var(--text-muted)]">
+            <p className="py-6 text-center text-[11px] text-ink-3">
               {language === 'ar' ? 'لا توجد بيانات لهذه الفترة.' : 'No data in this range.'}
             </p>
           ) : (
             <div className="flex flex-col gap-2.5">
               {byAgency.map(([name, count]) => (
                 <div key={name} className="text-xs">
-                  <div className="mb-1 flex items-center justify-between text-[var(--text-secondary)]">
-                    <span className="text-[var(--text-primary)]">{name}</span>
+                  <div className="mb-1 flex items-center justify-between text-ink-2">
+                    <span className="text-ink">{name}</span>
                     <span>{count}</span>
                   </div>
-                  <div className="h-1.5 w-full rounded-full bg-[var(--surface-hover)]">
-                    <div className="h-full rounded-full bg-amber-500" style={{ width: `${(count / maxAgencyCount) * 100}%` }} />
+                  <div className="h-1.5 w-full rounded-pill bg-raised">
+                    <div className="h-full rounded-pill bg-accent" style={{ width: `${(count / maxAgencyCount) * 100}%` }} />
                   </div>
                 </div>
               ))}

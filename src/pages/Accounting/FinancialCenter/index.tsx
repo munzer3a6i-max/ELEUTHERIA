@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FileBarChart, MapPin, Minus, Plus, ScrollText, Wallet } from 'lucide-react'
-import { useAppStore } from '../../store/useAppStore'
-import { useTranslation } from '../../i18n/useTranslation'
-import AddExpenseModal from '../../components/AddExpenseModal'
-import AddIncomeModal from '../../components/AddIncomeModal'
+import { useAppStore } from '../../../store/useAppStore'
+import { useTranslation } from '../../../i18n/useTranslation'
+import AddExpenseModal from '../../../components/AddExpenseModal'
+import AddIncomeModal from '../../../components/AddIncomeModal'
 import AgencyAccounts from './AgencyAccounts'
 import AgencyDetail from './AgencyDetail'
 import AgentSplitChart from './AgentSplitChart'
@@ -12,11 +12,11 @@ import FinancialSummary from './FinancialSummary'
 import KpiCards from './KpiCards'
 import OfficeExpensesPanel from './OfficeExpensesPanel'
 import PayrollPanel from './PayrollPanel'
-import PeriodSelect from '../../components/PeriodSelect'
+import PeriodSelect from '../../../components/PeriodSelect'
 import QuickActions from './QuickActions'
 import RecentTransactions from './RecentTransactions'
-import { formatRange, useFinancials } from '../../lib/financials'
-import type { PeriodKey } from '../../lib/financials'
+import { formatRange, useFinancials } from '../../../lib/financials'
+import type { PeriodKey } from '../../../lib/financials'
 import type { Slice } from './AgentSplitChart'
 
 // Categorical slots are handed out by the agency's position in the store, so a
@@ -79,12 +79,12 @@ export default function Dashboard() {
     <div className="flex flex-col gap-4 p-4">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-panel border border-accent-line bg-accent/10 text-accent-text">
             <ScrollText className="size-5" />
           </span>
           <div>
-            <h1 className="text-lg font-bold text-[var(--text-primary)]">{t('fin_title')}</h1>
-            <p className="mt-0.5 text-xs text-[var(--text-secondary)]">{t('fin_subtitle')}</p>
+            <h1 className="text-lg font-bold text-ink">{t('fin_title')}</h1>
+            <p className="mt-0.5 text-xs text-ink-2">{t('fin_subtitle')}</p>
           </div>
         </div>
 
@@ -97,20 +97,20 @@ export default function Dashboard() {
           <button
             type="button"
             onClick={() => setModal('expense')}
-            className="flex items-center gap-1.5 rounded border border-[var(--edge-strong)] bg-[var(--surface)] px-3 py-2 text-[11px] text-[var(--text-primary)] hover:border-amber-500/40"
+            className="flex items-center gap-1.5 rounded-control border border-line-strong bg-surface px-3 py-2 text-[11px] text-ink hover:border-accent-line"
           >
-            <Minus className="size-3.5 text-rose-400" /> {t('fin_add_expense')}
+            <Minus className="size-3.5 text-neg" /> {t('fin_add_expense')}
           </button>
           <button
             type="button"
             onClick={() => setModal('income')}
-            className="flex items-center gap-1.5 rounded border border-[var(--edge-strong)] bg-[var(--surface)] px-3 py-2 text-[11px] text-[var(--text-primary)] hover:border-amber-500/40"
+            className="flex items-center gap-1.5 rounded-control border border-line-strong bg-surface px-3 py-2 text-[11px] text-ink hover:border-accent-line"
           >
-            <Plus className="size-3.5 text-emerald-400" /> {t('fin_add_income')}
+            <Plus className="size-3.5 text-pos" /> {t('fin_add_income')}
           </button>
           <Link
             to="/accounting/reports"
-            className="flex items-center gap-1.5 rounded bg-amber-600 px-3 py-2 text-[11px] font-bold text-slate-950 hover:bg-amber-500"
+            className="flex items-center gap-1.5 rounded-control bg-accent px-3 py-2 text-[11px] font-bold text-accent-ink hover:bg-accent"
           >
             <FileBarChart className="size-3.5" /> {t('fin_generate_report')}
           </Link>
@@ -160,10 +160,10 @@ export default function Dashboard() {
         </aside>
       </div>
 
-      <footer className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 rounded-lg border border-[var(--edge)] bg-[var(--surface)] px-4 py-3 text-[10px] text-[var(--text-muted)]">
-        <span className="font-bold uppercase tracking-[0.5px] text-amber-500">
+      <footer className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 rounded-panel border border-line bg-surface px-4 py-3 text-[10px] text-ink-3">
+        <span className="font-semibold uppercase tracking-[0.08em] text-accent-text">
           {settings.companyName}{' '}
-          <span className="font-normal normal-case tracking-normal text-[var(--text-muted)]">
+          <span className="font-normal normal-case tracking-normal text-ink-3">
             {settings.companyTagline}
           </span>
         </span>
@@ -173,7 +173,7 @@ export default function Dashboard() {
         <span className="flex items-center gap-1.5">
           <MapPin className="size-3" /> {settings.address}
         </span>
-        <span className="text-[var(--text-secondary)]">{t('fin_partner_line')}</span>
+        <span className="text-ink-2">{t('fin_partner_line')}</span>
       </footer>
 
       {modal === 'expense' && <AddExpenseModal onClose={() => setModal(null)} />}

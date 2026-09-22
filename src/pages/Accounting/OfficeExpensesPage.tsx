@@ -61,7 +61,7 @@ export default function OfficeExpensesPage() {
   }, [rows])
 
   const filterClass =
-    'rounded border border-[var(--edge-strong)] bg-[var(--input)] px-2.5 py-2 text-[11px] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-amber-500/60'
+    'rounded-control border border-line-strong bg-sunken px-2.5 py-2 text-[11px] text-ink focus:outline-none focus:ring-1 focus:ring-focus'
 
   function handleDelete(expense: OfficeExpense) {
     if (window.confirm(`${t('action_delete')} ${tb(expense.item)}?`)) deleteOfficeExpense(expense.id)
@@ -79,7 +79,7 @@ export default function OfficeExpensesPage() {
               setEditing(null)
               setModalOpen(true)
             }}
-            className="flex items-center gap-1.5 rounded bg-amber-600 px-3 py-2 text-[11px] font-bold text-slate-950 hover:bg-amber-500"
+            className="flex items-center gap-1.5 rounded-control bg-accent px-3 py-2 text-[11px] font-bold text-accent-ink hover:bg-accent"
           >
             <Plus className="size-3.5" /> {t('fin_add_expense')}
           </button>
@@ -89,16 +89,16 @@ export default function OfficeExpensesPage() {
       <StatStrip
         stats={[
           { label: t('fin_total_expenses'), value: formatMoney(total, currency, 0), icon: <Coins className="size-4" /> },
-          { label: t('acc_paid'), value: formatMoney(paid, currency, 0), accent: 'text-emerald-400', icon: <Wallet className="size-4" /> },
+          { label: t('acc_paid'), value: formatMoney(paid, currency, 0), tone: 'pos', icon: <Wallet className="size-4" /> },
           {
             label: t('acc_pending'),
             value: formatMoney(total - paid, currency, 0),
-            accent: 'text-amber-400',
+            tone: 'warn',
             icon: <Wallet className="size-4" />,
           },
           {
             label: t('acc_largest_category'),
-            value: byCategory[0]?.[0] ?? '—',
+            value: byCategory[0]?.[0] ?? '-',
             note: byCategory[0] ? formatMoney(byCategory[0][1], currency, 0) : undefined,
             icon: <Building className="size-4" />,
           },
@@ -107,7 +107,7 @@ export default function OfficeExpensesPage() {
 
       <div className="flex flex-wrap items-center gap-2">
         <label className="relative">
-          <Search className="pointer-events-none absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[var(--text-muted)]" />
+          <Search className="pointer-events-none absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-ink-3" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -135,7 +135,7 @@ export default function OfficeExpensesPage() {
           <option value="Pending">{language === 'ar' ? 'قيد الانتظار' : 'Pending'}</option>
         </select>
         <PeriodSelect value={period} onChange={setPeriod} rangeLabel={t('fin_period_all')} compact />
-        <span className="text-[11px] text-[var(--text-muted)]">
+        <span className="text-[11px] text-ink-3">
           {rows.length} / {officeExpenses.length}
         </span>
       </div>
@@ -143,9 +143,9 @@ export default function OfficeExpensesPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="lg:col-span-8">
           <Card title={t('acc_office_expenses_title')} subtitle={t('acc_office_expenses_subtitle')} bodyClassName="overflow-x-auto">
-            <table className="w-full text-start">
+            <table className="data-table">
               <thead>
-                <tr className="border-b border-[var(--edge-soft)] text-[10px] font-bold uppercase text-[var(--text-secondary)]">
+                <tr>
                   <th className="w-8 px-3 py-2.5 text-start">#</th>
                   <th className="px-3 py-2.5 text-start">{t('fin_item')}</th>
                   <th className="px-3 py-2.5 text-start">{t('fin_category')}</th>
@@ -157,12 +157,12 @@ export default function OfficeExpensesPage() {
               </thead>
               <tbody>
                 {rows.map((expense, index) => (
-                  <tr key={expense.id} className="border-b border-[var(--edge-soft2)] text-xs last:border-b-0 hover:bg-[var(--surface-hover)]">
-                    <td className="px-3 py-2.5 tabular-nums text-[var(--text-muted)]">{index + 1}</td>
-                    <td className="px-3 py-2.5 font-medium text-[var(--text-primary)]">{tb(expense.item)}</td>
-                    <td className="px-3 py-2.5 text-[var(--text-secondary)]">{expense.category}</td>
-                    <td className="whitespace-nowrap px-3 py-2.5 tabular-nums text-[var(--text-secondary)]">{expense.date}</td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-end font-bold tabular-nums text-[var(--text-primary)]">
+                  <tr key={expense.id} className="text-xs">
+                    <td className="px-3 py-2.5 num text-ink-3">{index + 1}</td>
+                    <td className="px-3 py-2.5 font-medium text-ink">{tb(expense.item)}</td>
+                    <td className="px-3 py-2.5 text-ink-2">{expense.category}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 num text-ink-2">{expense.date}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-end font-bold num text-ink">
                       {formatMoney(expense.amount, currency, 0)}
                     </td>
                     <td className="px-3 py-2.5">
@@ -183,7 +183,7 @@ export default function OfficeExpensesPage() {
                             setModalOpen(true)
                           }}
                           title={t('action_edit')}
-                          className="text-[var(--text-muted)] hover:text-amber-400"
+                          className="text-ink-3 hover:text-accent-text"
                         >
                           <Pencil className="size-3.5" />
                         </button>
@@ -191,7 +191,7 @@ export default function OfficeExpensesPage() {
                           type="button"
                           onClick={() => handleDelete(expense)}
                           title={t('action_delete')}
-                          className="text-[var(--text-muted)] hover:text-rose-400"
+                          className="text-ink-3 hover:text-neg"
                         >
                           <Trash2 className="size-3.5" />
                         </button>
@@ -201,7 +201,7 @@ export default function OfficeExpensesPage() {
                 ))}
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-3 py-10 text-center text-xs text-[var(--text-muted)]">
+                    <td colSpan={7} className="px-3 py-10 text-center text-xs text-ink-3">
                       {t('acc_no_rows')}
                     </td>
                   </tr>
@@ -209,11 +209,11 @@ export default function OfficeExpensesPage() {
               </tbody>
               {rows.length > 0 && (
                 <tfoot>
-                  <tr className="bg-[var(--surface-hover)] text-xs font-bold text-[var(--text-primary)]">
+                  <tr>
                     <td className="px-3 py-2.5" colSpan={4}>
                       {t('fin_total')}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-end tabular-nums">{formatMoney(total, currency, 0)}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-end num">{formatMoney(total, currency, 0)}</td>
                     <td colSpan={2} />
                   </tr>
                 </tfoot>
@@ -230,25 +230,25 @@ export default function OfficeExpensesPage() {
                 return (
                   <li key={name} className="text-xs">
                     <div className="mb-1 flex items-baseline justify-between gap-2">
-                      <span className="flex items-center gap-2 text-[var(--text-primary)]">
+                      <span className="flex items-center gap-2 text-ink">
                         <span
-                          className="size-2 shrink-0 rounded-full"
+                          className="size-2 shrink-0 rounded-pill"
                           style={{ backgroundColor: SERIES[index] ?? 'var(--series-rest)' }}
                         />
                         {name}
                       </span>
                       <span className="flex items-baseline gap-2">
-                        <span dir="ltr" className="tabular-nums text-[var(--text-muted)]">
+                        <span dir="ltr" className="num text-ink-3">
                           {formatMoney(amount, currency, 0)}
                         </span>
-                        <span className="w-8 text-end font-bold tabular-nums text-[var(--text-primary)]">
+                        <span className="w-8 text-end font-bold num text-ink">
                           {Math.round(share)}%
                         </span>
                       </span>
                     </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--edge-soft)]">
+                    <div className="h-1.5 w-full overflow-hidden rounded-pill bg-[var(--edge-soft)]">
                       <div
-                        className="h-full rounded-full"
+                        className="h-full rounded-pill"
                         style={{ width: `${share}%`, backgroundColor: SERIES[index] ?? 'var(--series-rest)' }}
                       />
                     </div>
@@ -256,7 +256,7 @@ export default function OfficeExpensesPage() {
                 )
               })}
               {byCategory.length === 0 && (
-                <li className="py-8 text-center text-xs text-[var(--text-muted)]">{t('acc_no_rows')}</li>
+                <li className="py-8 text-center text-xs text-ink-3">{t('acc_no_rows')}</li>
               )}
             </ul>
           </Card>

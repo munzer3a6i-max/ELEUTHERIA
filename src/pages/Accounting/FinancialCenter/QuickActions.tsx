@@ -1,16 +1,16 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Banknote, Building2, CreditCard, FileBarChart, UserPlus, Wallet, Zap } from 'lucide-react'
-import { useTranslation } from '../../i18n/useTranslation'
-import Card from '../../components/Card'
+import { useTranslation } from '../../../i18n/useTranslation'
+import Card from '../../../components/Card'
 
 const tileClass =
-  'flex flex-col items-center justify-center gap-1.5 rounded-lg border border-[var(--edge)] bg-[var(--input)] px-2 py-3 text-center text-[10px] font-medium text-[var(--text-secondary)] transition-colors hover:border-amber-500/40 hover:text-amber-400'
+  'flex flex-col items-center justify-center gap-1.5 rounded-panel border border-line bg-sunken px-2 py-3 text-center text-[10px] font-medium text-ink-2 transition-colors hover:border-accent-line hover:text-accent-text'
 
 function Tile({ to, onClick, icon, label }: { to?: string; onClick?: () => void; icon: ReactNode; label: string }) {
   const content = (
     <>
-      <span className="text-amber-400">{icon}</span>
+      <span className="text-accent-text">{icon}</span>
       {label}
     </>
   )

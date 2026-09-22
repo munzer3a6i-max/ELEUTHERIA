@@ -22,7 +22,7 @@ export default function PeriodSelect({
   onChange: (period: PeriodKey) => void
   /** The resolved date window, shown on the button unless `compact` is set. */
   rangeLabel?: string
-  /** Shows the preset's name instead of the window — for filter rows, where space is tight. */
+  /** Shows the preset's name instead of the window, for filter rows where space is tight. */
   compact?: boolean
 }) {
   const { t } = useTranslation()
@@ -32,21 +32,16 @@ export default function PeriodSelect({
 
   return (
     <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="flex items-center gap-2 rounded border border-[var(--edge-strong)] bg-[var(--surface)] px-3 py-2 text-[11px] text-[var(--text-primary)] hover:border-amber-500/40"
-      >
-        <CalendarDays className="size-3.5 text-amber-400" />
-        <span className="tabular-nums">{buttonLabel}</span>
-        <ChevronDown className={`size-3.5 text-[var(--text-muted)] transition-transform ${open ? 'rotate-180' : ''}`} />
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="btn btn-secondary">
+        <CalendarDays className="size-3.5 text-accent-text" />
+        <span className="num text-[12px] font-medium">{buttonLabel}</span>
+        <ChevronDown className={`size-3.5 text-ink-3 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <ul className="absolute end-0 z-20 mt-1 w-52 overflow-hidden rounded-lg border border-[var(--edge)] bg-[var(--surface)] py-1 shadow-xl">
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} role="presentation" />
+          <ul className="absolute end-0 z-20 mt-1.5 w-52 overflow-hidden rounded-panel border border-line bg-surface py-1 shadow-pop">
             {PERIODS.map((period) => (
               <li key={period.key}>
                 <button
@@ -55,8 +50,8 @@ export default function PeriodSelect({
                     onChange(period.key)
                     setOpen(false)
                   }}
-                  className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-start text-[11px] hover:bg-[var(--surface-hover)] ${
-                    value === period.key ? 'font-bold text-amber-400' : 'text-[var(--text-secondary)]'
+                  className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-start text-[12px] hover:bg-raised ${
+                    value === period.key ? 'font-semibold text-accent-text' : 'text-ink-2'
                   }`}
                 >
                   {t(period.label)}

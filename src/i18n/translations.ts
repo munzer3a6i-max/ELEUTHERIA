@@ -91,7 +91,7 @@ export const translations = {
   fin_payroll: { en: 'Payroll', ar: 'الرواتب' },
   fin_financial_summary: { en: 'Financial Summary', ar: 'الملخص المالي' },
   fin_view_detailed_report: { en: 'View Detailed Report', ar: 'عرض التقرير التفصيلي' },
-  fin_payroll_employees: { en: 'Payroll — Employees', ar: 'الرواتب — الموظفون' },
+  fin_payroll_employees: { en: 'Payroll - Employees', ar: 'الرواتب - الموظفون' },
   fin_payroll_sub: { en: 'Monthly salaries and allowances', ar: 'الرواتب والبدلات الشهرية' },
   fin_basic_salary: { en: 'Basic Salary', ar: 'الراتب الأساسي' },
   fin_basic_short: { en: 'Basic', ar: 'الأساسي' },

@@ -30,14 +30,14 @@ export default function AddonsPage() {
     <div className="flex flex-col gap-4 p-4">
       <PageHeader title={t('nav_addons')} subtitle={language === 'ar' ? 'بيانات الإعدادات المشتركة' : 'Shared configuration data'} />
 
-      <div className="flex items-center gap-1 border-b border-[var(--edge-soft)] pb-1.5">
+      <div className="flex items-center gap-1 border-b border-line pb-1.5">
         {TABS.map((tb) => (
           <button
             key={tb}
             type="button"
             onClick={() => navigate(`/addons/${tb}`)}
-            className={`rounded px-3 py-1.5 text-[11px] ${
-              activeTab === tb ? 'bg-[var(--active)] text-amber-500' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
+            className={`rounded-control px-3 py-1.5 text-[11px] ${
+              activeTab === tb ? 'bg-accent-soft text-accent-text' : 'text-ink-2 hover:bg-raised'
             }`}
           >
             {labels[tb]}
@@ -67,22 +67,22 @@ function ConfigList({
 }) {
   const { t } = useTranslation()
   return (
-    <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-4">
+    <div className="rounded-panel border border-line bg-surface p-4">
       <div className="mb-3 flex justify-end">
         <PrimaryButton onClick={onAdd} className="flex items-center gap-1.5">
           <Plus className="size-3.5" /> {addLabel}
         </PrimaryButton>
       </div>
-      <div className="flex flex-col divide-y divide-[var(--edge-soft2)]">
+      <div className="flex flex-col divide-y divide-line">
         {items.map((it) => (
           <div key={it.id} className="flex items-center justify-between py-2.5 text-xs">
-            <span className="text-[var(--text-primary)]">{it.label}</span>
-            <button type="button" onClick={() => onDelete(it.id)} className="text-[var(--text-muted)] hover:text-rose-400">
+            <span className="text-ink">{it.label}</span>
+            <button type="button" onClick={() => onDelete(it.id)} className="text-ink-3 hover:text-neg">
               <Trash2 className="size-3.5" />
             </button>
           </div>
         ))}
-        {items.length === 0 && <p className="py-4 text-center text-[11px] text-[var(--text-muted)]">{t('action_search')}...</p>}
+        {items.length === 0 && <p className="py-4 text-center text-[11px] text-ink-3">{t('action_search')}...</p>}
       </div>
     </div>
   )
@@ -142,7 +142,7 @@ function CitiesTab() {
   return (
     <>
       <ConfigList
-        items={cities.map((c) => ({ id: c.id, label: `${tb(c.name)} — ${tb(countries.find((co) => co.id === c.countryId)?.name ?? { en: '', ar: '' })}` }))}
+        items={cities.map((c) => ({ id: c.id, label: `${tb(c.name)} - ${tb(countries.find((co) => co.id === c.countryId)?.name ?? { en: '', ar: '' })}` }))}
         onDelete={deleteCity}
         onAdd={() => setOpen(true)}
         addLabel={language === 'ar' ? 'إضافة مدينة' : 'Add City'}
@@ -238,29 +238,29 @@ function PaymentSourcesTab() {
 
   return (
     <>
-      <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-4">
+      <div className="rounded-panel border border-line bg-surface p-4">
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-[11px] text-[var(--text-muted)]">
+          <p className="text-[11px] text-ink-3">
             {language === 'ar'
               ? 'قائمة واحدة، حدد النطاق بدلاً من تكرار المصدر لكل وحدة.'
-              : 'One list — tag scope per source instead of duplicating it per module.'}
+              : 'One list - tag scope per source instead of duplicating it per module.'}
           </p>
           <PrimaryButton onClick={() => setOpen(true)} className="flex items-center gap-1.5">
             <Plus className="size-3.5" /> {language === 'ar' ? 'إضافة مصدر' : 'Add Source'}
           </PrimaryButton>
         </div>
-        <div className="flex flex-col divide-y divide-[var(--edge-soft2)]">
+        <div className="flex flex-col divide-y divide-line">
           {sources.map((s) => (
             <div key={s.id} className="flex items-center justify-between py-2.5 text-xs">
-              <span className="text-[var(--text-primary)]">{s.name}</span>
+              <span className="text-ink">{s.name}</span>
               <div className="flex items-center gap-4">
                 {(['Invoices', 'Request Status'] as PaymentSourceScope[]).map((scope) => (
-                  <label key={scope} className="flex items-center gap-1.5 text-[10.5px] text-[var(--text-secondary)]">
+                  <label key={scope} className="flex items-center gap-1.5 text-[10.5px] text-ink-2">
                     <input type="checkbox" checked={s.scopes.includes(scope)} onChange={() => toggleScope(s.id, scope)} />
                     {scope}
                   </label>
                 ))}
-                <button type="button" onClick={() => deletePaymentSource(s.id)} className="text-[var(--text-muted)] hover:text-rose-400">
+                <button type="button" onClick={() => deletePaymentSource(s.id)} className="text-ink-3 hover:text-neg">
                   <Trash2 className="size-3.5" />
                 </button>
               </div>
@@ -275,7 +275,7 @@ function PaymentSourcesTab() {
           </Field>
           <div className="mb-3 flex items-center gap-4">
             {(['Invoices', 'Request Status'] as PaymentSourceScope[]).map((scope) => (
-              <label key={scope} className="flex items-center gap-1.5 text-[11px] text-[var(--text-secondary)]">
+              <label key={scope} className="flex items-center gap-1.5 text-[11px] text-ink-2">
                 <input
                   type="checkbox"
                   checked={scopes.includes(scope)}
@@ -315,10 +315,10 @@ function StatusesTab() {
   }
 
   return (
-    <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-4">
+    <div className="rounded-panel border border-line bg-surface p-4">
       <div className="mb-3 flex items-center justify-between">
-        <p className="text-[11px] text-[var(--text-muted)]">
-          {language === 'ar' ? 'ثلاثة مسارات منفصلة' : 'Three separate pipelines'} — {counts.Domestic} {language === 'ar' ? 'منزلي' : 'Domestic'} + {counts.Profession} {language === 'ar' ? 'مهني' : 'Profession'} + {counts.Invoice} {language === 'ar' ? 'فواتير' : 'Invoice'} = {counts.Domestic + counts.Profession + counts.Invoice} {language === 'ar' ? 'إجمالي' : 'total'}
+        <p className="text-[11px] text-ink-3">
+          {language === 'ar' ? 'ثلاثة مسارات منفصلة' : 'Three separate pipelines'} - {counts.Domestic} {language === 'ar' ? 'منزلي' : 'Domestic'} + {counts.Profession} {language === 'ar' ? 'مهني' : 'Profession'} + {counts.Invoice} {language === 'ar' ? 'فواتير' : 'Invoice'} = {counts.Domestic + counts.Profession + counts.Invoice} {language === 'ar' ? 'إجمالي' : 'total'}
         </p>
         <div className="flex items-center gap-1">
           {(['Domestic', 'Profession', 'Invoice'] as const).map((p) => (
@@ -326,8 +326,8 @@ function StatusesTab() {
               key={p}
               type="button"
               onClick={() => setPipelineFilter(p)}
-              className={`rounded px-2.5 py-1.5 text-[11px] ${
-                pipelineFilter === p ? 'bg-[var(--active)] text-amber-500' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
+              className={`rounded-control px-2.5 py-1.5 text-[11px] ${
+                pipelineFilter === p ? 'bg-accent-soft text-accent-text' : 'text-ink-2 hover:bg-raised'
               }`}
             >
               {p === 'Domestic' ? (language === 'ar' ? 'منزلي' : 'Domestic') : p === 'Profession' ? (language === 'ar' ? 'مهني' : 'Profession') : (language === 'ar' ? 'فواتير' : 'Invoice')}
@@ -335,9 +335,9 @@ function StatusesTab() {
           ))}
         </div>
       </div>
-      <table className="w-full text-start">
+      <table className="data-table">
         <thead>
-          <tr className="border-b border-[var(--edge-soft)] text-[10.5px] font-bold uppercase text-[var(--text-secondary)]">
+          <tr>
             <th className="py-2 pe-3">#</th>
             <th className="py-2 pe-3">{language === 'ar' ? 'الحالة' : 'Status'}</th>
             <th className="py-2 pe-3">{language === 'ar' ? 'التكلفة الافتراضية' : 'Default Cost'}</th>
@@ -346,15 +346,15 @@ function StatusesTab() {
         </thead>
         <tbody>
           {filtered.map((s) => (
-            <tr key={s.id} className="border-b border-[var(--edge-soft2)] text-xs last:border-b-0">
-              <td className="py-2 pe-3 text-[var(--text-muted)]">{s.order || '—'}</td>
-              <td className="py-2 pe-3 text-[var(--text-primary)]">
+            <tr key={s.id} className="text-xs">
+              <td className="py-2 pe-3 text-ink-3">{s.order || '-'}</td>
+              <td className="py-2 pe-3 text-ink">
                 {s.label}
-                {s.isException && <span className="ms-1.5 rounded bg-amber-500/20 px-1.5 py-0.5 text-[9px] text-amber-400">exception</span>}
-                {s.isTerminal && !s.isException && <span className="ms-1.5 rounded bg-emerald-500/20 px-1.5 py-0.5 text-[9px] text-emerald-400">terminal</span>}
+                {s.isException && <span className="ms-1.5 rounded-control bg-accent/20 px-1.5 py-0.5 text-[9px] text-accent-text">exception</span>}
+                {s.isTerminal && !s.isException && <span className="ms-1.5 rounded-control bg-pos/20 px-1.5 py-0.5 text-[9px] text-pos">terminal</span>}
               </td>
-              <td className="py-2 pe-3 text-[var(--text-secondary)]">{s.defaultCost > 0 ? `$${s.defaultCost.toFixed(2)}` : '—'}</td>
-              <td className="py-2 text-[var(--text-muted)]">{s.costNote}</td>
+              <td className="py-2 pe-3 text-ink-2">{s.defaultCost > 0 ? `$${s.defaultCost.toFixed(2)}` : '-'}</td>
+              <td className="py-2 text-ink-3">{s.costNote}</td>
             </tr>
           ))}
         </tbody>

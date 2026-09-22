@@ -33,27 +33,27 @@ export default function StaffList() {
         }
       />
 
-      <div className="overflow-x-auto rounded-lg border border-[var(--edge)] bg-[var(--surface)]">
-        <table className="w-full text-start">
+      <div className="overflow-x-auto rounded-panel border border-line bg-surface">
+        <table className="data-table">
           <thead>
-            <tr className="border-b border-[var(--edge-soft)] text-[10.5px] font-bold uppercase text-[var(--text-secondary)]">
+            <tr>
               <th className="px-4 py-3">{t('label_name')}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'الدور' : 'Role'}</th>
               <th className="px-4 py-3">{t('label_email')}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'الطلبات المعالجة' : 'Requests Handled'}</th>
               <th className="px-4 py-3">{t('label_status')}</th>
-              <th className="sticky end-0 bg-[var(--surface)] px-4 py-3 text-end">{t('label_action')}</th>
+              <th className="sticky end-0 bg-surface px-4 py-3 text-end">{t('label_action')}</th>
             </tr>
           </thead>
           <tbody>
             {staff.map((m) => {
               const handled = requests.filter((r) => r.responsibleEmployeeId === m.id).length
               return (
-                <tr key={m.id} className="border-b border-[var(--edge-soft2)] text-xs last:border-b-0 hover:bg-[var(--surface-hover)]">
+                <tr key={m.id} className="text-xs">
                   <td className="px-4 py-3">
-                    <span className="flex items-center gap-2.5 text-[var(--text-primary)]">
-                      <span className="flex size-7 items-center justify-center rounded-full bg-[var(--surface-hover)]">
-                        <UserCog className="size-3.5 text-[var(--text-muted)]" />
+                    <span className="flex items-center gap-2.5 text-ink">
+                      <span className="flex size-7 items-center justify-center rounded-pill bg-raised">
+                        <UserCog className="size-3.5 text-ink-3" />
                       </span>
                       {tb(m.name)}
                     </span>
@@ -62,27 +62,27 @@ export default function StaffList() {
                     <select
                       value={m.role}
                       onChange={(e) => updateStaffRole(m.id, e.target.value as StaffRole)}
-                      className="rounded border border-[var(--edge)] bg-[var(--input)] px-2 py-1 text-[10.5px] text-[var(--text-primary)] focus:outline-none"
+                      className="rounded-control border border-line bg-sunken px-2 py-1 text-[10.5px] text-ink focus:outline-none"
                     >
                       <option value="admin">{language === 'ar' ? 'مسؤول' : 'Admin'}</option>
                       <option value="user">{language === 'ar' ? 'مستخدم' : 'User'}</option>
                     </select>
                   </td>
-                  <td className="px-4 py-3 text-[var(--text-secondary)]">{m.email}</td>
-                  <td className="px-4 py-3 text-[var(--text-secondary)]">{handled}</td>
+                  <td className="px-4 py-3 text-ink-2">{m.email}</td>
+                  <td className="px-4 py-3 text-ink-2">{handled}</td>
                   <td className="px-4 py-3">
                     <button
                       type="button"
                       onClick={() => toggleStaffActive(m.id)}
-                      className={`rounded px-2 py-0.5 text-[10px] font-bold ${
-                        m.status === 'Active' ? 'bg-emerald-950/80 text-emerald-400' : 'bg-[var(--surface-hover)] text-[var(--text-muted)]'
+                      className={`rounded-control px-2 py-0.5 text-[10px] font-bold ${
+                        m.status === 'Active' ? 'bg-pos-soft text-pos' : 'bg-raised text-ink-3'
                       }`}
                     >
                       {m.status === 'Active' ? t('label_active') : t('label_inactive')}
                     </button>
                   </td>
-                  <td className="sticky end-0 bg-[var(--surface)] px-4 py-3 text-end">
-                    <button type="button" onClick={() => handleDelete(m.id, m.name.en)} className="text-[var(--text-muted)] hover:text-rose-400">
+                  <td className="sticky end-0 bg-surface px-4 py-3 text-end">
+                    <button type="button" onClick={() => handleDelete(m.id, m.name.en)} className="text-ink-3 hover:text-neg">
                       <Trash2 className="size-3.5" />
                     </button>
                   </td>

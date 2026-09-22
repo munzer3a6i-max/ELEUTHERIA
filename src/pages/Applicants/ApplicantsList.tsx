@@ -64,9 +64,9 @@ export default function ApplicantsList() {
             value={query}
             onChange={(e) => setSearchParams(e.target.value ? { q: e.target.value } : {})}
             placeholder={language === 'ar' ? 'ابحث بالاسم أو رقم الجواز...' : 'Search by name or passport no...'}
-            className="w-full rounded border border-[var(--edge)] bg-[var(--input)] py-2 ps-8 pe-3 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+            className="w-full rounded-control border border-line bg-sunken py-2 ps-8 pe-3 text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-focus"
           />
-          <Search className="absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[var(--text-muted)]" />
+          <Search className="absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-ink-3" />
         </div>
         <div className="flex items-center gap-1">
           {TYPE_FILTERS.map((s) => (
@@ -74,8 +74,8 @@ export default function ApplicantsList() {
               key={s}
               type="button"
               onClick={() => setTypeFilter(s)}
-              className={`rounded px-2.5 py-1.5 text-[11px] ${
-                typeFilter === s ? 'bg-[var(--active)] text-amber-500' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
+              className={`rounded-control px-2.5 py-1.5 text-[11px] ${
+                typeFilter === s ? 'bg-accent-soft text-accent-text' : 'text-ink-2 hover:bg-raised'
               }`}
             >
               {s === 'All' ? t('label_all') : s === 'Domestic' ? t('type_domestic') : t('type_profession')}
@@ -88,8 +88,8 @@ export default function ApplicantsList() {
               key={s}
               type="button"
               onClick={() => setStatusFilter(s)}
-              className={`rounded px-2.5 py-1.5 text-[11px] ${
-                statusFilter === s ? 'bg-[var(--active)] text-amber-500' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
+              className={`rounded-control px-2.5 py-1.5 text-[11px] ${
+                statusFilter === s ? 'bg-accent-soft text-accent-text' : 'text-ink-2 hover:bg-raised'
               }`}
             >
               {s === 'All' ? t('label_all') : s}
@@ -98,47 +98,47 @@ export default function ApplicantsList() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-[var(--edge)] bg-[var(--surface)]">
-        <table className="w-full text-start">
+      <div className="overflow-x-auto rounded-panel border border-line bg-surface">
+        <table className="data-table">
           <thead>
-            <tr className="border-b border-[var(--edge-soft)] text-[10.5px] font-bold uppercase text-[var(--text-secondary)]">
+            <tr>
               <th className="px-4 py-3">{t('label_name')}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'المهنة' : 'Profession'}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'النوع' : 'Type'}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'مكتب الاستقدام' : 'Agency'}</th>
               <th className="px-4 py-3">{t('label_status')}</th>
-              <th className="sticky end-0 bg-[var(--surface)] px-4 py-3 text-end">{t('label_action')}</th>
+              <th className="sticky end-0 bg-surface px-4 py-3 text-end">{t('label_action')}</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((a) => {
               const agency = agencies.find((ag) => ag.id === a.recruitmentAgencyId)
               return (
-                <tr key={a.id} className="border-b border-[var(--edge-soft2)] text-xs last:border-b-0 hover:bg-[var(--surface-hover)]">
+                <tr key={a.id} className="text-xs">
                   <td className="px-4 py-3">
                     <Link to={`/applicants/${a.id}`} className="flex items-center gap-2.5">
-                      <span className="flex size-8 items-center justify-center overflow-hidden rounded-full bg-[var(--surface-hover)]">
+                      <span className="flex size-8 items-center justify-center overflow-hidden rounded-pill bg-raised">
                         {a.photoDataUrl ? (
                           <img src={a.photoDataUrl} alt="" className="size-full object-cover" />
                         ) : (
-                          <User className="size-4 text-[var(--text-muted)]" />
+                          <User className="size-4 text-ink-3" />
                         )}
                       </span>
-                      <span className="font-medium text-[var(--text-primary)] hover:text-amber-400">
+                      <span className="font-medium text-ink hover:text-accent-text">
                         {language === 'ar' ? a.arabicName || a.englishName : a.englishName}
                       </span>
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-[var(--text-secondary)]">{a.profession}</td>
-                  <td className="px-4 py-3 text-[var(--text-secondary)]">
+                  <td className="px-4 py-3 text-ink-2">{a.profession}</td>
+                  <td className="px-4 py-3 text-ink-2">
                     {a.type === 'Domestic' ? t('type_domestic') : t('type_profession')}
                   </td>
-                  <td className="px-4 py-3 text-[var(--text-secondary)]">{agency ? tb({ en: agency.englishName, ar: agency.arabicName }) : '—'}</td>
+                  <td className="px-4 py-3 text-ink-2">{agency ? tb({ en: agency.englishName, ar: agency.arabicName }) : '-'}</td>
                   <td className="px-4 py-3">
                     <StatusBadge status={a.status} />
                   </td>
-                  <td className="sticky end-0 bg-[var(--surface)] px-4 py-3 text-end">
-                    <button type="button" onClick={() => handleDelete(a.id, a.englishName)} className="text-[var(--text-muted)] hover:text-rose-400">
+                  <td className="sticky end-0 bg-surface px-4 py-3 text-end">
+                    <button type="button" onClick={() => handleDelete(a.id, a.englishName)} className="text-ink-3 hover:text-neg">
                       <Trash2 className="size-3.5" />
                     </button>
                   </td>
@@ -147,7 +147,7 @@ export default function ApplicantsList() {
             })}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-xs text-[var(--text-muted)]">
+                <td colSpan={6} className="px-4 py-8 text-center text-xs text-ink-3">
                   {language === 'ar' ? 'لا يوجد متقدمون مطابقون' : 'No applicants match your search.'}
                 </td>
               </tr>

@@ -36,8 +36,8 @@ export default function Settings() {
     <div className="flex flex-col gap-4 p-4">
       <PageHeader title={t('nav_settings')} subtitle={language === 'ar' ? 'تفضيلات النظام وملف الشركة' : 'Company profile and system preferences'} />
 
-      <div className="max-w-lg rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-5">
-        <h2 className="mb-4 text-xs font-bold uppercase tracking-[0.3px] text-[var(--text-primary)]">
+      <div className="max-w-lg rounded-panel border border-line bg-surface p-5">
+        <h2 className="mb-4 panel-title">
           {language === 'ar' ? 'التفضيلات' : 'Preferences'}
         </h2>
         <div className="grid grid-cols-2 gap-3">
@@ -56,8 +56,8 @@ export default function Settings() {
         </div>
       </div>
 
-      <div className="max-w-lg rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-5">
-        <h2 className="mb-4 text-xs font-bold uppercase tracking-[0.3px] text-[var(--text-primary)]">
+      <div className="max-w-lg rounded-panel border border-line bg-surface p-5">
+        <h2 className="mb-4 panel-title">
           {language === 'ar' ? 'ملف الشركة' : 'Company Profile'}
         </h2>
         <form onSubmit={handleSubmit}>
@@ -102,21 +102,21 @@ export default function Settings() {
           </Field>
           <div className="mt-2 flex items-center gap-3">
             <PrimaryButton type="submit">{t('action_save')}</PrimaryButton>
-            {saved && <span className="text-[11px] text-emerald-400">{language === 'ar' ? 'تم الحفظ.' : 'Saved.'}</span>}
+            {saved && <span className="text-[11px] text-pos">{language === 'ar' ? 'تم الحفظ.' : 'Saved.'}</span>}
           </div>
         </form>
       </div>
 
-      <div className="max-w-lg rounded-lg border border-rose-900/60 bg-[var(--surface)] p-5">
-        <h2 className="mb-2 text-xs font-bold uppercase tracking-[0.3px] text-rose-400">
+      <div className="max-w-lg rounded-panel border border-neg/40 bg-surface p-5">
+        <h2 className="mb-2 panel-title text-neg">
           {language === 'ar' ? 'منطقة الخطر' : 'Danger Zone'}
         </h2>
-        <p className="mb-3 text-xs text-[var(--text-muted)]">
+        <p className="mb-3 text-xs text-ink-3">
           {language === 'ar'
             ? 'يعيد هذا تعيين المتقدمين وأصحاب العمل ومكاتب الاستقدام والطلبات والفواتير والموظفين إلى بيانات العرض التوضيحي الأصلية.'
             : 'This resets applicants, employers, agencies, requests, invoices, and staff back to the original demo data.'}
         </p>
-        <SecondaryButton onClick={handleReset} className="border-rose-900 text-rose-400 hover:border-rose-700">
+        <SecondaryButton onClick={handleReset} className="border-neg/40 text-neg hover:border-neg">
           {language === 'ar' ? 'إعادة تعيين البيانات' : 'Reset Demo Data'}
         </SecondaryButton>
       </div>

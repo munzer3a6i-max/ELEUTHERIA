@@ -12,11 +12,11 @@ export default function IncomeTable({ invoice, onCreateInvoice }: { invoice: Inv
 
   if (!invoice) {
     return (
-      <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-[13px]">
-        <h2 className="mb-2 text-[11px] font-bold uppercase tracking-[0.55px] text-[var(--text-secondary)]">
+      <div className="rounded-panel border border-line bg-surface p-[13px]">
+        <h2 className="mb-2 text-[11px] font-semibold text-ink-3">
           {language === 'ar' ? 'الدخل من العميل' : 'Income From Client'}
         </h2>
-        <p className="mb-3 text-[11px] text-[var(--text-muted)]">
+        <p className="mb-3 text-[11px] text-ink-3">
           {language === 'ar' ? 'لا توجد فاتورة لهذا الطلب بعد.' : 'No invoice exists for this request yet.'}
         </p>
         <SecondaryButton onClick={onCreateInvoice}>{language === 'ar' ? 'إنشاء فاتورة' : 'Create Invoice'}</SecondaryButton>
@@ -27,21 +27,21 @@ export default function IncomeTable({ invoice, onCreateInvoice }: { invoice: Inv
   const totalIncome = invoiceTotalPaid(invoice)
 
   return (
-    <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-[13px]">
+    <div className="rounded-panel border border-line bg-surface p-[13px]">
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-[11px] font-bold uppercase tracking-[0.55px] text-[var(--text-secondary)]">
+        <h2 className="text-[11px] font-semibold text-ink-3">
           {language === 'ar' ? 'الدخل من العميل' : 'Income From Client'}
         </h2>
         <button
           type="button"
           onClick={() => setPaymentOpen(true)}
-          className="flex items-center gap-1 rounded bg-emerald-700 px-2.5 py-1 text-[10px] font-bold text-white hover:bg-emerald-600"
+          className="flex items-center gap-1 rounded-control bg-pos px-2.5 py-1 text-[10px] font-semibold text-page hover:opacity-90"
         >
           <Plus className="size-2.5" /> {language === 'ar' ? 'إضافة دفعة' : 'Add Payment'}
         </button>
       </div>
 
-      <div className="mb-2 flex items-center justify-between text-[11px] text-[var(--text-secondary)]">
+      <div className="mb-2 flex items-center justify-between text-[11px] text-ink-2">
         <span>
           {invoice.invoiceNumber} · {invoice.status}
         </span>
@@ -51,25 +51,25 @@ export default function IncomeTable({ invoice, onCreateInvoice }: { invoice: Inv
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[400px] border-collapse text-start">
+        <table className="data-table min-w-[400px]">
           <thead>
-            <tr className="border-b border-[var(--edge-soft)]">
-              <th className="px-2 pb-3.5 pt-2 text-[10.5px] font-semibold text-[var(--text-secondary)]">#</th>
-              <th className="px-2 pb-3.5 pt-2 text-[10.5px] font-semibold text-[var(--text-secondary)]">{t('label_date')}</th>
-              <th className="px-2 pb-3.5 pt-2 text-end text-[10.5px] font-semibold text-[var(--text-secondary)]">{t('label_amount')} (USD)</th>
+            <tr>
+              <th className="px-2 pb-3.5 pt-2 text-[10.5px] font-semibold text-ink-2">#</th>
+              <th className="px-2 pb-3.5 pt-2 text-[10.5px] font-semibold text-ink-2">{t('label_date')}</th>
+              <th className="px-2 pb-3.5 pt-2 text-end text-[10.5px] font-semibold text-ink-2">{t('label_amount')} (USD)</th>
             </tr>
           </thead>
           <tbody>
             {invoice.payments.map((p, i) => (
-              <tr key={p.id} className="border-t border-[var(--edge-soft2)] first:border-t-0">
-                <td className="px-2 py-3.5 text-[10.5px] text-[var(--text-muted)]">{i + 1}</td>
-                <td className="px-2 py-3.5 text-[10.5px] text-[var(--text-secondary)]">{p.date}</td>
-                <td className="px-2 py-3.5 text-end text-[10.5px] text-[var(--text-primary)]">{formatMoney(p.amount)}</td>
+              <tr key={p.id} className="border-t border-line first:border-t-0">
+                <td className="px-2 py-3.5 text-[10.5px] text-ink-3">{i + 1}</td>
+                <td className="px-2 py-3.5 text-[10.5px] text-ink-2">{p.date}</td>
+                <td className="px-2 py-3.5 text-end text-[10.5px] text-ink">{formatMoney(p.amount)}</td>
               </tr>
             ))}
             {invoice.payments.length === 0 && (
               <tr>
-                <td colSpan={3} className="px-2 py-6 text-center text-[11px] text-[var(--text-muted)]">
+                <td colSpan={3} className="px-2 py-6 text-center text-[11px] text-ink-3">
                   {language === 'ar' ? 'لا توجد دفعات مسجلة بعد.' : 'No payments recorded yet.'}
                 </td>
               </tr>
@@ -78,11 +78,11 @@ export default function IncomeTable({ invoice, onCreateInvoice }: { invoice: Inv
         </table>
       </div>
 
-      <div className="mt-1 flex items-center justify-between border-t border-[var(--edge-soft)] pt-2.5">
-        <span className="text-xs font-bold uppercase tracking-[0.3px] text-emerald-400">
+      <div className="mt-1 flex items-center justify-between border-t border-line pt-2.5">
+        <span className="panel-title text-pos">
           {language === 'ar' ? 'إجمالي الدخل' : 'Total Income'}
         </span>
-        <span className="text-sm font-bold tracking-[0.35px] text-emerald-400">{formatMoney(totalIncome)}</span>
+        <span className="text-sm font-bold tracking-[0.35px] text-pos">{formatMoney(totalIncome)}</span>
       </div>
 
       {paymentOpen && <LogPaymentModal invoiceId={invoice.id} onClose={() => setPaymentOpen(false)} />}
@@ -113,7 +113,7 @@ function LogPaymentModal({ invoiceId, onClose }: { invoiceId: string; onClose: (
   return (
     <Modal title={language === 'ar' ? 'إضافة دفعة' : 'Add Payment'} onClose={onClose}>
       <form onSubmit={handleSubmit}>
-        <p className="mb-3 text-[11px] text-[var(--text-muted)]">
+        <p className="mb-3 text-[11px] text-ink-3">
           {language === 'ar' ? 'الرصيد المتبقي' : 'Remaining balance'}: {formatMoney(balance)}
         </p>
         <Field label={`${t('label_amount')} (USD)`}>

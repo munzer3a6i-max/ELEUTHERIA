@@ -61,8 +61,8 @@ export default function RequestsList() {
             key={s}
             type="button"
             onClick={() => setTypeFilter(s)}
-            className={`rounded px-3 py-1.5 text-[11px] ${
-              typeFilter === s ? 'bg-[var(--active)] text-amber-500' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
+            className={`rounded-control px-3 py-1.5 text-[11px] ${
+              typeFilter === s ? 'bg-accent-soft text-accent-text' : 'text-ink-2 hover:bg-raised'
             }`}
           >
             {s === 'All' ? t('label_all') : s === 'Domestic' ? t('type_domestic') : t('type_profession')}
@@ -70,17 +70,17 @@ export default function RequestsList() {
         ))}
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-[var(--edge)] bg-[var(--surface)]">
-        <table className="w-full text-start">
+      <div className="overflow-x-auto rounded-panel border border-line bg-surface">
+        <table className="data-table">
           <thead>
-            <tr className="border-b border-[var(--edge-soft)] text-[10.5px] font-bold uppercase text-[var(--text-secondary)]">
+            <tr>
               <th className="px-4 py-3">{language === 'ar' ? 'المتقدم' : 'Applicant'}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'صاحب العمل' : 'Employer'}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'النوع' : 'Type'}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'الحالة الحالية' : 'Current Status'}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'الموظف المسؤول' : 'Officer'}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'مكتب الاستقدام' : 'Agency'}</th>
-              <th className="sticky end-0 bg-[var(--surface)] px-4 py-3 text-end">{t('label_action')}</th>
+              <th className="sticky end-0 bg-surface px-4 py-3 text-end">{t('label_action')}</th>
             </tr>
           </thead>
           <tbody>
@@ -91,31 +91,31 @@ export default function RequestsList() {
               const officer = staff.find((s) => s.id === r.responsibleEmployeeId)
               const status = currentStatus(r)
               return (
-                <tr key={r.id} className="border-b border-[var(--edge-soft2)] text-xs last:border-b-0 hover:bg-[var(--surface-hover)]">
+                <tr key={r.id} className="text-xs">
                   <td className="px-4 py-3">
-                    <Link to={`/recruitments/${r.id}`} className="font-medium text-[var(--text-primary)] hover:text-amber-400">
-                      {applicant ? (language === 'ar' ? applicant.arabicName || applicant.englishName : applicant.englishName) : '—'}
+                    <Link to={`/recruitments/${r.id}`} className="font-medium text-ink hover:text-accent-text">
+                      {applicant ? (language === 'ar' ? applicant.arabicName || applicant.englishName : applicant.englishName) : '-'}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-[var(--text-secondary)]">
-                    {employer ? tb({ en: employer.englishName, ar: employer.arabicName }) : '—'}
+                  <td className="px-4 py-3 text-ink-2">
+                    {employer ? tb({ en: employer.englishName, ar: employer.arabicName }) : '-'}
                   </td>
-                  <td className="px-4 py-3 text-[var(--text-secondary)]">
+                  <td className="px-4 py-3 text-ink-2">
                     {r.type === 'Domestic' ? t('type_domestic') : t('type_profession')}
                   </td>
                   <td className="px-4 py-3">
                     {status ? (
-                      <span className="rounded border border-blue-500/50 bg-blue-900/60 px-2 py-0.5 text-[10px] text-blue-300">{status}</span>
+                      <span className="rounded-control border border-info/40 bg-info-soft px-2 py-0.5 text-[10px] text-info">{status}</span>
                     ) : (
-                      <span className="rounded border border-[var(--edge-strong)] bg-[var(--surface-hover)] px-2 py-0.5 text-[10px] text-[var(--text-muted)]">
+                      <span className="rounded-control border border-line-strong bg-raised px-2 py-0.5 text-[10px] text-ink-3">
                         {language === 'ar' ? 'لم يبدأ' : 'Not started'}
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-[var(--text-secondary)]">{officer ? tb(officer.name) : '—'}</td>
-                  <td className="px-4 py-3 text-[var(--text-secondary)]">{agency ? tb({ en: agency.englishName, ar: agency.arabicName }) : '—'}</td>
-                  <td className="sticky end-0 bg-[var(--surface)] px-4 py-3 text-end">
-                    <button type="button" onClick={() => handleDelete(r.id)} className="text-[var(--text-muted)] hover:text-rose-400">
+                  <td className="px-4 py-3 text-ink-2">{officer ? tb(officer.name) : '-'}</td>
+                  <td className="px-4 py-3 text-ink-2">{agency ? tb({ en: agency.englishName, ar: agency.arabicName }) : '-'}</td>
+                  <td className="sticky end-0 bg-surface px-4 py-3 text-end">
+                    <button type="button" onClick={() => handleDelete(r.id)} className="text-ink-3 hover:text-neg">
                       <Trash2 className="size-3.5" />
                     </button>
                   </td>
@@ -124,7 +124,7 @@ export default function RequestsList() {
             })}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-xs text-[var(--text-muted)]">
+                <td colSpan={7} className="px-4 py-8 text-center text-xs text-ink-3">
                   {language === 'ar' ? 'لا توجد طلبات مطابقة' : 'No requests match your filters.'}
                 </td>
               </tr>
@@ -214,7 +214,7 @@ function NewRequestModal({
           </Field>
         </div>
 
-        <label className="mb-1.5 flex items-center gap-2 text-[11px] text-[var(--text-secondary)]">
+        <label className="mb-1.5 flex items-center gap-2 text-[11px] text-ink-2">
           <input type="checkbox" checked={onlyAvailable} onChange={(e) => setOnlyAvailable(e.target.checked)} />
           {language === 'ar' ? 'عرض المتقدمين المتاحين فقط' : 'Show only Available applicants'}
         </label>
@@ -227,7 +227,7 @@ function NewRequestModal({
           />
         </Field>
 
-        <label className="mb-1.5 flex items-center gap-2 text-[11px] text-[var(--text-secondary)]">
+        <label className="mb-1.5 flex items-center gap-2 text-[11px] text-ink-2">
           <input type="checkbox" checked={onlyActive} onChange={(e) => setOnlyActive(e.target.checked)} />
           {language === 'ar' ? 'عرض أصحاب العمل النشطين فقط' : 'Show only Active employers'}
         </label>
@@ -266,7 +266,7 @@ function NewRequestModal({
             value={mosanedNumber}
             onChange={(e) => setMosanedNumber(e.target.value)}
             placeholder="MSD-2024-00000"
-            className="w-full rounded border border-[var(--edge)] bg-[var(--input)] px-3 py-2 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-amber-500/60"
+            className="w-full rounded-control border border-line bg-sunken px-3 py-2 text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-focus"
           />
         </Field>
 

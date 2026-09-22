@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom'
 import { Building, Plus, Trash2 } from 'lucide-react'
-import { useAppStore, formatMoney } from '../../store/useAppStore'
-import { useTranslation } from '../../i18n/useTranslation'
-import StatusBadge from '../../components/StatusBadge'
-import Card from '../../components/Card'
+import { useAppStore, formatMoney } from '../../../store/useAppStore'
+import { useTranslation } from '../../../i18n/useTranslation'
+import StatusBadge from '../../../components/StatusBadge'
+import Card from '../../../components/Card'
 
 export default function OfficeExpensesPanel({
   currency,
@@ -32,20 +32,20 @@ export default function OfficeExpensesPanel({
           <button
             type="button"
             onClick={onAddExpense}
-            className="flex items-center gap-1 rounded border border-[var(--edge-strong)] px-2 py-1.5 text-[11px] text-[var(--text-secondary)] hover:border-amber-500/40 hover:text-amber-400"
+            className="flex items-center gap-1 rounded-control border border-line-strong px-2 py-1.5 text-[11px] text-ink-2 hover:border-accent-line hover:text-accent-text"
           >
             <Plus className="size-3" /> {t('action_add')}
           </button>
-          <Link to="/accounting/office-expenses" className="text-[11px] text-amber-400 hover:text-amber-300">
+          <Link to="/accounting/office-expenses" className="text-[11px] text-accent-text hover:text-accent">
             {t('fin_view_all')}
           </Link>
         </>
       }
       bodyClassName="overflow-x-auto"
     >
-      <table className="w-full text-start">
+      <table className="data-table">
         <thead>
-          <tr className="border-b border-[var(--edge-soft)] text-[10px] font-bold uppercase text-[var(--text-secondary)]">
+          <tr>
             <th className="px-1.5 py-2.5 text-start">{t('fin_item')}</th>
             <th className="px-1.5 py-2.5 text-end">{t('label_amount')}</th>
             <th className="px-1 py-2.5 text-start">{t('label_date')}</th>
@@ -54,15 +54,15 @@ export default function OfficeExpensesPanel({
         </thead>
         <tbody>
           {rows.map((expense) => (
-            <tr key={expense.id} className="border-b border-[var(--edge-soft2)] text-xs last:border-b-0 hover:bg-[var(--surface-hover)]">
+            <tr key={expense.id} className="text-xs">
               <td className="px-1.5 py-2.5">
-                <span className="block font-medium text-[var(--text-primary)]">{tb(expense.item)}</span>
-                <span className="block text-[10px] text-[var(--text-muted)]">{expense.category}</span>
+                <span className="block font-medium text-ink">{tb(expense.item)}</span>
+                <span className="block text-[10px] text-ink-3">{expense.category}</span>
               </td>
-              <td className="whitespace-nowrap px-1.5 py-2.5 text-end tabular-nums text-[var(--text-primary)]">
+              <td className="whitespace-nowrap px-1.5 py-2.5 text-end num text-ink">
                 {formatMoney(expense.amount, currency, 0)}
               </td>
-              <td className="whitespace-nowrap px-1 py-2.5 tabular-nums text-[var(--text-secondary)]">
+              <td className="whitespace-nowrap px-1 py-2.5 num text-ink-2">
                 {shortDate(expense.date)}
               </td>
               <td className="px-1.5 py-2.5">
@@ -79,7 +79,7 @@ export default function OfficeExpensesPanel({
                     type="button"
                     onClick={() => deleteOfficeExpense(expense.id)}
                     title={t('action_delete')}
-                    className="text-[var(--text-muted)] hover:text-rose-400"
+                    className="text-ink-3 hover:text-neg"
                   >
                     <Trash2 className="size-3" />
                   </button>
@@ -89,7 +89,7 @@ export default function OfficeExpensesPanel({
           ))}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={4} className="px-3 py-8 text-center text-xs text-[var(--text-muted)]">
+              <td colSpan={4} className="px-3 py-8 text-center text-xs text-ink-3">
                 {t('fin_no_data')}
               </td>
             </tr>
@@ -97,9 +97,9 @@ export default function OfficeExpensesPanel({
         </tbody>
         {rows.length > 0 && (
           <tfoot>
-            <tr className="bg-[var(--surface-hover)] text-xs font-bold text-[var(--text-primary)]">
+            <tr>
               <td className="px-1.5 py-2.5">{t('fin_total')}</td>
-              <td className="whitespace-nowrap px-1.5 py-2.5 text-end tabular-nums">{formatMoney(total, currency, 0)}</td>
+              <td className="whitespace-nowrap px-1.5 py-2.5 text-end num">{formatMoney(total, currency, 0)}</td>
               <td colSpan={2} />
             </tr>
           </tfoot>

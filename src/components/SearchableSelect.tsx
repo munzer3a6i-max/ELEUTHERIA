@@ -48,22 +48,22 @@ export default function SearchableSelect({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between rounded border border-[var(--edge)] bg-[var(--input)] px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-amber-500/60"
+        className="flex w-full items-center justify-between rounded-control border border-line bg-sunken px-3 py-2 text-xs text-ink focus:outline-none focus:ring-1 focus:ring-focus"
       >
-        <span className={selected ? '' : 'text-[var(--text-muted)]'}>{selected ? selected.label : placeholder}</span>
-        <ChevronDown className="size-3.5 text-[var(--text-muted)]" />
+        <span className={selected ? '' : 'text-ink-3'}>{selected ? selected.label : placeholder}</span>
+        <ChevronDown className="size-3.5 text-ink-3" />
       </button>
 
       {open && (
-        <div className="absolute z-30 mt-1 w-full overflow-hidden rounded border border-[var(--edge)] bg-[var(--surface)] shadow-xl">
-          <div className="flex items-center gap-2 border-b border-[var(--edge)] px-2.5 py-2">
-            <Search className="size-3.5 text-[var(--text-muted)]" />
+        <div className="absolute z-30 mt-1 w-full overflow-hidden rounded-control border border-line bg-surface shadow-xl">
+          <div className="flex items-center gap-2 border-b border-line px-2.5 py-2">
+            <Search className="size-3.5 text-ink-3" />
             <input
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={placeholder}
-              className="w-full bg-transparent text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none"
+              className="w-full bg-transparent text-xs text-ink placeholder:text-ink-3 focus:outline-none"
             />
           </div>
           <div className="max-h-56 overflow-y-auto py-1">
@@ -76,16 +76,16 @@ export default function SearchableSelect({
                   setOpen(false)
                   setQuery('')
                 }}
-                className={`block w-full px-3 py-2 text-start text-xs hover:bg-[var(--surface-hover)] ${
-                  o.value === value ? 'text-amber-400' : 'text-[var(--text-primary)]'
+                className={`block w-full px-3 py-2 text-start text-xs hover:bg-raised ${
+                  o.value === value ? 'text-accent-text' : 'text-ink'
                 }`}
               >
                 {o.label}
-                {o.sublabel && <span className="ms-1.5 text-[var(--text-muted)]">· {o.sublabel}</span>}
+                {o.sublabel && <span className="ms-1.5 text-ink-3">· {o.sublabel}</span>}
               </button>
             ))}
             {filtered.length === 0 && (
-              <p className="px-3 py-3 text-center text-[11px] text-[var(--text-muted)]">{emptyText}</p>
+              <p className="px-3 py-3 text-center text-[11px] text-ink-3">{emptyText}</p>
             )}
           </div>
         </div>

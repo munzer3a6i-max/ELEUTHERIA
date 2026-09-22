@@ -17,8 +17,8 @@ export default function NotesTab({ applicant }: { applicant: Applicant }) {
   }
 
   return (
-    <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-5">
-      <h2 className="mb-4 text-xs font-bold uppercase tracking-[0.3px] text-[var(--text-primary)]">
+    <div className="rounded-panel border border-line bg-surface p-5">
+      <h2 className="mb-4 panel-title">
         {language === 'ar' ? 'ملاحظات وسجل' : 'Notes & History'}
       </h2>
 
@@ -35,18 +35,18 @@ export default function NotesTab({ applicant }: { applicant: Applicant }) {
         </PrimaryButton>
       </form>
 
-      <div className="flex flex-col divide-y divide-[var(--edge-soft2)]">
+      <div className="flex flex-col divide-y divide-line">
         {applicant.notes.map((note) => (
           <div key={note.id} className="py-3">
             <div className="mb-1 flex items-center justify-between">
-              <span className="text-xs font-medium text-[var(--text-primary)]">{note.author}</span>
-              <span className="text-[10px] text-[var(--text-muted)]">{note.date}</span>
+              <span className="text-xs font-medium text-ink">{note.author}</span>
+              <span className="text-[10px] text-ink-3">{note.date}</span>
             </div>
-            <p className="text-xs text-[var(--text-secondary)]">{note.text}</p>
+            <p className="text-xs text-ink-2">{note.text}</p>
           </div>
         ))}
         {applicant.notes.length === 0 && (
-          <p className="py-6 text-center text-xs text-[var(--text-muted)]">
+          <p className="py-6 text-center text-xs text-ink-3">
             {language === 'ar' ? 'لا توجد ملاحظات بعد.' : 'No notes yet.'}
           </p>
         )}

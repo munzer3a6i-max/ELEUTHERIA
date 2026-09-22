@@ -35,8 +35,8 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
   return (
     <div className="grid grid-cols-3 gap-4">
       <div className="col-span-2 flex flex-col gap-4">
-        <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-4">
-          <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.3px] text-[var(--text-primary)]">
+        <div className="rounded-panel border border-line bg-surface p-4">
+          <h2 className="mb-3 panel-title">
             {language === 'ar' ? 'المعلومات الأساسية' : 'Basic Information'}
           </h2>
           <div className="grid grid-cols-3 gap-x-6 gap-y-2 text-[11px]">
@@ -70,22 +70,22 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
           </div>
         </div>
 
-        <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-4">
+        <div className="rounded-panel border border-line bg-surface p-4">
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-xs font-bold uppercase tracking-[0.3px] text-[var(--text-primary)]">
+            <h2 className="panel-title">
               {language === 'ar' ? 'السيرة الذاتية' : 'CV'}
             </h2>
-            <label className="flex cursor-pointer items-center gap-1.5 rounded bg-amber-600 px-3 py-1.5 text-[11px] font-bold text-slate-950 hover:bg-amber-500">
+            <label className="flex cursor-pointer items-center gap-1.5 rounded-control bg-accent px-3 py-1.5 text-[11px] font-bold text-accent-ink hover:bg-accent">
               <Upload className="size-3.5" /> {language === 'ar' ? 'رفع السيرة الذاتية' : 'Upload CV'}
               <input type="file" className="hidden" onChange={handleCv} />
             </label>
           </div>
           <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
-              <FileText className="size-4 text-[var(--text-muted)]" />
+            <span className="flex items-center gap-2 text-xs text-ink-2">
+              <FileText className="size-4 text-ink-3" />
               {applicant.cvFileName ?? (language === 'ar' ? 'لم يتم رفع سيرة ذاتية' : 'No CV uploaded')}
             </span>
-            <label className="flex items-center gap-2 text-[11px] text-[var(--text-secondary)]">
+            <label className="flex items-center gap-2 text-[11px] text-ink-2">
               <input
                 type="checkbox"
                 checked={applicant.cvLinkedToWebsite}
@@ -97,70 +97,70 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
           </div>
         </div>
 
-        <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-4">
+        <div className="rounded-panel border border-line bg-surface p-4">
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-xs font-bold uppercase tracking-[0.3px] text-[var(--text-primary)]">
+            <h2 className="panel-title">
               {language === 'ar' ? 'الخبرات' : 'Experience'}
             </h2>
             <button
               type="button"
               onClick={() => setExpOpen(true)}
-              className="flex items-center gap-1 rounded border border-[var(--edge-strong)] bg-[var(--surface-hover)] px-2.5 py-1 text-[11px] text-[var(--text-secondary)] hover:border-amber-500/40"
+              className="flex items-center gap-1 rounded-control border border-line-strong bg-raised px-2.5 py-1 text-[11px] text-ink-2 hover:border-accent-line"
             >
               <Plus className="size-3" /> {t('action_add')}
             </button>
           </div>
-          <div className="flex flex-col divide-y divide-[var(--edge-soft2)]">
+          <div className="flex flex-col divide-y divide-line">
             {applicant.experience.map((exp) => (
               <div key={exp.id} className="flex items-center justify-between py-2 text-xs">
                 <div>
-                  <p className="text-[var(--text-primary)]">{exp.title}</p>
-                  <p className="text-[10px] text-[var(--text-muted)]">
+                  <p className="text-ink">{exp.title}</p>
+                  <p className="text-[10px] text-ink-3">
                     {exp.employer} · {exp.years} {language === 'ar' ? 'سنوات' : 'yrs'}
                   </p>
                 </div>
-                <button type="button" onClick={() => deleteExperience(applicant.id, exp.id)} className="text-[var(--text-muted)] hover:text-rose-400">
+                <button type="button" onClick={() => deleteExperience(applicant.id, exp.id)} className="text-ink-3 hover:text-neg">
                   <Trash2 className="size-3.5" />
                 </button>
               </div>
             ))}
             {applicant.experience.length === 0 && (
-              <p className="py-4 text-center text-[11px] text-[var(--text-muted)]">
+              <p className="py-4 text-center text-[11px] text-ink-3">
                 {language === 'ar' ? 'لا توجد خبرات مسجلة' : 'No experience recorded.'}
               </p>
             )}
           </div>
         </div>
 
-        <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-4">
+        <div className="rounded-panel border border-line bg-surface p-4">
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-xs font-bold uppercase tracking-[0.3px] text-[var(--text-primary)]">
+            <h2 className="panel-title">
               {language === 'ar' ? 'التعليم' : 'Education'}
             </h2>
             <button
               type="button"
               onClick={() => setEduOpen(true)}
-              className="flex items-center gap-1 rounded border border-[var(--edge-strong)] bg-[var(--surface-hover)] px-2.5 py-1 text-[11px] text-[var(--text-secondary)] hover:border-amber-500/40"
+              className="flex items-center gap-1 rounded-control border border-line-strong bg-raised px-2.5 py-1 text-[11px] text-ink-2 hover:border-accent-line"
             >
               <Plus className="size-3" /> {t('action_add')}
             </button>
           </div>
-          <div className="flex flex-col divide-y divide-[var(--edge-soft2)]">
+          <div className="flex flex-col divide-y divide-line">
             {applicant.education.map((edu) => (
               <div key={edu.id} className="flex items-center justify-between py-2 text-xs">
                 <div>
-                  <p className="text-[var(--text-primary)]">{edu.degree}</p>
-                  <p className="text-[10px] text-[var(--text-muted)]">
+                  <p className="text-ink">{edu.degree}</p>
+                  <p className="text-[10px] text-ink-3">
                     {edu.institution} · {edu.year}
                   </p>
                 </div>
-                <button type="button" onClick={() => deleteEducation(applicant.id, edu.id)} className="text-[var(--text-muted)] hover:text-rose-400">
+                <button type="button" onClick={() => deleteEducation(applicant.id, edu.id)} className="text-ink-3 hover:text-neg">
                   <Trash2 className="size-3.5" />
                 </button>
               </div>
             ))}
             {applicant.education.length === 0 && (
-              <p className="py-4 text-center text-[11px] text-[var(--text-muted)]">
+              <p className="py-4 text-center text-[11px] text-ink-3">
                 {language === 'ar' ? 'لا يوجد تعليم مسجل' : 'No education recorded.'}
               </p>
             )}
@@ -169,17 +169,17 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
       </div>
 
       <div className="flex flex-col gap-4">
-        <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-4">
-          <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.3px] text-[var(--text-primary)]">
+        <div className="rounded-panel border border-line bg-surface p-4">
+          <h2 className="mb-3 panel-title">
             {language === 'ar' ? 'مكتب الاستقدام' : 'Recruitment Agency'}
           </h2>
           {agency ? (
             <div className="text-xs">
-              <p className="font-medium text-[var(--text-primary)]">{tb({ en: agency.englishName, ar: agency.arabicName })}</p>
-              <p className="mt-1 text-[var(--text-muted)]">{agency.phone}</p>
+              <p className="font-medium text-ink">{tb({ en: agency.englishName, ar: agency.arabicName })}</p>
+              <p className="mt-1 text-ink-3">{agency.phone}</p>
             </div>
           ) : (
-            <p className="text-[11px] text-[var(--text-muted)]">
+            <p className="text-[11px] text-ink-3">
               {applicant.type === 'Domestic'
                 ? language === 'ar'
                   ? 'العمالة المنزلية تتطلب عادة مكتب استقدام.'
@@ -191,8 +191,8 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
           )}
         </div>
 
-        <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-4">
-          <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.3px] text-[var(--text-primary)]">
+        <div className="rounded-panel border border-line bg-surface p-4">
+          <h2 className="mb-3 panel-title">
             {language === 'ar' ? 'طلبات الاستقدام' : 'Recruitment Requests'}
           </h2>
           <div className="flex flex-col gap-3">
@@ -203,19 +203,19 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
                 <Link
                   key={r.id}
                   to={`/recruitments/${r.id}`}
-                  className="block rounded border border-[var(--edge-soft2)] bg-[var(--input)] p-3 text-xs hover:border-amber-500/40"
+                  className="block rounded-control border border-line bg-sunken p-3 text-xs hover:border-accent-line"
                 >
-                  <p className="font-medium text-[var(--text-primary)]">
-                    {employer ? tb({ en: employer.englishName, ar: employer.arabicName }) : '—'}
+                  <p className="font-medium text-ink">
+                    {employer ? tb({ en: employer.englishName, ar: employer.arabicName }) : '-'}
                   </p>
-                  <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">
-                    {language === 'ar' ? 'الموظف المسؤول' : 'Responsible officer'}: {officer ? tb(officer.name) : '—'}
+                  <p className="mt-0.5 text-[10px] text-ink-3">
+                    {language === 'ar' ? 'الموظف المسؤول' : 'Responsible officer'}: {officer ? tb(officer.name) : '-'}
                   </p>
                 </Link>
               )
             })}
             {requests.length === 0 && (
-              <p className="text-[11px] text-[var(--text-muted)]">
+              <p className="text-[11px] text-ink-3">
                 {language === 'ar' ? 'لا توجد طلبات استقدام مرتبطة بعد.' : 'No recruitment requests yet.'}
               </p>
             )}
@@ -266,9 +266,9 @@ function MetaField({
   if (readOnly || !onSave) {
     return (
       <div>
-        <p className="text-[var(--text-muted)]">{label}</p>
-        <p className="mt-0.5 text-[var(--text-primary)]" dir={dir}>
-          {value || '—'}
+        <p className="text-ink-3">{label}</p>
+        <p className="mt-0.5 text-ink" dir={dir}>
+          {value || '-'}
         </p>
       </div>
     )
@@ -277,7 +277,7 @@ function MetaField({
   if (editing) {
     return (
       <div>
-        <p className="mb-0.5 text-[var(--text-muted)]">{label}</p>
+        <p className="mb-0.5 text-ink-3">{label}</p>
         <input
           autoFocus
           type={type}
@@ -294,7 +294,7 @@ function MetaField({
               setEditing(false)
             }
           }}
-          className="w-full rounded border border-amber-500/50 bg-[var(--input)] px-1.5 py-0.5 text-[11px] text-[var(--text-primary)] focus:outline-none"
+          className="w-full rounded-control border border-accent-line bg-sunken px-1.5 py-0.5 text-[11px] text-ink focus:outline-none"
         />
       </div>
     )
@@ -302,9 +302,9 @@ function MetaField({
 
   return (
     <button type="button" onClick={() => setEditing(true)} className="text-start">
-      <p className="text-[var(--text-muted)]">{label}</p>
-      <p className="mt-0.5 text-[var(--text-primary)] hover:text-amber-400" dir={dir}>
-        {value || '—'}
+      <p className="text-ink-3">{label}</p>
+      <p className="mt-0.5 text-ink hover:text-accent-text" dir={dir}>
+        {value || '-'}
       </p>
     </button>
   )

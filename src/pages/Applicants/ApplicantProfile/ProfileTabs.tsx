@@ -21,7 +21,7 @@ export default function ProfileTabs({
   ]
 
   return (
-    <div className="flex items-center gap-1 border-b border-[var(--edge-soft)] pt-1">
+    <div className="flex items-center gap-1 border-b border-line pt-1">
       {tabs.map((tab) => {
         const isActive = tab.key === active
         const Icon = tab.icon
@@ -32,12 +32,12 @@ export default function ProfileTabs({
             onClick={() => onChange(tab.key)}
             className={`flex items-center gap-1.5 rounded-t px-3 pb-2.5 pt-2 text-[11px] transition-colors ${
               isActive
-                ? 'border-b-2 border-amber-500 bg-[var(--active)]/50 font-bold text-amber-500'
-                : 'border-b-2 border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                ? 'border-b-2 border-accent-line bg-accent-soft/50 font-bold text-accent-text'
+                : 'border-b-2 border-transparent text-ink-2 hover:text-ink'
             }`}
           >
             {isActive && tab.key === 'financial' ? (
-              <span className="flex size-4 items-center justify-center rounded-full bg-amber-500/20 text-[10px] font-bold text-amber-500">
+              <span className="flex size-4 items-center justify-center rounded-pill bg-accent/20 text-[10px] font-bold text-accent-text">
                 $
               </span>
             ) : (

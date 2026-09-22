@@ -67,7 +67,7 @@ export default function StatusUpdateModal({
             ))}
           </SelectInput>
         </Field>
-        {selectedDef?.costNote && <p className="-mt-2 mb-3 text-[10px] text-[var(--text-muted)]">{selectedDef.costNote}</p>}
+        {selectedDef?.costNote && <p className="-mt-2 mb-3 text-[10px] text-ink-3">{selectedDef.costNote}</p>}
         <div className="grid grid-cols-2 gap-3">
           <Field label={t('label_date')}>
             <TextInput type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
@@ -100,9 +100,9 @@ export default function StatusUpdateModal({
           <input
             type="file"
             onChange={(e) => setAttachmentName(e.target.files?.[0]?.name ?? attachmentName)}
-            className="block w-full text-[11px] text-[var(--text-secondary)] file:me-2 file:rounded file:border-0 file:bg-[var(--surface-hover)] file:px-2 file:py-1 file:text-[11px] file:text-[var(--text-secondary)]"
+            className="block w-full text-[11px] text-ink-2 file:me-2 file:rounded-control file:border-0 file:bg-raised file:px-2 file:py-1 file:text-[11px] file:text-ink-2"
           />
-          {attachmentName && <p className="mt-1 text-[10px] text-[var(--text-muted)]">{attachmentName}</p>}
+          {attachmentName && <p className="mt-1 text-[10px] text-ink-3">{attachmentName}</p>}
         </Field>
         <Field label={language === 'ar' ? 'ملاحظات' : 'Notes'}>
           <TextArea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />

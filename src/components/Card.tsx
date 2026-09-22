@@ -1,5 +1,10 @@
 import type { ReactNode } from 'react'
 
+/**
+ * The one panel shell. A header appears only when the section needs a name;
+ * otherwise content sits directly on the surface, because a box inside a box
+ * costs density and buys nothing.
+ */
 export default function Card({
   icon,
   title,
@@ -18,18 +23,18 @@ export default function Card({
   bodyClassName?: string
 }) {
   return (
-    <section className={`flex h-full flex-col rounded-lg border border-[var(--edge)] bg-[var(--surface)] ${className}`}>
+    <section className={`panel flex h-full flex-col ${className}`}>
       {title && (
-        <header className="flex items-start justify-between gap-3 border-b border-[var(--edge-soft)] px-4 py-3">
-          <div className="flex items-center gap-2.5">
+        <header className="panel-header">
+          <div className="flex min-w-0 items-center gap-2.5">
             {icon && (
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-400">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-control bg-accent-soft text-accent-text">
                 {icon}
               </span>
             )}
-            <div>
-              <h2 className="text-xs font-bold uppercase tracking-[0.3px] text-[var(--text-primary)]">{title}</h2>
-              {subtitle && <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">{subtitle}</p>}
+            <div className="min-w-0">
+              <h2 className="panel-title truncate">{title}</h2>
+              {subtitle && <p className="panel-subtitle truncate">{subtitle}</p>}
             </div>
           </div>
           {action && <div className="flex shrink-0 items-center gap-2">{action}</div>}

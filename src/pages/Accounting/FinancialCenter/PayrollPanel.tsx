@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Receipt } from 'lucide-react'
-import { useAppStore, formatMoney, payrollTotal } from '../../store/useAppStore'
-import { useTranslation } from '../../i18n/useTranslation'
-import StatusBadge from '../../components/StatusBadge'
-import Card from '../../components/Card'
+import { useAppStore, formatMoney, payrollTotal } from '../../../store/useAppStore'
+import { useTranslation } from '../../../i18n/useTranslation'
+import StatusBadge from '../../../components/StatusBadge'
+import Card from '../../../components/Card'
 
 export default function PayrollPanel({ currency }: { currency: string }) {
   const payroll = useAppStore((s) => s.payroll)
@@ -49,7 +49,7 @@ export default function PayrollPanel({ currency }: { currency: string }) {
             value={activeMonth}
             onChange={(e) => setMonth(e.target.value)}
             aria-label={t('fin_payroll')}
-            className="rounded border border-[var(--edge-strong)] bg-[var(--input)] px-2 py-1.5 text-[11px] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-amber-500/60"
+            className="rounded-control border border-line-strong bg-sunken px-2 py-1.5 text-[11px] text-ink focus:outline-none focus:ring-1 focus:ring-focus"
           >
             {months.map((value) => (
               <option key={value} value={value}>
@@ -57,16 +57,16 @@ export default function PayrollPanel({ currency }: { currency: string }) {
               </option>
             ))}
           </select>
-          <Link to="/accounting/payroll" className="text-[11px] text-amber-400 hover:text-amber-300">
+          <Link to="/accounting/payroll" className="text-[11px] text-accent-text hover:text-accent">
             {t('fin_view_all')}
           </Link>
         </>
       }
       bodyClassName="overflow-x-auto"
     >
-      <table className="w-full text-start">
+      <table className="data-table">
         <thead>
-          <tr className="border-b border-[var(--edge-soft)] text-[10px] font-bold uppercase text-[var(--text-secondary)]">
+          <tr>
             <th className="w-6 px-2 py-2.5 text-start">#</th>
             <th className="px-2 py-2.5 text-start">{t('label_name')}</th>
             <th className="px-2 py-2.5 text-end" title={t('fin_basic_salary')}>
@@ -86,13 +86,13 @@ export default function PayrollPanel({ currency }: { currency: string }) {
           {rows.map((entry, index) => {
             const member = staff.find((m) => m.id === entry.staffId)
             return (
-              <tr key={entry.id} className="border-b border-[var(--edge-soft2)] text-xs last:border-b-0 hover:bg-[var(--surface-hover)]">
-                <td className="px-2 py-2.5 text-[var(--text-muted)] tabular-nums">{index + 1}</td>
+              <tr key={entry.id} className="text-xs">
+                <td className="px-2 py-2.5 text-ink-3 num">{index + 1}</td>
                 <td className="px-2 py-2.5">
-                  <span className="block font-medium text-[var(--text-primary)]">
+                  <span className="block font-medium text-ink">
                     {member ? tb(member.name) : entry.staffId}
                   </span>
-                  <span className="block text-[10px] text-[var(--text-muted)]">
+                  <span className="block text-[10px] text-ink-3">
                     {member?.role === 'admin'
                       ? language === 'ar'
                         ? 'مدير'
@@ -102,16 +102,16 @@ export default function PayrollPanel({ currency }: { currency: string }) {
                         : 'Staff'}
                   </span>
                 </td>
-                <td className="whitespace-nowrap px-2 py-2.5 text-end tabular-nums text-[var(--text-primary)]">
+                <td className="whitespace-nowrap px-2 py-2.5 text-end num text-ink">
                   {formatMoney(entry.basicSalary, currency, 0)}
                 </td>
-                <td className="whitespace-nowrap px-2 py-2.5 text-end tabular-nums text-[var(--text-secondary)]">
+                <td className="whitespace-nowrap px-2 py-2.5 text-end num text-ink-2">
                   {formatMoney(entry.overtime, currency, 0)}
                 </td>
-                <td className="whitespace-nowrap px-2 py-2.5 text-end tabular-nums text-[var(--text-secondary)]">
+                <td className="whitespace-nowrap px-2 py-2.5 text-end num text-ink-2">
                   {formatMoney(entry.allowances, currency, 0)}
                 </td>
-                <td className="whitespace-nowrap px-2 py-2.5 text-end font-bold tabular-nums text-[var(--text-primary)]">
+                <td className="whitespace-nowrap px-2 py-2.5 text-end font-bold num text-ink">
                   {formatMoney(payrollTotal(entry), currency, 0)}
                 </td>
                 <td className="px-2 py-2.5 text-end">
@@ -129,7 +129,7 @@ export default function PayrollPanel({ currency }: { currency: string }) {
           })}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={7} className="px-3 py-8 text-center text-xs text-[var(--text-muted)]">
+              <td colSpan={7} className="px-3 py-8 text-center text-xs text-ink-3">
                 {t('fin_no_data')}
               </td>
             </tr>
@@ -137,14 +137,14 @@ export default function PayrollPanel({ currency }: { currency: string }) {
         </tbody>
         {rows.length > 0 && (
           <tfoot>
-            <tr className="bg-[var(--surface-hover)] text-xs font-bold text-[var(--text-primary)]">
+            <tr>
               <td className="px-2 py-2.5" colSpan={2}>
                 {t('fin_total')}
               </td>
-              <td className="whitespace-nowrap px-2 py-2.5 text-end tabular-nums">{formatMoney(totals.basic, currency, 0)}</td>
-              <td className="whitespace-nowrap px-2 py-2.5 text-end tabular-nums">{formatMoney(totals.overtime, currency, 0)}</td>
-              <td className="whitespace-nowrap px-2 py-2.5 text-end tabular-nums">{formatMoney(totals.allowances, currency, 0)}</td>
-              <td className="whitespace-nowrap px-2 py-2.5 text-end tabular-nums">{formatMoney(totals.total, currency, 0)}</td>
+              <td className="whitespace-nowrap px-2 py-2.5 text-end num">{formatMoney(totals.basic, currency, 0)}</td>
+              <td className="whitespace-nowrap px-2 py-2.5 text-end num">{formatMoney(totals.overtime, currency, 0)}</td>
+              <td className="whitespace-nowrap px-2 py-2.5 text-end num">{formatMoney(totals.allowances, currency, 0)}</td>
+              <td className="whitespace-nowrap px-2 py-2.5 text-end num">{formatMoney(totals.total, currency, 0)}</td>
               <td />
             </tr>
           </tfoot>

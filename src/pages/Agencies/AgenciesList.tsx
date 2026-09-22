@@ -11,7 +11,7 @@ function Rating({ value }: { value: number }) {
   return (
     <span className="flex items-center gap-0.5">
       {Array.from({ length: 5 }).map((_, i) => (
-        <Star key={i} className={`size-3 ${i < value ? 'fill-amber-400 text-amber-400' : 'text-[var(--edge-strong)]'}`} />
+        <Star key={i} className={`size-3 ${i < value ? 'fill-amber-400 text-accent-text' : 'text-[var(--edge-strong)]'}`} />
       ))}
     </span>
   )
@@ -41,39 +41,39 @@ export default function AgenciesList() {
         }
       />
 
-      <div className="overflow-x-auto rounded-lg border border-[var(--edge)] bg-[var(--surface)]">
-        <table className="w-full text-start">
+      <div className="overflow-x-auto rounded-panel border border-line bg-surface">
+        <table className="data-table">
           <thead>
-            <tr className="border-b border-[var(--edge-soft)] text-[10.5px] font-bold uppercase text-[var(--text-secondary)]">
+            <tr>
               <th className="px-4 py-3">{t('label_name')}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'رقم الترخيص' : 'License No.'}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'المدير الأساسي' : 'Primary Manager'}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'المتقدمون' : 'Applicants'}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'التقييم' : 'Rating'}</th>
-              <th className="sticky end-0 bg-[var(--surface)] px-4 py-3 text-end">{t('label_action')}</th>
+              <th className="sticky end-0 bg-surface px-4 py-3 text-end">{t('label_action')}</th>
             </tr>
           </thead>
           <tbody>
             {agencies.map((a) => {
               const sourced = applicants.filter((ap) => ap.recruitmentAgencyId === a.id).length
               return (
-                <tr key={a.id} className="border-b border-[var(--edge-soft2)] text-xs last:border-b-0 hover:bg-[var(--surface-hover)]">
+                <tr key={a.id} className="text-xs">
                   <td className="px-4 py-3">
                     <span className="flex items-center gap-2.5">
-                      <span className="flex size-7 items-center justify-center rounded-full bg-[var(--surface-hover)]">
-                        <Handshake className="size-3.5 text-[var(--text-muted)]" />
+                      <span className="flex size-7 items-center justify-center rounded-pill bg-raised">
+                        <Handshake className="size-3.5 text-ink-3" />
                       </span>
-                      <span className="font-medium text-[var(--text-primary)]">{tb({ en: a.englishName, ar: a.arabicName })}</span>
+                      <span className="font-medium text-ink">{tb({ en: a.englishName, ar: a.arabicName })}</span>
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-[var(--text-secondary)]">{a.licenseNumber}</td>
-                  <td className="px-4 py-3 text-[var(--text-secondary)]">{tb(a.primaryManager)}</td>
-                  <td className="px-4 py-3 text-[var(--text-secondary)]">{sourced}</td>
+                  <td className="px-4 py-3 text-ink-2">{a.licenseNumber}</td>
+                  <td className="px-4 py-3 text-ink-2">{tb(a.primaryManager)}</td>
+                  <td className="px-4 py-3 text-ink-2">{sourced}</td>
                   <td className="px-4 py-3">
                     <Rating value={a.rating} />
                   </td>
-                  <td className="sticky end-0 bg-[var(--surface)] px-4 py-3 text-end">
-                    <button type="button" onClick={() => handleDelete(a.id, a.englishName)} className="text-[var(--text-muted)] hover:text-rose-400">
+                  <td className="sticky end-0 bg-surface px-4 py-3 text-end">
+                    <button type="button" onClick={() => handleDelete(a.id, a.englishName)} className="text-ink-3 hover:text-neg">
                       <Trash2 className="size-3.5" />
                     </button>
                   </td>

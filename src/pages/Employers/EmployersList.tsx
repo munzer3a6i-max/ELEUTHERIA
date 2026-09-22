@@ -36,42 +36,42 @@ export default function EmployersList() {
         {employers.map((e) => {
           const activeWorkers = requests.filter((r) => r.employerId === e.id).length
           return (
-            <div key={e.id} className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-4">
+            <div key={e.id} className="rounded-panel border border-line bg-surface p-4">
               <div className="mb-3 flex items-start justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="flex size-9 items-center justify-center overflow-hidden rounded-full bg-[var(--surface-hover)]">
+                  <div className="flex size-9 items-center justify-center overflow-hidden rounded-pill bg-raised">
                     {e.profileImageDataUrl ? (
                       <img src={e.profileImageDataUrl} alt="" className="size-full object-cover" />
                     ) : (
-                      <Building2 className="size-4 text-[var(--text-muted)]" />
+                      <Building2 className="size-4 text-ink-3" />
                     )}
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-[var(--text-primary)]">{tb({ en: e.englishName, ar: e.arabicName })}</p>
-                    <p className="text-[11px] text-[var(--text-muted)]">{e.nationalAddressShortCode}</p>
+                    <p className="text-sm font-bold text-ink">{tb({ en: e.englishName, ar: e.arabicName })}</p>
+                    <p className="text-[11px] text-ink-3">{e.nationalAddressShortCode}</p>
                   </div>
                 </div>
-                <button type="button" onClick={() => handleDelete(e.id, e.englishName)} className="text-[var(--text-muted)] hover:text-rose-400">
+                <button type="button" onClick={() => handleDelete(e.id, e.englishName)} className="text-ink-3 hover:text-neg">
                   <Trash2 className="size-3.5" />
                 </button>
               </div>
-              <div className="flex flex-col gap-1 text-[11px] text-[var(--text-secondary)]">
+              <div className="flex flex-col gap-1 text-[11px] text-ink-2">
                 <p>{e.email}</p>
                 <p>{e.phone}</p>
                 <p>{e.nationalAddress}</p>
                 <p>{language === 'ar' ? 'رقم الهوية الوطنية' : 'National ID'}: {e.nationalIdNumber}</p>
               </div>
-              <div className="mt-3 flex items-center justify-between border-t border-[var(--edge-soft2)] pt-2 text-[11px]">
+              <div className="mt-3 flex items-center justify-between border-t border-line pt-2 text-[11px]">
                 <button
                   type="button"
                   onClick={() => updateEmployer(e.id, { status: e.status === 'Active' ? 'Inactive' : 'Active' })}
-                  className={`rounded px-2 py-0.5 text-[10px] font-bold ${
-                    e.status === 'Active' ? 'bg-emerald-950/80 text-emerald-400' : 'bg-[var(--surface-hover)] text-[var(--text-muted)]'
+                  className={`rounded-control px-2 py-0.5 text-[10px] font-bold ${
+                    e.status === 'Active' ? 'bg-pos-soft text-pos' : 'bg-raised text-ink-3'
                   }`}
                 >
                   {e.status === 'Active' ? t('label_active') : t('label_inactive')}
                 </button>
-                <span className="text-[var(--text-secondary)]">
+                <span className="text-ink-2">
                   {activeWorkers} {language === 'ar' ? 'استقدام' : 'requests'}
                 </span>
               </div>

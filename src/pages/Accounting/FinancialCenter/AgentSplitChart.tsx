@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronRight, PieChart } from 'lucide-react'
-import { formatMoney } from '../../store/useAppStore'
-import { useTranslation } from '../../i18n/useTranslation'
-import Card from '../../components/Card'
+import { formatMoney } from '../../../store/useAppStore'
+import { useTranslation } from '../../../i18n/useTranslation'
+import Card from '../../../components/Card'
 
 export interface Slice {
   id: string
@@ -72,10 +72,10 @@ function Donut({
 
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
         <span className="flex w-[104px] flex-col items-center text-center">
-          <span className="text-sm font-bold text-[var(--text-primary)]">
+          <span className="text-sm font-bold text-ink">
             {formatMoney(active ? active.value : total, currency, 0)}
           </span>
-          <span className="mt-0.5 line-clamp-2 text-[9px] leading-tight text-[var(--text-muted)]">
+          <span className="mt-0.5 line-clamp-2 text-[9px] leading-tight text-ink-3">
             {active ? active.label : language === 'ar' ? 'الإجمالي' : 'Total'}
           </span>
         </span>
@@ -102,7 +102,7 @@ export default function AgentSplitChart({
 
   return (
     <Card icon={<PieChart className="size-4" />} title={t('fin_agent_split')} bodyClassName="p-4">
-      <div className="mb-3 grid grid-cols-2 gap-1 rounded border border-[var(--edge)] bg-[var(--input)] p-1">
+      <div className="mb-3 grid grid-cols-2 gap-1 rounded-control border border-line bg-sunken p-1">
         {(['income', 'expenses'] as const).map((key) => (
           <button
             key={key}
@@ -111,8 +111,8 @@ export default function AgentSplitChart({
               setTab(key)
               setActiveId(null)
             }}
-            className={`rounded py-1.5 text-[11px] transition-colors ${
-              tab === key ? 'bg-[var(--active)] font-bold text-amber-400' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            className={`rounded-control py-1.5 text-[11px] transition-colors ${
+              tab === key ? 'bg-accent-soft font-bold text-accent-text' : 'text-ink-2 hover:text-ink'
             }`}
           >
             {key === 'income' ? t('fin_income') : t('fin_expenses')}
@@ -121,7 +121,7 @@ export default function AgentSplitChart({
       </div>
 
       {total === 0 ? (
-        <p className="py-10 text-center text-xs text-[var(--text-muted)]">{t('fin_no_data')}</p>
+        <p className="py-10 text-center text-xs text-ink-3">{t('fin_no_data')}</p>
       ) : (
         <>
           <Donut slices={slices} total={total} currency={currency} activeId={activeId} onHover={setActiveId} />
@@ -131,16 +131,16 @@ export default function AgentSplitChart({
                 key={slice.id}
                 onMouseEnter={() => setActiveId(slice.id)}
                 onMouseLeave={() => setActiveId(null)}
-                className={`flex items-center gap-2 rounded px-1.5 py-1 text-[11px] ${
-                  activeId === slice.id ? 'bg-[var(--surface-hover)]' : ''
+                className={`flex items-center gap-2 rounded-control px-1.5 py-1 text-[11px] ${
+                  activeId === slice.id ? 'bg-raised' : ''
                 }`}
               >
-                <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: slice.color }} />
-                <span className="min-w-0 flex-1 truncate text-[var(--text-secondary)]">{slice.label}</span>
-                <span className="shrink-0 tabular-nums text-[var(--text-muted)]">
+                <span className="size-2 shrink-0 rounded-pill" style={{ backgroundColor: slice.color }} />
+                <span className="min-w-0 flex-1 truncate text-ink-2">{slice.label}</span>
+                <span className="shrink-0 num text-ink-3">
                   {formatMoney(slice.value, currency, 0)}
                 </span>
-                <span className="w-9 shrink-0 text-end font-bold tabular-nums text-[var(--text-primary)]">
+                <span className="w-9 shrink-0 text-end font-bold num text-ink">
                   {Math.round((slice.value / total) * 100)}%
                 </span>
               </li>
@@ -151,7 +151,7 @@ export default function AgentSplitChart({
 
       <Link
         to="/accounting/agency-accounts"
-        className="mt-3 flex items-center justify-center gap-1 rounded border border-[var(--edge-strong)] py-2 text-[11px] text-[var(--text-secondary)] hover:border-amber-500/40 hover:text-amber-400"
+        className="mt-3 flex items-center justify-center gap-1 rounded-control border border-line-strong py-2 text-[11px] text-ink-2 hover:border-accent-line hover:text-accent-text"
       >
         {t('fin_view_all_agencies')} <ChevronRight className="size-3 rtl:rotate-180" />
       </Link>

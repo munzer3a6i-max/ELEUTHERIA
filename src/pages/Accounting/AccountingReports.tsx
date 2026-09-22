@@ -31,16 +31,16 @@ function StatementRow({
 }) {
   return (
     <div
-      className={`flex items-baseline justify-between gap-3 border-b border-[var(--edge-soft2)] py-2.5 last:border-b-0 ${
+      className={`flex items-baseline justify-between gap-3 border-b border-line py-2.5 last:border-b-0 ${
         emphasis ? 'text-sm font-bold' : 'text-xs'
       }`}
     >
-      <span className={`${indent ? 'ps-4' : ''} ${emphasis ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>
+      <span className={`${indent ? 'ps-4' : ''} ${emphasis ? 'text-ink' : 'text-ink-2'}`}>
         {label}
       </span>
       <span className="flex items-baseline gap-3">
-        {share && <span className="w-10 text-end text-[10px] tabular-nums text-[var(--text-muted)]">{share}</span>}
-        <span dir="ltr" className={`w-28 text-end tabular-nums ${accent ?? 'text-[var(--text-primary)]'}`}>
+        {share && <span className="w-10 text-end text-[10px] num text-ink-3">{share}</span>}
+        <span dir="ltr" className={`w-28 text-end num ${accent ?? 'text-ink'}`}>
           {value}
         </span>
       </span>
@@ -64,7 +64,7 @@ export default function AccountingReports() {
   const net = financials.netProfit
   const receivables = invoices.reduce((sum, invoice) => sum + invoiceBalance(invoice), 0)
 
-  const share = (value: number) => (revenue > 0 ? `${Math.round((value / revenue) * 100)}%` : '—')
+  const share = (value: number) => (revenue > 0 ? `${Math.round((value / revenue) * 100)}%` : '-')
 
   const monthly = useMemo<MonthPoint[]>(() => {
     const map = new Map<string, MonthPoint>()
@@ -114,9 +114,9 @@ export default function AccountingReports() {
             <button
               type="button"
               onClick={() => window.print()}
-              className="flex items-center gap-1.5 rounded border border-[var(--edge-strong)] bg-[var(--surface)] px-3 py-2 text-[11px] text-[var(--text-primary)] hover:border-amber-500/40"
+              className="flex items-center gap-1.5 rounded-control border border-line-strong bg-surface px-3 py-2 text-[11px] text-ink hover:border-accent-line"
             >
-              <Printer className="size-3.5 text-amber-400" /> {t('acc_print')}
+              <Printer className="size-3.5 text-accent-text" /> {t('acc_print')}
             </button>
           </>
         }
@@ -124,18 +124,18 @@ export default function AccountingReports() {
 
       <StatStrip
         stats={[
-          { label: t('acc_revenue'), value: formatMoney(revenue, currency, 0), accent: 'text-emerald-400', icon: <TrendingUp className="size-4" /> },
-          { label: t('fin_total_expenses'), value: formatMoney(financials.totalExpenses, currency, 0), accent: 'text-rose-400', icon: <BarChart3 className="size-4" /> },
+          { label: t('acc_revenue'), value: formatMoney(revenue, currency, 0), tone: 'pos', icon: <TrendingUp className="size-4" /> },
+          { label: t('fin_total_expenses'), value: formatMoney(financials.totalExpenses, currency, 0), tone: 'neg', icon: <BarChart3 className="size-4" /> },
           {
             label: t('acc_net_result'),
             value: formatMoney(net, currency, 0),
-            accent: net >= 0 ? 'text-emerald-400' : 'text-rose-400',
+            tone: net >= 0 ? 'pos' : 'neg',
             icon: <FileText className="size-4" />,
           },
           {
             label: t('acc_uncollected'),
             value: formatMoney(receivables, currency, 0),
-            accent: 'text-amber-400',
+            tone: 'warn',
             note: `${invoices.filter((i) => invoiceBalance(i) > 0).length} ${t('nav_invoices')}`,
             icon: <FileText className="size-4" />,
           },
@@ -148,27 +148,27 @@ export default function AccountingReports() {
             title={t('acc_income_statement')}
             subtitle={`${settings.companyName} · ${formatRange(financials.range, financials.transactions, language)}`}
           >
-            <StatementRow label={t('acc_revenue')} value={formatMoney(revenue, currency, 0)} share={share(revenue)} accent="text-emerald-400" />
+            <StatementRow label={t('acc_revenue')} value={formatMoney(revenue, currency, 0)} share={share(revenue)} accent="text-pos" />
             <StatementRow
               label={t('acc_cost_of_placements')}
               value={`− ${formatMoney(buckets.recruitment, currency, 0)}`}
               share={share(buckets.recruitment)}
               indent
-              accent="text-rose-400"
+              accent="text-neg"
             />
             <StatementRow label={t('acc_gross_profit')} value={formatMoney(grossProfit, currency, 0)} share={share(grossProfit)} emphasis />
-            <StatementRow label={t('acc_operating_expenses')} value={`− ${formatMoney(operating, currency, 0)}`} share={share(operating)} accent="text-rose-400" />
-            <StatementRow label={t('acc_salaries')} value={formatMoney(buckets.payroll, currency, 0)} indent accent="text-[var(--text-secondary)]" />
-            <StatementRow label={t('acc_office_running')} value={formatMoney(buckets.office, currency, 0)} indent accent="text-[var(--text-secondary)]" />
+            <StatementRow label={t('acc_operating_expenses')} value={`− ${formatMoney(operating, currency, 0)}`} share={share(operating)} accent="text-neg" />
+            <StatementRow label={t('acc_salaries')} value={formatMoney(buckets.payroll, currency, 0)} indent accent="text-ink-2" />
+            <StatementRow label={t('acc_office_running')} value={formatMoney(buckets.office, currency, 0)} indent accent="text-ink-2" />
             <StatementRow
               label={t('acc_net_result')}
               value={formatMoney(net, currency, 0)}
               share={share(net)}
               emphasis
-              accent={net >= 0 ? 'text-emerald-400' : 'text-rose-400'}
+              accent={net >= 0 ? 'text-pos' : 'text-neg'}
             />
 
-            <p className="mt-3 rounded border border-[var(--edge)] bg-[var(--input)] p-2.5 text-[10px] leading-relaxed text-[var(--text-muted)]">
+            <p className="mt-3 rounded-control border border-line bg-sunken p-2.5 text-[10px] leading-relaxed text-ink-3">
               {language === 'ar'
                 ? 'الإيرادات تُحتسب عند التحصيل من دفعات الفواتير. المصروفات تُحتسب عند الاستحقاق، وتشمل الرواتب ومصروفات المكتب غير المدفوعة.'
                 : 'Revenue is counted when collected, from invoice payments. Expenses are counted when incurred, including payroll and office costs still pending.'}
@@ -192,24 +192,24 @@ export default function AccountingReports() {
                 return (
                   <li key={row.label} className="text-xs">
                     <div className="mb-1 flex items-baseline justify-between gap-2">
-                      <span className="flex items-center gap-2 text-[var(--text-primary)]">
-                        <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: row.color }} />
+                      <span className="flex items-center gap-2 text-ink">
+                        <span className="size-2 shrink-0 rounded-pill" style={{ backgroundColor: row.color }} />
                         {row.label}
                       </span>
                       <span className="flex items-baseline gap-2">
-                        <span dir="ltr" className="tabular-nums text-[var(--text-muted)]">
+                        <span dir="ltr" className="num text-ink-3">
                           {formatMoney(row.value, currency, 0)}
                         </span>
-                        <span className="w-8 text-end font-bold tabular-nums text-[var(--text-primary)]">{Math.round(percent)}%</span>
+                        <span className="w-8 text-end font-bold num text-ink">{Math.round(percent)}%</span>
                       </span>
                     </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--edge-soft)]">
-                      <div className="h-full rounded-full" style={{ width: `${percent}%`, backgroundColor: row.color }} />
+                    <div className="h-1.5 w-full overflow-hidden rounded-pill bg-[var(--edge-soft)]">
+                      <div className="h-full rounded-pill" style={{ width: `${percent}%`, backgroundColor: row.color }} />
                     </div>
                   </li>
                 )
               })}
-              {breakdown.length === 0 && <li className="py-8 text-center text-xs text-[var(--text-muted)]">{t('fin_no_data')}</li>}
+              {breakdown.length === 0 && <li className="py-8 text-center text-xs text-ink-3">{t('fin_no_data')}</li>}
             </ul>
           </Card>
         </div>
@@ -219,15 +219,15 @@ export default function AccountingReports() {
             title={t('acc_agency_profitability')}
             subtitle={t('acc_agency_accounts_subtitle')}
             action={
-              <Link to="/accounting/agency-accounts" className="text-[11px] text-amber-400 hover:text-amber-300">
+              <Link to="/accounting/agency-accounts" className="text-[11px] text-accent-text hover:text-accent">
                 {t('fin_view_details')}
               </Link>
             }
             bodyClassName="overflow-x-auto"
           >
-            <table className="w-full text-start">
+            <table className="data-table">
               <thead>
-                <tr className="border-b border-[var(--edge-soft)] text-[10px] font-bold uppercase text-[var(--text-secondary)]">
+                <tr>
                   <th className="px-3 py-2.5 text-start">{t('label_name')}</th>
                   <th className="px-3 py-2.5 text-end">{t('fin_workers')}</th>
                   <th className="px-3 py-2.5 text-end">{t('fin_income')}</th>
@@ -238,31 +238,31 @@ export default function AccountingReports() {
               </thead>
               <tbody>
                 {agencyRows.map((row) => (
-                  <tr key={row.id} className="border-b border-[var(--edge-soft2)] text-xs last:border-b-0 hover:bg-[var(--surface-hover)]">
-                    <td className="px-3 py-2.5 font-medium text-[var(--text-primary)]">{row.name}</td>
-                    <td className="px-3 py-2.5 text-end tabular-nums text-[var(--text-secondary)]">{row.workers}</td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-end tabular-nums text-emerald-400">
+                  <tr key={row.id} className="text-xs">
+                    <td className="px-3 py-2.5 font-medium text-ink">{row.name}</td>
+                    <td className="px-3 py-2.5 text-end num text-ink-2">{row.workers}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-end num text-pos">
                       {formatMoney(row.income, currency, 0)}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-end tabular-nums text-rose-400">
+                    <td className="whitespace-nowrap px-3 py-2.5 text-end num text-neg">
                       {formatMoney(row.cost, currency, 0)}
                     </td>
                     <td
                       dir="ltr"
-                      className={`whitespace-nowrap px-3 py-2.5 text-end font-bold tabular-nums ${
-                        row.result >= 0 ? 'text-[var(--text-primary)]' : 'text-rose-400'
+                      className={`whitespace-nowrap px-3 py-2.5 text-end font-bold num ${
+                        row.result >= 0 ? 'text-ink' : 'text-neg'
                       }`}
                     >
                       {formatMoney(row.result, currency, 0)}
                     </td>
-                    <td className="px-3 py-2.5 text-end tabular-nums text-[var(--text-secondary)]">
-                      {row.income > 0 ? `${Math.round((row.result / row.income) * 100)}%` : '—'}
+                    <td className="px-3 py-2.5 text-end num text-ink-2">
+                      {row.income > 0 ? `${Math.round((row.result / row.income) * 100)}%` : '-'}
                     </td>
                   </tr>
                 ))}
                 {agencyRows.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-3 py-10 text-center text-xs text-[var(--text-muted)]">
+                    <td colSpan={6} className="px-3 py-10 text-center text-xs text-ink-3">
                       {t('acc_no_rows')}
                     </td>
                   </tr>

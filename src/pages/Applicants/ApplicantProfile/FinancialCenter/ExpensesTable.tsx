@@ -22,31 +22,31 @@ export default function ExpensesTable({ request }: { request: RecruitmentRequest
   }
 
   return (
-    <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-[13px]">
+    <div className="rounded-panel border border-line bg-surface p-[13px]">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-xs font-bold uppercase tracking-[0.3px] text-[var(--text-primary)]">
+        <h2 className="panel-title">
           {language === 'ar' ? 'تفصيل المصروفات' : 'Expenses Breakdown'}
         </h2>
         <button
           type="button"
           onClick={() => setStatusModal('add')}
-          className="flex items-center gap-1 rounded bg-amber-600 px-3 py-1.5 text-[11px] font-bold text-slate-950 hover:bg-amber-500"
+          className="flex items-center gap-1 rounded-control bg-accent px-3 py-1.5 text-[11px] font-bold text-accent-ink hover:bg-accent"
         >
           <Plus className="size-3" /> {language === 'ar' ? 'إضافة مصروف' : 'Add Expense'}
         </button>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] border-collapse text-start">
+        <table className="data-table min-w-[640px]">
           <thead>
-            <tr className="border-b border-[var(--edge-soft)]">
-              <th className="w-8 px-2 pb-3.5 pt-2 text-[10.5px] font-bold text-[var(--text-secondary)]">#</th>
-              <th className="px-2 pb-3.5 pt-2 text-[10.5px] font-bold text-[var(--text-secondary)]">{t('label_status')}</th>
-              <th className="px-2 pb-3.5 pt-2 text-[10.5px] font-bold text-[var(--text-secondary)]">{t('label_date')}</th>
-              <th className="px-2 pb-3.5 pt-2 text-[10.5px] font-bold text-[var(--text-secondary)]">{language === 'ar' ? 'مصدر الدفع' : 'Source'}</th>
-              <th className="px-2 pb-3.5 pt-2 text-[10.5px] font-bold text-[var(--text-secondary)]">{language === 'ar' ? 'الموظف' : 'Officer'}</th>
-              <th className="px-2 pb-3.5 pt-2 text-end text-[10.5px] font-bold text-[var(--text-secondary)]">{language === 'ar' ? 'المبلغ (USD)' : 'Amount (USD)'}</th>
-              <th className="w-16 px-2 pb-3.5 pt-2 text-center text-[10.5px] font-bold text-[var(--text-secondary)]">{t('label_action')}</th>
+            <tr>
+              <th className="w-8 px-2 pb-3.5 pt-2 text-[10.5px] font-bold text-ink-2">#</th>
+              <th className="px-2 pb-3.5 pt-2 text-[10.5px] font-bold text-ink-2">{t('label_status')}</th>
+              <th className="px-2 pb-3.5 pt-2 text-[10.5px] font-bold text-ink-2">{t('label_date')}</th>
+              <th className="px-2 pb-3.5 pt-2 text-[10.5px] font-bold text-ink-2">{language === 'ar' ? 'مصدر الدفع' : 'Source'}</th>
+              <th className="px-2 pb-3.5 pt-2 text-[10.5px] font-bold text-ink-2">{language === 'ar' ? 'الموظف' : 'Officer'}</th>
+              <th className="px-2 pb-3.5 pt-2 text-end text-[10.5px] font-bold text-ink-2">{language === 'ar' ? 'المبلغ (USD)' : 'Amount (USD)'}</th>
+              <th className="w-16 px-2 pb-3.5 pt-2 text-center text-[10.5px] font-bold text-ink-2">{t('label_action')}</th>
             </tr>
           </thead>
           <tbody>
@@ -54,20 +54,20 @@ export default function ExpensesTable({ request }: { request: RecruitmentRequest
               const source = paymentSources.find((p) => p.id === row.paymentSourceId)
               const resp = staff.find((s) => s.id === row.responsibleEmployeeId)
               return (
-                <tr key={row.id} className="border-b border-[var(--edge-soft2)] last:border-b-0">
-                  <td className="px-2 py-3.5 text-[10.5px] text-[var(--text-muted)]">{i + 1}</td>
-                  <td className="px-2 py-3.5 text-[10.5px] text-[var(--text-primary)]">{row.status}</td>
-                  <td className="px-2 py-3.5 text-[10.5px] text-[var(--text-secondary)]">{row.date}</td>
-                  <td className="px-2 py-3.5 text-[10.5px] text-[var(--text-secondary)]">{source?.name ?? '—'}</td>
-                  <td className="px-2 py-3.5 text-[10.5px] text-[var(--text-secondary)]">{resp ? tb(resp.name) : '—'}</td>
-                  <td className="px-2 py-3.5 text-end text-[10.5px] text-[var(--text-primary)]">{formatMoney(row.cost)}</td>
+                <tr key={row.id} className="border-b border-line last:border-b-0">
+                  <td className="px-2 py-3.5 text-[10.5px] text-ink-3">{i + 1}</td>
+                  <td className="px-2 py-3.5 text-[10.5px] text-ink">{row.status}</td>
+                  <td className="px-2 py-3.5 text-[10.5px] text-ink-2">{row.date}</td>
+                  <td className="px-2 py-3.5 text-[10.5px] text-ink-2">{source?.name ?? '-'}</td>
+                  <td className="px-2 py-3.5 text-[10.5px] text-ink-2">{resp ? tb(resp.name) : '-'}</td>
+                  <td className="px-2 py-3.5 text-end text-[10.5px] text-ink">{formatMoney(row.cost)}</td>
                   <td className="px-2 py-3.5">
-                    <div className="flex items-center justify-center gap-3 text-[var(--text-muted)]">
+                    <div className="flex items-center justify-center gap-3 text-ink-3">
                       {row.attachmentName && <Paperclip className="size-3" />}
-                      <button type="button" onClick={() => setStatusModal(row)} className="hover:text-amber-400">
+                      <button type="button" onClick={() => setStatusModal(row)} className="hover:text-accent-text">
                         <Pencil className="size-3" />
                       </button>
-                      <button type="button" onClick={() => handleDelete(row.id, row.status)} className="hover:text-rose-400">
+                      <button type="button" onClick={() => handleDelete(row.id, row.status)} className="hover:text-neg">
                         <Trash2 className="size-3" />
                       </button>
                     </div>
@@ -77,7 +77,7 @@ export default function ExpensesTable({ request }: { request: RecruitmentRequest
             })}
             {request.statusHistory.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-2 py-6 text-center text-[11px] text-[var(--text-muted)]">
+                <td colSpan={7} className="px-2 py-6 text-center text-[11px] text-ink-3">
                   {language === 'ar' ? 'لا توجد مصروفات مسجلة بعد.' : 'No expenses recorded yet.'}
                 </td>
               </tr>
@@ -86,11 +86,11 @@ export default function ExpensesTable({ request }: { request: RecruitmentRequest
         </table>
       </div>
 
-      <div className="mt-2.5 flex items-center justify-between border-t border-[var(--edge-soft)] pt-2.5">
-        <span className="text-xs font-bold uppercase tracking-[0.3px] text-rose-500">
+      <div className="mt-2.5 flex items-center justify-between border-t border-line pt-2.5">
+        <span className="panel-title text-neg">
           {language === 'ar' ? 'إجمالي المصروفات' : 'Total Expenses'}
         </span>
-        <span className="text-sm font-bold tracking-[0.35px] text-rose-500">{formatMoney(totalExpenses)}</span>
+        <span className="text-sm font-bold tracking-[0.35px] text-neg">{formatMoney(totalExpenses)}</span>
       </div>
 
       {statusModal && (

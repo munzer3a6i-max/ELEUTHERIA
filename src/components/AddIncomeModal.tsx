@@ -32,8 +32,8 @@ export default function AddIncomeModal({ onClose, currency }: { onClose: () => v
     <Modal title={t('fin_add_income')} onClose={onClose}>
       {open.length === 0 ? (
         <div>
-          <p className="mb-4 text-xs text-[var(--text-muted)]">
-            {language === 'ar' ? 'لا توجد فواتير مستحقة حاليًا.' : 'Every invoice is settled — nothing to collect.'}
+          <p className="mb-4 text-xs text-ink-3">
+            {language === 'ar' ? 'لا توجد فواتير مستحقة حاليًا.' : 'Every invoice is settled - nothing to collect.'}
           </p>
           <SecondaryButton onClick={onClose}>{t('action_cancel')}</SecondaryButton>
         </div>

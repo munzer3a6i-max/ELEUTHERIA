@@ -1,7 +1,8 @@
 import { Routes, Route } from 'react-router-dom'
 import AppShell from './layouts/AppShell'
 import RootEffects from './components/RootEffects'
-import Dashboard from './pages/Dashboard'
+import Overview from './pages/Overview'
+import FinancialCenter from './pages/Accounting/FinancialCenter'
 import Login from './pages/Login'
 import ApplicantsList from './pages/Applicants/ApplicantsList'
 import ApplicantProfile from './pages/Applicants/ApplicantProfile'
@@ -28,7 +29,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route element={<AppShell />}>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<Overview />} />
           <Route path="/applicants" element={<ApplicantsList />} />
           <Route path="/applicants/:id" element={<ApplicantProfile />} />
           <Route path="/employers" element={<EmployersList />} />
@@ -37,7 +38,7 @@ function App() {
           <Route path="/recruitments/:id" element={<RequestDetail />} />
           <Route path="/invoices" element={<InvoicesList />} />
           <Route path="/staff" element={<StaffList />} />
-          <Route path="/accounting" element={<Dashboard />} />
+          <Route path="/accounting" element={<FinancialCenter />} />
           <Route path="/accounting/payroll" element={<PayrollPage />} />
           <Route path="/accounting/agency-accounts" element={<AgencyAccountsPage />} />
           <Route path="/accounting/office-expenses" element={<OfficeExpensesPage />} />

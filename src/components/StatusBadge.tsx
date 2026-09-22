@@ -1,33 +1,50 @@
-const colorMap: Record<string, string> = {
-  Available: 'border-emerald-500/40 bg-emerald-950/80 text-emerald-400',
-  Unavailable: 'border-slate-500/40 bg-slate-800/60 text-slate-300',
-  Selected: 'border-blue-500/50 bg-blue-900/60 text-blue-300',
-  Deployed: 'border-amber-500/40 bg-amber-950/60 text-amber-400',
-  Active: 'border-emerald-500/40 bg-emerald-950/80 text-emerald-400',
-  Inactive: 'border-slate-500/40 bg-slate-800/60 text-slate-300',
-  Issued: 'border-slate-500/40 bg-slate-800/60 text-slate-300',
-  'Partial Payment': 'border-amber-500/40 bg-amber-950/60 text-amber-400',
-  Completed: 'border-emerald-500/40 bg-emerald-950/80 text-emerald-400',
-  Domestic: 'border-blue-500/50 bg-blue-900/60 text-blue-300',
-  Profession: 'border-amber-500/40 bg-amber-950/60 text-amber-400',
-  'عمالة منزلية': 'border-blue-500/50 bg-blue-900/60 text-blue-300',
-  مهنية: 'border-amber-500/40 bg-amber-950/60 text-amber-400',
-  New: 'border-slate-500/40 bg-slate-800/60 text-slate-300',
-  Screening: 'border-amber-500/40 bg-amber-950/60 text-amber-400',
-  Interview: 'border-blue-500/50 bg-blue-900/60 text-blue-300',
-  Approved: 'border-emerald-500/40 bg-emerald-950/80 text-emerald-400',
-  Rejected: 'border-rose-500/40 bg-rose-950/60 text-rose-400',
-  Paid: 'border-emerald-500/40 bg-emerald-950/80 text-emerald-400',
-  Pending: 'border-amber-500/40 bg-amber-950/60 text-amber-400',
-  مدفوع: 'border-emerald-500/40 bg-emerald-950/80 text-emerald-400',
-  'قيد الانتظار': 'border-amber-500/40 bg-amber-950/60 text-amber-400',
+type Tone = 'pos' | 'neg' | 'warn' | 'info' | 'accent' | 'neutral'
+
+/*
+  One chip vocabulary for every state in the app. Tones carry meaning, never
+  decoration: settled and available read positive, money owed and rejections
+  read negative, anything mid-pipeline reads as in-progress.
+*/
+const TONES: Record<string, Tone> = {
+  // Records
+  Active: 'pos',
+  Available: 'pos',
+  Inactive: 'neutral',
+  Unavailable: 'neutral',
+  Suspended: 'neg',
+  // Placement
+  Selected: 'info',
+  Deployed: 'pos',
+  'Guarantee Completed': 'pos',
+  Repatriated: 'warn',
+  Transfer: 'warn',
+  Unfit: 'neg',
+  'Back Out': 'neg',
+  // Money
+  Issued: 'neutral',
+  'Partial Payment': 'warn',
+  Completed: 'pos',
+  Paid: 'pos',
+  Pending: 'warn',
+  // Request types
+  Domestic: 'info',
+  Profession: 'accent',
+  'عمالة منزلية': 'info',
+  مهنية: 'accent',
+  // Arabic record states
+  نشط: 'pos',
+  'غير نشط': 'neutral',
+  مدفوع: 'pos',
+  'قيد الانتظار': 'warn',
+  // Legacy screening vocabulary
+  New: 'neutral',
+  Screening: 'warn',
+  Interview: 'info',
+  Approved: 'pos',
+  Rejected: 'neg',
 }
 
-export default function StatusBadge({ status }: { status: string }) {
-  const cls = colorMap[status] ?? 'border-slate-500/40 bg-slate-800/60 text-slate-300'
-  return (
-    <span className={`inline-flex shrink-0 items-center rounded border px-2.5 py-0.5 text-[10px] font-bold ${cls}`}>
-      {status}
-    </span>
-  )
+export default function StatusBadge({ status, tone }: { status: string; tone?: Tone }) {
+  const resolved = tone ?? TONES[status] ?? 'neutral'
+  return <span className={`chip chip-${resolved}`}>{status}</span>
 }

@@ -71,22 +71,22 @@ export default function AgencyAccountsPage() {
           {
             label: t('acc_paid_to_agencies'),
             value: formatMoney(financials.totals.totalPaid, currency, 0),
-            accent: 'text-rose-400',
+            tone: 'neg',
             icon: <HandCoins className="size-4" />,
           },
           {
             label: t('acc_outstanding'),
             value: formatMoney(outstanding, currency, 0),
-            accent: 'text-amber-400',
+            tone: 'warn',
             icon: <Scale className="size-4" />,
           },
         ]}
       />
 
       <Card title={t('acc_agency_accounts_title')} subtitle={t('acc_agency_accounts_subtitle')} bodyClassName="overflow-x-auto">
-        <table className="w-full text-start">
+        <table className="data-table">
           <thead>
-            <tr className="border-b border-[var(--edge-soft)] text-[10px] font-bold uppercase text-[var(--text-secondary)]">
+            <tr>
               <th className="w-8 px-3 py-2.5 text-start">#</th>
               <th className="px-3 py-2.5 text-start">{t('label_name')}</th>
               <th className="px-3 py-2.5 text-start">{t('acc_licence')}</th>
@@ -106,31 +106,31 @@ export default function AgencyAccountsPage() {
                 <tr
                   key={account.agency.id}
                   onClick={() => setSelectedId(account.agency.id)}
-                  className={`cursor-pointer border-b border-[var(--edge-soft2)] text-xs last:border-b-0 ${
-                    account.agency.id === selected?.agency.id ? 'bg-[var(--active)]/40' : 'hover:bg-[var(--surface-hover)]'
+                  className={`cursor-pointer text-xs ${
+                    account.agency.id === selected?.agency.id ? 'bg-accent-soft/40' : 'hover:bg-raised'
                   }`}
                 >
-                  <td className="px-3 py-2.5 tabular-nums text-[var(--text-muted)]">{index + 1}</td>
+                  <td className="px-3 py-2.5 num text-ink-3">{index + 1}</td>
                   <td className="px-3 py-2.5">
-                    <span className="block font-medium text-[var(--text-primary)]">{name}</span>
-                    <span className="block text-[10px] text-[var(--text-muted)]">
+                    <span className="block font-medium text-ink">{name}</span>
+                    <span className="block text-[10px] text-ink-3">
                       {account.country} · {account.currency}
                     </span>
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[10px] text-[var(--text-secondary)]">
+                  <td className="whitespace-nowrap px-3 py-2.5 num text-[10px] text-ink-2">
                     {account.agency.licenseNumber}
                   </td>
-                  <td className="px-3 py-2.5 text-end tabular-nums text-[var(--text-primary)]">{account.workers}</td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-end tabular-nums text-[var(--text-secondary)]">
+                  <td className="px-3 py-2.5 text-end num text-ink">{account.workers}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-end num text-ink-2">
                     {formatMoney(billing.billed, currency, 0)}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-end tabular-nums text-emerald-400">
+                  <td className="whitespace-nowrap px-3 py-2.5 text-end num text-pos">
                     {formatMoney(billing.collected, currency, 0)}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-end tabular-nums text-rose-400">
+                  <td className="whitespace-nowrap px-3 py-2.5 text-end num text-neg">
                     {formatMoney(account.totalPaid, currency, 0)}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-end tabular-nums text-amber-400">
+                  <td className="whitespace-nowrap px-3 py-2.5 text-end num text-accent-text">
                     {formatMoney(account.balance, currency, 0)}
                   </td>
                   <td className="px-3 py-2.5">
@@ -141,7 +141,7 @@ export default function AgencyAccountsPage() {
             })}
             {accounts.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-3 py-10 text-center text-xs text-[var(--text-muted)]">
+                <td colSpan={9} className="px-3 py-10 text-center text-xs text-ink-3">
                   {t('acc_no_rows')}
                 </td>
               </tr>
@@ -155,15 +155,15 @@ export default function AgencyAccountsPage() {
           title={`${t('acc_statement')} · ${tb({ en: selected.agency.englishName, ar: selected.agency.arabicName })}`}
           subtitle={formatRange(financials.range, financials.transactions, language)}
           action={
-            <Link to="/agencies" className="text-[11px] text-amber-400 hover:text-amber-300">
+            <Link to="/agencies" className="text-[11px] text-accent-text hover:text-accent">
               {t('fin_view_details')}
             </Link>
           }
           bodyClassName="overflow-x-auto"
         >
-          <table className="w-full text-start">
+          <table className="data-table">
             <thead>
-              <tr className="border-b border-[var(--edge-soft)] text-[10px] font-bold uppercase text-[var(--text-secondary)]">
+              <tr>
                 <th className="px-3 py-2.5 text-start">{t('label_date')}</th>
                 <th className="px-3 py-2.5 text-start">{t('acc_description')}</th>
                 <th className="px-3 py-2.5 text-end">{t('acc_debit')}</th>
@@ -173,30 +173,30 @@ export default function AgencyAccountsPage() {
             </thead>
             <tbody>
               {statement.map((row) => (
-                <tr key={row.id} className="border-b border-[var(--edge-soft2)] text-xs last:border-b-0 hover:bg-[var(--surface-hover)]">
-                  <td className="whitespace-nowrap px-3 py-2.5 tabular-nums text-[var(--text-secondary)]">{row.date}</td>
+                <tr key={row.id} className="text-xs">
+                  <td className="whitespace-nowrap px-3 py-2.5 num text-ink-2">{row.date}</td>
                   <td className="px-3 py-2.5">
-                    <span className="block text-[var(--text-primary)]">{row.title}</span>
-                    <span className="block text-[10px] text-[var(--text-muted)]">{row.detail}</span>
+                    <span className="block text-ink">{row.title}</span>
+                    <span className="block text-[10px] text-ink-3">{row.detail}</span>
                   </td>
                   <td
-                    className={`whitespace-nowrap px-3 py-2.5 text-end tabular-nums ${
-                      row.kind === 'expense' ? 'text-rose-400' : 'text-[var(--text-muted)]'
+                    className={`whitespace-nowrap px-3 py-2.5 text-end num ${
+                      row.kind === 'expense' ? 'text-neg' : 'text-ink-3'
                     }`}
                   >
-                    {row.kind === 'expense' ? formatMoney(row.amount, currency, 0) : '—'}
+                    {row.kind === 'expense' ? formatMoney(row.amount, currency, 0) : '-'}
                   </td>
                   <td
-                    className={`whitespace-nowrap px-3 py-2.5 text-end tabular-nums ${
-                      row.kind === 'income' ? 'text-emerald-400' : 'text-[var(--text-muted)]'
+                    className={`whitespace-nowrap px-3 py-2.5 text-end num ${
+                      row.kind === 'income' ? 'text-pos' : 'text-ink-3'
                     }`}
                   >
-                    {row.kind === 'income' ? formatMoney(row.amount, currency, 0) : '—'}
+                    {row.kind === 'income' ? formatMoney(row.amount, currency, 0) : '-'}
                   </td>
                   <td
                     dir="ltr"
-                    className={`whitespace-nowrap px-3 py-2.5 text-end font-bold tabular-nums ${
-                      row.running >= 0 ? 'text-[var(--text-primary)]' : 'text-rose-400'
+                    className={`whitespace-nowrap px-3 py-2.5 text-end font-bold num ${
+                      row.running >= 0 ? 'text-ink' : 'text-neg'
                     }`}
                   >
                     {formatMoney(row.running, currency, 0)}
@@ -205,7 +205,7 @@ export default function AgencyAccountsPage() {
               ))}
               {statement.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-3 py-10 text-center text-xs text-[var(--text-muted)]">
+                  <td colSpan={5} className="px-3 py-10 text-center text-xs text-ink-3">
                     {t('fin_no_data')}
                   </td>
                 </tr>
@@ -213,28 +213,28 @@ export default function AgencyAccountsPage() {
             </tbody>
           </table>
 
-          <div className="flex flex-wrap items-center gap-x-8 gap-y-2 border-t border-[var(--edge-soft)] px-3 py-3 text-xs">
-            <span className="text-[var(--text-secondary)]">
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-2 border-t border-line px-3 py-3 text-xs">
+            <span className="text-ink-2">
               {t('acc_billed')}:{' '}
-              <strong dir="ltr" className="tabular-nums text-[var(--text-primary)]">
+              <strong dir="ltr" className="num text-ink">
                 {formatMoney(billedByAgency.get(selected.agency.id)?.billed ?? 0, currency, 0)}
               </strong>
             </span>
-            <span className="text-[var(--text-secondary)]">
+            <span className="text-ink-2">
               {t('acc_collected')}:{' '}
-              <strong dir="ltr" className="tabular-nums text-emerald-400">
+              <strong dir="ltr" className="num text-pos">
                 {formatMoney(selected.income, currency, 0)}
               </strong>
             </span>
-            <span className="text-[var(--text-secondary)]">
+            <span className="text-ink-2">
               {t('acc_paid_to_agencies')}:{' '}
-              <strong dir="ltr" className="tabular-nums text-rose-400">
+              <strong dir="ltr" className="num text-neg">
                 {formatMoney(selected.totalPaid, currency, 0)}
               </strong>
             </span>
-            <span className="text-[var(--text-secondary)]">
+            <span className="text-ink-2">
               {t('acc_outstanding')}:{' '}
-              <strong dir="ltr" className="tabular-nums text-amber-400">
+              <strong dir="ltr" className="num text-accent-text">
                 {formatMoney(
                   invoices
                     .filter((i) => i.recruitmentAgencyId === selected.agency.id)

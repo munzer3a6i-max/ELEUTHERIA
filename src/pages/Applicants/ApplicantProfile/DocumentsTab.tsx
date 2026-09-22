@@ -35,9 +35,9 @@ export default function DocumentsTab({ applicant }: { applicant: Applicant }) {
   }
 
   return (
-    <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-5">
+    <div className="rounded-panel border border-line bg-surface p-5">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xs font-bold uppercase tracking-[0.3px] text-[var(--text-primary)]">
+        <h2 className="panel-title">
           {language === 'ar' ? 'المستندات' : 'Documents'}
         </h2>
         <div className="flex items-center gap-2">
@@ -50,32 +50,32 @@ export default function DocumentsTab({ applicant }: { applicant: Applicant }) {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-1.5 rounded bg-amber-600 px-3 py-2 text-xs font-bold text-slate-950 hover:bg-amber-500"
+            className="flex items-center gap-1.5 rounded-control bg-accent px-3 py-2 text-xs font-bold text-accent-ink hover:bg-accent"
           >
             <Upload className="size-3.5" /> {language === 'ar' ? 'رفع مستند' : 'Upload Document'}
           </button>
         </div>
       </div>
 
-      <div className="flex flex-col divide-y divide-[var(--edge-soft2)]">
+      <div className="flex flex-col divide-y divide-line">
         {applicant.documents.map((doc) => (
           <div key={doc.id} className="flex items-center justify-between py-3">
             <div className="flex items-center gap-3">
-              <FileText className="size-4 text-[var(--text-muted)]" />
+              <FileText className="size-4 text-ink-3" />
               <div>
-                <p className="text-xs text-[var(--text-primary)]">{doc.name}</p>
-                <p className="text-[10px] text-[var(--text-muted)]">
+                <p className="text-xs text-ink">{doc.name}</p>
+                <p className="text-[10px] text-ink-3">
                   {doc.category} · {language === 'ar' ? 'تم الرفع' : 'Uploaded'} {doc.uploadedOn}
                 </p>
               </div>
             </div>
-            <button type="button" onClick={() => handleDelete(doc.id, doc.name)} className="text-[var(--text-muted)] hover:text-rose-400">
+            <button type="button" onClick={() => handleDelete(doc.id, doc.name)} className="text-ink-3 hover:text-neg">
               <Trash2 className="size-3.5" />
             </button>
           </div>
         ))}
         {applicant.documents.length === 0 && (
-          <p className="py-6 text-center text-xs text-[var(--text-muted)]">
+          <p className="py-6 text-center text-xs text-ink-3">
             {language === 'ar' ? 'لا توجد مستندات مرفوعة بعد.' : 'No documents uploaded yet.'}
           </p>
         )}
