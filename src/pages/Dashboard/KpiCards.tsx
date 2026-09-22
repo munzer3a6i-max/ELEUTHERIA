@@ -1,7 +1,7 @@
 import { Coins, Wallet, TrendingUp, TrendingDown, Users, Minus } from 'lucide-react'
 import { formatMoney } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
-import type { Financials } from './useFinancials'
+import type { Financials } from '../../lib/financials'
 
 function percentChange(current: number, previous: number): number | null {
   if (previous === 0) return null

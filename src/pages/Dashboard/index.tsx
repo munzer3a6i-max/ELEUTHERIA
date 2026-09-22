@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom'
 import { FileBarChart, MapPin, Minus, Plus, ScrollText, Wallet } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
-import AddExpenseModal from './AddExpenseModal'
-import AddIncomeModal from './AddIncomeModal'
+import AddExpenseModal from '../../components/AddExpenseModal'
+import AddIncomeModal from '../../components/AddIncomeModal'
 import AgencyAccounts from './AgencyAccounts'
 import AgencyDetail from './AgencyDetail'
 import AgentSplitChart from './AgentSplitChart'
@@ -12,11 +12,11 @@ import FinancialSummary from './FinancialSummary'
 import KpiCards from './KpiCards'
 import OfficeExpensesPanel from './OfficeExpensesPanel'
 import PayrollPanel from './PayrollPanel'
-import PeriodSelect from './PeriodSelect'
+import PeriodSelect from '../../components/PeriodSelect'
 import QuickActions from './QuickActions'
 import RecentTransactions from './RecentTransactions'
-import { formatRange, useFinancials } from './useFinancials'
-import type { PeriodKey } from './useFinancials'
+import { formatRange, useFinancials } from '../../lib/financials'
+import type { PeriodKey } from '../../lib/financials'
 import type { Slice } from './AgentSplitChart'
 
 // Categorical slots are handed out by the agency's position in the store, so a
@@ -109,7 +109,7 @@ export default function Dashboard() {
             <Plus className="size-3.5 text-emerald-400" /> {t('fin_add_income')}
           </button>
           <Link
-            to="/reports"
+            to="/accounting/reports"
             className="flex items-center gap-1.5 rounded bg-amber-600 px-3 py-2 text-[11px] font-bold text-slate-950 hover:bg-amber-500"
           >
             <FileBarChart className="size-3.5" /> {t('fin_generate_report')}

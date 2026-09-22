@@ -2,8 +2,8 @@ import { Link } from 'react-router-dom'
 import { ArrowDownRight, ArrowUpRight, ClipboardList, Scale } from 'lucide-react'
 import { formatMoney } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
-import Card from './Card'
-import type { Financials } from './useFinancials'
+import Card from '../../components/Card'
+import type { Financials } from '../../lib/financials'
 
 export default function FinancialSummary({ financials, currency }: { financials: Financials; currency: string }) {
   const { t, language } = useTranslation()
@@ -48,7 +48,7 @@ export default function FinancialSummary({ financials, currency }: { financials:
       </dl>
 
       <Link
-        to="/reports"
+        to="/accounting/reports"
         className="mt-3 flex items-center justify-center rounded bg-amber-600 py-2 text-[11px] font-bold text-slate-950 hover:bg-amber-500"
       >
         {t('fin_view_detailed_report')}

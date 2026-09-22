@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
-import { useAppStore, currentStatus, invoiceBalance, payrollTotal } from '../../store/useAppStore'
-import { useTranslation } from '../../i18n/useTranslation'
-import type { Bilingual, RecruitmentAgency, RecruitmentRequest } from '../../types'
+import { useAppStore, currentStatus, invoiceBalance, payrollTotal } from '../store/useAppStore'
+import { useTranslation } from '../i18n/useTranslation'
+import type { Bilingual, RecruitmentAgency, RecruitmentRequest } from '../types'
 
 export type PeriodKey = 'all' | 'month' | 'quarter' | 'year' | 'last12'
 
@@ -249,6 +249,40 @@ export function workerStage(applicantId: string, requests: RecruitmentRequest[],
     .filter((r) => r.applicantId === applicantId)
     .sort((a, b) => (a.updatedOn < b.updatedOn ? 1 : -1))[0]
   return (request && currentStatus(request)) || fallback
+}
+
+/** 'YYYY-MM' bucket a dated record belongs to. */
+export function monthKey(date: string): string {
+  return date.slice(0, 7)
+}
+
+export function monthLabel(month: string, language: 'en' | 'ar', long = true): string {
+  const [year, m] = month.split('-').map(Number)
+  if (!year || !m) return month
+  return new Date(year, m - 1, 1).toLocaleDateString(language === 'ar' ? 'ar' : 'en-GB', {
+    month: long ? 'long' : 'short',
+    year: 'numeric',
+  })
+}
+
+/** The month after the given one, as 'YYYY-MM'. */
+export function nextMonth(month: string): string {
+  const [year, m] = month.split('-').map(Number)
+  const date = new Date(year, m, 1)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+}
+
+/** Operating expenses split by where they came from. */
+export function expenseBuckets(transactions: Transaction[]): {
+  recruitment: number
+  payroll: number
+  office: number
+} {
+  const total = (source: Transaction['source']) =>
+    transactions
+      .filter((tx) => tx.kind === 'expense' && tx.source === source)
+      .reduce((sum, tx) => sum + tx.amount, 0)
+  return { recruitment: total('recruitment'), payroll: total('payroll'), office: total('office') }
 }
 
 export function ageFromDob(dob: string): number | null {

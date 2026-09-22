@@ -13,6 +13,11 @@ import {
   Wallet,
   ListChecks,
   BarChart3,
+  Calculator,
+  Landmark,
+  Building,
+  FileSpreadsheet,
+  Banknote,
   Bell,
   Settings,
   LogOut,
@@ -57,14 +62,55 @@ function NavItem({ to, icon, label, badge, end }: NavItemProps) {
   )
 }
 
+function NavGroup({
+  icon,
+  label,
+  active,
+  children,
+}: {
+  icon: React.ReactNode
+  label: string
+  active: boolean
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(active)
+  const [wasActive, setWasActive] = useState(active)
+
+  // Navigating into the group from elsewhere (a quick action, a link) opens it.
+  if (active !== wasActive) {
+    setWasActive(active)
+    if (active) setOpen(true)
+  }
+
+  return (
+    <div className="w-full">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-xs ${
+          active ? 'text-amber-500' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
+        }`}
+      >
+        <span className="flex items-center gap-3">
+          {icon}
+          {label}
+        </span>
+        <ChevronDown className={`size-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && <div className="flex flex-col gap-1 py-1 pe-2 ps-8">{children}</div>}
+    </div>
+  )
+}
+
 export default function Sidebar() {
-  const [addonsOpen, setAddonsOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
   const { t, language } = useTranslation()
   const unreadCount = useAppStore((s) => s.notifications.filter((n) => !n.read).length)
   const settings = useAppStore((s) => s.settings)
   const addonsActive = location.pathname.startsWith('/addons')
+  const accountingActive = location.pathname === '/' || location.pathname.startsWith('/accounting')
 
   function handleLogout() {
     if (window.confirm(language === 'ar' ? 'تسجيل الخروج من النظام؟' : 'Log out of Mustaqdem?')) {
@@ -98,30 +144,21 @@ export default function Sidebar() {
           <NavItem to="/invoices" icon={<Receipt className="size-4" />} label={t('nav_invoices')} />
           <NavItem to="/staff" icon={<UserCog className="size-4" />} label={t('nav_staff')} />
 
-          <div className="w-full">
-            <button
-              type="button"
-              onClick={() => setAddonsOpen((v) => !v)}
-              className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-xs ${
-                addonsActive ? 'text-amber-500' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              <span className="flex items-center gap-3">
-                <Wallet className="size-4" />
-                {t('nav_addons')}
-              </span>
-              <ChevronDown className={`size-3.5 transition-transform ${addonsOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {addonsOpen && (
-              <div className="flex flex-col gap-1 py-1 ps-8 pe-2">
-                <NavItem to="/addons/countries" icon={<Globe2 className="size-3.5" />} label={language === 'ar' ? 'الدول' : 'Countries'} />
-                <NavItem to="/addons/cities" icon={<MapPin className="size-3.5" />} label={language === 'ar' ? 'المدن' : 'Cities'} />
-                <NavItem to="/addons/professions" icon={<Briefcase className="size-3.5" />} label={language === 'ar' ? 'المهن' : 'Professions'} />
-                <NavItem to="/addons/payment-sources" icon={<Wallet className="size-3.5" />} label={language === 'ar' ? 'مصادر الدفع' : 'Payment Sources'} />
-                <NavItem to="/addons/statuses" icon={<ListChecks className="size-3.5" />} label={language === 'ar' ? 'الحالات' : 'Statuses'} />
-              </div>
-            )}
-          </div>
+          <NavGroup icon={<Calculator className="size-4" />} label={t('nav_accounting')} active={accountingActive}>
+            <NavItem to="/" end icon={<Landmark className="size-3.5" />} label={t('fin_title')} />
+            <NavItem to="/accounting/payroll" icon={<Banknote className="size-3.5" />} label={t('acc_payroll_title')} />
+            <NavItem to="/accounting/agency-accounts" icon={<Building2 className="size-3.5" />} label={t('acc_agency_accounts_title')} />
+            <NavItem to="/accounting/office-expenses" icon={<Building className="size-3.5" />} label={t('acc_office_expenses_title')} />
+            <NavItem to="/accounting/reports" icon={<FileSpreadsheet className="size-3.5" />} label={t('acc_reports_title')} />
+          </NavGroup>
+
+          <NavGroup icon={<Wallet className="size-4" />} label={t('nav_addons')} active={addonsActive}>
+            <NavItem to="/addons/countries" icon={<Globe2 className="size-3.5" />} label={language === 'ar' ? 'الدول' : 'Countries'} />
+            <NavItem to="/addons/cities" icon={<MapPin className="size-3.5" />} label={language === 'ar' ? 'المدن' : 'Cities'} />
+            <NavItem to="/addons/professions" icon={<Briefcase className="size-3.5" />} label={language === 'ar' ? 'المهن' : 'Professions'} />
+            <NavItem to="/addons/payment-sources" icon={<Wallet className="size-3.5" />} label={language === 'ar' ? 'مصادر الدفع' : 'Payment Sources'} />
+            <NavItem to="/addons/statuses" icon={<ListChecks className="size-3.5" />} label={language === 'ar' ? 'الحالات' : 'Statuses'} />
+          </NavGroup>
 
           <NavItem to="/reports" icon={<BarChart3 className="size-4" />} label={t('nav_reports')} />
           <NavItem to="/notifications" icon={<Bell className="size-4" />} label={t('nav_notifications')} badge={unreadCount} />

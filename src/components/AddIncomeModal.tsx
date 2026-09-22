@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { useAppStore, formatMoney, invoiceBalance } from '../../store/useAppStore'
-import { useTranslation } from '../../i18n/useTranslation'
-import Modal from '../../components/Modal'
-import { Field, PrimaryButton, SecondaryButton, SelectInput, TextInput } from '../../components/form'
+import { useAppStore, formatMoney, invoiceBalance } from '../store/useAppStore'
+import { useTranslation } from '../i18n/useTranslation'
+import Modal from './Modal'
+import { Field, PrimaryButton, SecondaryButton, SelectInput, TextInput } from './form'
 
 export default function AddIncomeModal({ onClose, currency }: { onClose: () => void; currency: string }) {
   const invoices = useAppStore((s) => s.invoices)

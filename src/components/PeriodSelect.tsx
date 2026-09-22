@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { CalendarDays, Check, ChevronDown } from 'lucide-react'
-import { useTranslation } from '../../i18n/useTranslation'
-import type { TranslationKey } from '../../i18n/translations'
-import type { PeriodKey } from './useFinancials'
+import { useTranslation } from '../i18n/useTranslation'
+import type { TranslationKey } from '../i18n/translations'
+import type { PeriodKey } from '../lib/financials'
 
 const PERIODS: { key: PeriodKey; label: TranslationKey }[] = [
   { key: 'all', label: 'fin_period_all' },
@@ -16,13 +16,19 @@ export default function PeriodSelect({
   value,
   onChange,
   rangeLabel,
+  compact = false,
 }: {
   value: PeriodKey
   onChange: (period: PeriodKey) => void
-  rangeLabel: string
+  /** The resolved date window, shown on the button unless `compact` is set. */
+  rangeLabel?: string
+  /** Shows the preset's name instead of the window — for filter rows, where space is tight. */
+  compact?: boolean
 }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
+  const selected = PERIODS.find((period) => period.key === value)
+  const buttonLabel = compact || !rangeLabel ? t(selected?.label ?? 'fin_period_all') : rangeLabel
 
   return (
     <div className="relative">
@@ -33,7 +39,7 @@ export default function PeriodSelect({
         className="flex items-center gap-2 rounded border border-[var(--edge-strong)] bg-[var(--surface)] px-3 py-2 text-[11px] text-[var(--text-primary)] hover:border-amber-500/40"
       >
         <CalendarDays className="size-3.5 text-amber-400" />
-        <span className="tabular-nums">{rangeLabel}</span>
+        <span className="tabular-nums">{buttonLabel}</span>
         <ChevronDown className={`size-3.5 text-[var(--text-muted)] transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 

@@ -4,8 +4,8 @@ import { ChevronRight, MapPin, Search } from 'lucide-react'
 import { useAppStore, formatMoney } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
 import StatusBadge from '../../components/StatusBadge'
-import { ageFromDob, workerStage } from './useFinancials'
-import type { AgencyAccount } from './useFinancials'
+import { ageFromDob, workerStage } from '../../lib/financials'
+import type { AgencyAccount } from '../../lib/financials'
 
 function Stat({ label, value, accent = '' }: { label: string; value: string; accent?: string }) {
   return (

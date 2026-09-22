@@ -123,9 +123,15 @@ interface AppState {
   deletePaymentSource: (id: string) => void
 
   addOfficeExpense: (data: Omit<OfficeExpense, 'id'>) => void
+  updateOfficeExpense: (id: string, patch: Partial<Omit<OfficeExpense, 'id'>>) => void
   setOfficeExpenseStatus: (id: string, status: LedgerStatus) => void
   deleteOfficeExpense: (id: string) => void
+  addPayrollEntry: (data: Omit<PayrollEntry, 'id'>) => void
+  updatePayrollEntry: (id: string, patch: Partial<Omit<PayrollEntry, 'id'>>) => void
+  deletePayrollEntry: (id: string) => void
   setPayrollStatus: (id: string, status: LedgerStatus) => void
+  /** Copies a month's payroll to a new month, reset to Pending — the usual way a period is opened. */
+  rollForwardPayroll: (fromMonth: string, toMonth: string) => number
 
   markNotificationRead: (id: string) => void
   markAllNotificationsRead: () => void
@@ -352,12 +358,27 @@ export const useAppStore = create<AppState>()(
 
       addOfficeExpense: (data) =>
         set((s) => ({ officeExpenses: [{ ...data, id: newId('oe') }, ...s.officeExpenses] })),
+      updateOfficeExpense: (id, patch) =>
+        set((s) => ({ officeExpenses: s.officeExpenses.map((e) => (e.id === id ? { ...e, ...patch } : e)) })),
       setOfficeExpenseStatus: (id, status) =>
         set((s) => ({ officeExpenses: s.officeExpenses.map((e) => (e.id === id ? { ...e, status } : e)) })),
       deleteOfficeExpense: (id) =>
         set((s) => ({ officeExpenses: s.officeExpenses.filter((e) => e.id !== id) })),
+      addPayrollEntry: (data) => set((s) => ({ payroll: [{ ...data, id: newId('pay') }, ...s.payroll] })),
+      updatePayrollEntry: (id, patch) =>
+        set((s) => ({ payroll: s.payroll.map((e) => (e.id === id ? { ...e, ...patch } : e)) })),
+      deletePayrollEntry: (id) => set((s) => ({ payroll: s.payroll.filter((e) => e.id !== id) })),
       setPayrollStatus: (id, status) =>
         set((s) => ({ payroll: s.payroll.map((e) => (e.id === id ? { ...e, status } : e)) })),
+      rollForwardPayroll: (fromMonth, toMonth) => {
+        const source = get().payroll.filter((e) => e.month === fromMonth)
+        const already = new Set(get().payroll.filter((e) => e.month === toMonth).map((e) => e.staffId))
+        const copies = source
+          .filter((e) => !already.has(e.staffId))
+          .map((e) => ({ ...e, id: newId('pay'), month: toMonth, status: 'Pending' as LedgerStatus }))
+        if (copies.length > 0) set((s) => ({ payroll: [...copies, ...s.payroll] }))
+        return copies.length
+      },
 
       markNotificationRead: (id) =>
         set((s) => ({ notifications: s.notifications.map((n) => (n.id === id ? { ...n, read: true } : n)) })),

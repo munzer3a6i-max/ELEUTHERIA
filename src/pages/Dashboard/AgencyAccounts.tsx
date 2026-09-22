@@ -3,8 +3,8 @@ import { Building2, Eye, Plus, SquareArrowOutUpRight } from 'lucide-react'
 import { formatMoney } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
 import StatusBadge from '../../components/StatusBadge'
-import Card from './Card'
-import type { AgencyAccount, Financials } from './useFinancials'
+import Card from '../../components/Card'
+import type { AgencyAccount, Financials } from '../../lib/financials'
 
 export default function AgencyAccounts({
   financials,
@@ -99,7 +99,7 @@ export default function AgencyAccounts({
                       <Eye className="size-3.5" />
                     </button>
                     <Link
-                      to="/agencies"
+                      to="/accounting/agency-accounts"
                       onClick={(e) => e.stopPropagation()}
                       title={t('fin_view_details')}
                       className="text-[var(--text-muted)] hover:text-amber-400"

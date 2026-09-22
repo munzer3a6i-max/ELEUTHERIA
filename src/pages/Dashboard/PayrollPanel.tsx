@@ -4,7 +4,7 @@ import { Receipt } from 'lucide-react'
 import { useAppStore, formatMoney, payrollTotal } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
 import StatusBadge from '../../components/StatusBadge'
-import Card from './Card'
+import Card from '../../components/Card'
 
 export default function PayrollPanel({ currency }: { currency: string }) {
   const payroll = useAppStore((s) => s.payroll)
@@ -57,7 +57,7 @@ export default function PayrollPanel({ currency }: { currency: string }) {
               </option>
             ))}
           </select>
-          <Link to="/staff" className="text-[11px] text-amber-400 hover:text-amber-300">
+          <Link to="/accounting/payroll" className="text-[11px] text-amber-400 hover:text-amber-300">
             {t('fin_view_all')}
           </Link>
         </>

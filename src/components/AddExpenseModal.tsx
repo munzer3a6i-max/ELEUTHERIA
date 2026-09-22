@@ -1,40 +1,50 @@
 import { useState } from 'react'
-import { useAppStore } from '../../store/useAppStore'
-import { useTranslation } from '../../i18n/useTranslation'
-import Modal from '../../components/Modal'
-import { BilingualField, Field, PrimaryButton, SecondaryButton, SelectInput, TextInput } from '../../components/form'
-import type { LedgerStatus } from '../../types'
+import { useAppStore } from '../store/useAppStore'
+import { useTranslation } from '../i18n/useTranslation'
+import Modal from './Modal'
+import { BilingualField, Field, PrimaryButton, SecondaryButton, SelectInput, TextInput } from './form'
+import type { LedgerStatus, OfficeExpense } from '../types'
 
 const CATEGORIES = ['Rent', 'Utilities', 'Supplies', 'Accommodation', 'Logistics', 'Other']
 
-export default function AddExpenseModal({ onClose }: { onClose: () => void }) {
+export default function AddExpenseModal({
+  onClose,
+  expense = null,
+}: {
+  onClose: () => void
+  /** Pass an existing expense to edit it in place instead of adding a new one. */
+  expense?: OfficeExpense | null
+}) {
   const addOfficeExpense = useAppStore((s) => s.addOfficeExpense)
+  const updateOfficeExpense = useAppStore((s) => s.updateOfficeExpense)
   const { t, language } = useTranslation()
   const [form, setForm] = useState({
-    en: '',
-    ar: '',
-    category: CATEGORIES[0],
-    amount: '',
-    date: new Date().toISOString().slice(0, 10),
-    status: 'Paid' as LedgerStatus,
+    en: expense?.item.en ?? '',
+    ar: expense?.item.ar ?? '',
+    category: expense?.category ?? CATEGORIES[0],
+    amount: expense ? String(expense.amount) : '',
+    date: expense?.date ?? new Date().toISOString().slice(0, 10),
+    status: expense?.status ?? ('Paid' as LedgerStatus),
   })
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const amount = Number(form.amount)
     if (!form.en.trim() || !Number.isFinite(amount) || amount <= 0) return
-    addOfficeExpense({
+    const payload = {
       item: { en: form.en.trim(), ar: form.ar.trim() || form.en.trim() },
       category: form.category,
       amount,
       date: form.date,
       status: form.status,
-    })
+    }
+    if (expense) updateOfficeExpense(expense.id, payload)
+    else addOfficeExpense(payload)
     onClose()
   }
 
   return (
-    <Modal title={t('fin_add_expense')} onClose={onClose}>
+    <Modal title={expense ? t('acc_edit_expense') : t('fin_add_expense')} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         <BilingualField
           labelEn={language === 'ar' ? 'البند (إنجليزي)' : 'Item (English)'}
@@ -47,7 +57,7 @@ export default function AddExpenseModal({ onClose }: { onClose: () => void }) {
         <div className="grid grid-cols-2 gap-3">
           <Field label={t('fin_category')}>
             <SelectInput value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}>
-              {CATEGORIES.map((category) => (
+              {[...new Set([...CATEGORIES, form.category])].map((category) => (
                 <option key={category} value={category}>
                   {category}
                 </option>

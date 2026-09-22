@@ -1,8 +1,9 @@
+import { Link } from 'react-router-dom'
 import { Building, Plus, Trash2 } from 'lucide-react'
 import { useAppStore, formatMoney } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
 import StatusBadge from '../../components/StatusBadge'
-import Card from './Card'
+import Card from '../../components/Card'
 
 export default function OfficeExpensesPanel({
   currency,
@@ -27,13 +28,18 @@ export default function OfficeExpensesPanel({
       title={t('fin_office_expenses')}
       subtitle={t('fin_office_expenses_sub')}
       action={
-        <button
-          type="button"
-          onClick={onAddExpense}
-          className="flex items-center gap-1 rounded border border-[var(--edge-strong)] px-2 py-1.5 text-[11px] text-[var(--text-secondary)] hover:border-amber-500/40 hover:text-amber-400"
-        >
-          <Plus className="size-3" /> {t('action_add')}
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={onAddExpense}
+            className="flex items-center gap-1 rounded border border-[var(--edge-strong)] px-2 py-1.5 text-[11px] text-[var(--text-secondary)] hover:border-amber-500/40 hover:text-amber-400"
+          >
+            <Plus className="size-3" /> {t('action_add')}
+          </button>
+          <Link to="/accounting/office-expenses" className="text-[11px] text-amber-400 hover:text-amber-300">
+            {t('fin_view_all')}
+          </Link>
+        </>
       }
       bodyClassName="overflow-x-auto"
     >

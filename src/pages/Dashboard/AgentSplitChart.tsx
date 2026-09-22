@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { ChevronRight, PieChart } from 'lucide-react'
 import { formatMoney } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
-import Card from './Card'
+import Card from '../../components/Card'
 
 export interface Slice {
   id: string
@@ -150,7 +150,7 @@ export default function AgentSplitChart({
       )}
 
       <Link
-        to="/agencies"
+        to="/accounting/agency-accounts"
         className="mt-3 flex items-center justify-center gap-1 rounded border border-[var(--edge-strong)] py-2 text-[11px] text-[var(--text-secondary)] hover:border-amber-500/40 hover:text-amber-400"
       >
         {t('fin_view_all_agencies')} <ChevronRight className="size-3 rtl:rotate-180" />

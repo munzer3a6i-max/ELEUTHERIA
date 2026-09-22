@@ -2,8 +2,8 @@ import { Link } from 'react-router-dom'
 import { ArrowDownRight, ArrowUpRight, History } from 'lucide-react'
 import { formatMoney } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
-import Card from './Card'
-import type { Transaction } from './useFinancials'
+import Card from '../../components/Card'
+import type { Transaction } from '../../lib/financials'
 
 export default function RecentTransactions({
   transactions,
@@ -21,7 +21,7 @@ export default function RecentTransactions({
       icon={<History className="size-4" />}
       title={t('fin_recent_transactions')}
       action={
-        <Link to="/reports" className="text-[11px] text-amber-400 hover:text-amber-300">
+        <Link to="/accounting/reports" className="text-[11px] text-amber-400 hover:text-amber-300">
           {t('fin_view_all')}
         </Link>
       }
