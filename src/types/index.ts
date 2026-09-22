@@ -13,6 +13,18 @@ export type Theme = 'dark' | 'light'
 export type StaffRole = 'admin' | 'accountant' | 'data_entry'
 export type StaffStatus = 'Active' | 'Inactive' | 'Suspended'
 
+/**
+ * What is kept instead of the password itself: a per-account salt and the
+ * SHA-256 of salt and password together. `temporary` marks one nobody chose --
+ * a new account, or a reset -- so the app can say so.
+ */
+export interface StaffCredentials {
+  salt: string
+  hash: string
+  temporary: boolean
+  updatedOn: string
+}
+
 export interface StaffMember {
   id: string
   name: Bilingual
@@ -20,6 +32,9 @@ export interface StaffMember {
   email: string
   role: StaffRole
   status: StaffStatus
+  /** What they type to sign in. Unique, compared without case. */
+  username: string
+  credentials: StaffCredentials | null
 }
 
 /**

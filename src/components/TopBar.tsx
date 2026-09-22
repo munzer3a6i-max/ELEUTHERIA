@@ -1,4 +1,4 @@
-import { Bell, Languages, LogOut, Menu, Moon, Search, Settings as SettingsIcon, Sun, User, Users } from 'lucide-react'
+import { Bell, Languages, LogOut, Menu, Moon, Search, Settings as SettingsIcon, Sun, User } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
@@ -113,6 +113,16 @@ export default function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
                   </span>
                   <span className="block text-[10.5px] text-accent-text">{ROLE_LABEL[role][language]}</span>
                 </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileOpen(false)
+                    navigate('/account')
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-start text-[12px] text-ink-2 hover:bg-raised hover:text-ink"
+                >
+                  <User className="size-3.5" /> {t('auth_my_account')}
+                </button>
                 {canView('system') && (
                   <button
                     type="button"
@@ -125,16 +135,7 @@ export default function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
                     <SettingsIcon className="size-3.5" /> {t('nav_settings')}
                   </button>
                 )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setProfileOpen(false)
-                    navigate('/login')
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-start text-[12px] text-ink-2 hover:bg-raised hover:text-ink"
-                >
-                  <Users className="size-3.5" /> {t('perm_switch_user')}
-                </button>
+
                 <button
                   type="button"
                   onClick={() => {

@@ -53,6 +53,7 @@ import {
 import { syncDerivedBilling } from '../lib/derivedBilling'
 import { BACKOUT_STAGE } from '../data/businessRules'
 import { canEdit, type Area } from '../lib/permissions'
+import { DEFAULT_PASSWORD, makeCredentials, normaliseUsername, verifyPassword } from '../lib/passwords'
 
 /*
   Which area each action belongs to. Hiding a button keeps an honest person out
@@ -66,6 +67,7 @@ const ACTION_AREA: Record<string, Area> = {
   setTheme: 'personal',
   signIn: 'personal',
   signOut: 'personal',
+  changeOwnPassword: 'personal',
   markNotificationRead: 'personal',
   markAllNotificationsRead: 'personal',
   addNotification: 'personal',
@@ -124,9 +126,10 @@ const ACTION_AREA: Record<string, Area> = {
 
   updateSettings: 'system',
   addStaff: 'system',
-  updateStaffRole: 'system',
+  updateStaff: 'system',
   toggleStaffActive: 'system',
   deleteStaff: 'system',
+  resetStaffPassword: 'system',
   addCountry: 'system',
   deleteCountry: 'system',
   addCity: 'system',
@@ -179,6 +182,23 @@ function withBilling<T extends Partial<AppState>>(state: AppState, changes: T) {
   return { ...changes, ...syncDerivedBilling({ ...state, ...changes }) }
 }
 
+/** Usernames are the way in, so two accounts can never share one. */
+function usernameTaken(staff: StaffMember[], username: string, exceptId?: string): boolean {
+  const wanted = normaliseUsername(username)
+  return staff.some((m) => m.id !== exceptId && normaliseUsername(m.username) === wanted)
+}
+
+/**
+ * True when this account is the only active administrator left. Removing,
+ * suspending or demoting that one would lock everybody out of the settings,
+ * and nothing in a browser-only app can undo it.
+ */
+function isLastActiveAdmin(staff: StaffMember[], id: string): boolean {
+  const member = staff.find((m) => m.id === id)
+  if (!member || member.role !== 'admin' || member.status !== 'Active') return false
+  return staff.filter((m) => m.role === 'admin' && m.status === 'Active').length <= 1
+}
+
 /** The request a worker's own status change should be written against. */
 function latestRequestFor(requests: RecruitmentRequest[], applicantId: string): RecruitmentRequest | null {
   return (
@@ -187,6 +207,20 @@ function latestRequestFor(requests: RecruitmentRequest[], applicantId: string): 
       .sort((a, b) => (a.createdOn < b.createdOn ? 1 : -1))[0] ?? null
   )
 }
+
+export type SignInResult = 'ok' | 'unknown-user' | 'wrong-password' | 'inactive'
+
+/** A new account: who they are, what they sign in with, and what they may do. */
+export interface NewStaff {
+  name: StaffMember['name']
+  phone: string
+  email: string
+  role: StaffRole
+  username: string
+  password: string
+}
+
+export type StaffPatch = Partial<Pick<StaffMember, 'name' | 'phone' | 'email' | 'role' | 'username'>>
 
 interface AppSettings {
   companyName: string
@@ -224,8 +258,14 @@ interface AppState {
   /** The member of staff working the app right now. */
   currentStaffId: string
 
-  signIn: (staffId: string) => void
+  /**
+   * Checks the password against the account's stored hash. Nothing else in the
+   * app sets `currentStaffId`, so this is the only way in.
+   */
+  signIn: (username: string, password: string) => Promise<SignInResult>
   signOut: () => void
+  /** Changes the signed-in person's own password, current one required. */
+  changeOwnPassword: (current: string, next: string) => Promise<'ok' | 'wrong-password'>
 
   setLanguage: (lang: Language) => void
   setTheme: (theme: Theme) => void
@@ -268,10 +308,12 @@ interface AppState {
   addInvoicePayment: (invoiceId: string, payment: Omit<InvoicePayment, 'id'>) => void
   deleteInvoice: (id: string) => void
 
-  addStaff: (data: Omit<StaffMember, 'id' | 'status'>) => void
-  updateStaffRole: (id: string, role: StaffRole) => void
-  toggleStaffActive: (id: string) => void
-  deleteStaff: (id: string) => void
+  addStaff: (data: NewStaff) => Promise<'ok' | 'username-taken'>
+  updateStaff: (id: string, patch: StaffPatch) => 'ok' | 'username-taken' | 'last-admin'
+  toggleStaffActive: (id: string) => 'ok' | 'last-admin' | 'self'
+  deleteStaff: (id: string) => 'ok' | 'last-admin' | 'self'
+  /** An administrator setting someone else's password, marked temporary. */
+  resetStaffPassword: (id: string, password: string) => Promise<void>
 
   addCountry: (name: Country['name']) => void
   deleteCountry: (id: string) => void
@@ -339,7 +381,8 @@ export const useAppStore = create<AppState>()(
       backouts: seedBackouts,
       notifications: seedNotifications,
       invoiceSequence: seedInvoices.length + 1,
-      currentStaffId: seedStaff[0].id,
+      // Nobody is signed in until somebody types a password.
+      currentStaffId: '',
       settings: {
         companyName: 'Eleutheria',
         companyTagline: 'International Placement Services',
@@ -350,8 +393,23 @@ export const useAppStore = create<AppState>()(
         theme: 'dark',
       },
 
-      signIn: (staffId) => set({ currentStaffId: staffId }),
+      signIn: async (username, password) => {
+        const wanted = normaliseUsername(username)
+        const member = get().staff.find((m) => normaliseUsername(m.username) === wanted)
+        if (!member) return 'unknown-user'
+        if (member.status !== 'Active') return 'inactive'
+        if (!(await verifyPassword(password, member.credentials))) return 'wrong-password'
+        set({ currentStaffId: member.id })
+        return 'ok'
+      },
       signOut: () => set({ currentStaffId: '' }),
+      changeOwnPassword: async (current, next) => {
+        const member = get().staff.find((m) => m.id === get().currentStaffId)
+        if (!member || !(await verifyPassword(current, member.credentials))) return 'wrong-password'
+        const credentials = await makeCredentials(next)
+        set((s) => ({ staff: s.staff.map((m) => (m.id === member.id ? { ...m, credentials } : m)) }))
+        return 'ok'
+      },
 
       setLanguage: (language) => set((s) => ({ settings: { ...s.settings, language } })),
       setTheme: (theme) => set((s) => ({ settings: { ...s.settings, theme } })),
@@ -616,14 +674,58 @@ export const useAppStore = create<AppState>()(
         })),
       deleteInvoice: (id) => set((s) => ({ invoices: s.invoices.filter((i) => i.id !== id) })),
 
-      addStaff: (data) => set((s) => ({ staff: [{ ...data, id: newId('st'), status: 'Active' }, ...s.staff] })),
-      updateStaffRole: (id, role) =>
-        set((s) => ({ staff: s.staff.map((m) => (m.id === id ? { ...m, role } : m)) })),
-      toggleStaffActive: (id) =>
+      addStaff: async ({ password, username, ...rest }) => {
+        if (usernameTaken(get().staff, username)) return 'username-taken'
+        const member: StaffMember = {
+          ...rest,
+          username: normaliseUsername(username),
+          credentials: await makeCredentials(password, true),
+          id: newId('st'),
+          status: 'Active',
+        }
+        set((s) => ({ staff: [member, ...s.staff] }))
+        return 'ok'
+      },
+      updateStaff: (id, patch) => {
+        const state = get()
+        if (patch.username && usernameTaken(state.staff, patch.username, id)) return 'username-taken'
+        // Somebody has to be able to get back into the settings.
+        if (patch.role && patch.role !== 'admin' && isLastActiveAdmin(state.staff, id)) return 'last-admin'
         set((s) => ({
-          staff: s.staff.map((m) => (m.id === id ? { ...m, status: m.status === 'Active' ? 'Inactive' : 'Active' } : m)),
-        })),
-      deleteStaff: (id) => set((s) => ({ staff: s.staff.filter((m) => m.id !== id) })),
+          staff: s.staff.map((m) =>
+            m.id === id
+              ? { ...m, ...patch, username: patch.username ? normaliseUsername(patch.username) : m.username }
+              : m,
+          ),
+        }))
+        return 'ok'
+      },
+      toggleStaffActive: (id) => {
+        const state = get()
+        const member = state.staff.find((m) => m.id === id)
+        if (!member) return 'ok'
+        if (member.status === 'Active') {
+          if (id === state.currentStaffId) return 'self'
+          if (isLastActiveAdmin(state.staff, id)) return 'last-admin'
+        }
+        set((s) => ({
+          staff: s.staff.map((m) =>
+            m.id === id ? { ...m, status: m.status === 'Active' ? 'Inactive' : 'Active' } : m,
+          ),
+        }))
+        return 'ok'
+      },
+      deleteStaff: (id) => {
+        const state = get()
+        if (id === state.currentStaffId) return 'self'
+        if (isLastActiveAdmin(state.staff, id)) return 'last-admin'
+        set((s) => ({ staff: s.staff.filter((m) => m.id !== id) }))
+        return 'ok'
+      },
+      resetStaffPassword: async (id, password) => {
+        const credentials = await makeCredentials(password, true)
+        set((s) => ({ staff: s.staff.map((m) => (m.id === id ? { ...m, credentials } : m)) }))
+      },
 
       addCountry: (name) => set((s) => ({ countries: [...s.countries, { id: newId('co'), name }] })),
       deleteCountry: (id) => set((s) => ({ countries: s.countries.filter((c) => c.id !== id) })),
@@ -770,7 +872,7 @@ export const useAppStore = create<AppState>()(
       () => get().staff.find((m) => m.id === get().currentStaffId)?.role ?? 'data_entry'),
     {
       name: 'mustaqdem-store',
-      version: 4,
+      version: 5,
       // Older saved stores predate agents and predate keeping the bill itself.
       // Seed what is missing rather than leaving the new pages empty, carry
       // filenames over as attachments with no file, and let the sync re-derive
@@ -790,7 +892,8 @@ export const useAppStore = create<AppState>()(
             ...member,
             role: (member.role as string) === 'user' ? 'data_entry' : member.role,
           })),
-          currentStaffId: state.currentStaffId ?? (state.staff ?? seedStaff)[0]?.id ?? '',
+          // Passwords are new, so an older session has to sign in again.
+          currentStaffId: '',
           agents: state.agents ?? seedAgents,
           agentCommissions: state.agentCommissions ?? [],
           agencyContracts: state.agencyContracts ?? seedAgencyContracts,
@@ -860,3 +963,30 @@ export function formatMoney(amount: number, currency = 'USD', fractionDigits = 2
 export function payrollTotal(entry: PayrollEntry): number {
   return entry.basicSalary + entry.overtime + entry.allowances
 }
+
+/*
+  Accounts saved before this app had passwords have no username and no
+  credentials, and an account nobody can sign in to is an account that is
+  gone. Give each one the starting password and a username taken from their
+  email, marked temporary so the app says it was not chosen. This runs once as
+  the store loads, so it goes through setState rather than an action.
+*/
+async function backfillCredentials(): Promise<void> {
+  const staff = useAppStore.getState().staff
+  if (staff.every((member) => member.credentials && member.username)) return
+
+  const repaired = await Promise.all(
+    staff.map(async (member) => {
+      if (member.credentials && member.username) return member
+      const username = member.username || normaliseUsername(member.email.split('@')[0] || member.name.en)
+      return {
+        ...member,
+        username,
+        credentials: member.credentials ?? (await makeCredentials(DEFAULT_PASSWORD, true)),
+      }
+    }),
+  )
+  useAppStore.setState({ staff: repaired })
+}
+
+void backfillCredentials()

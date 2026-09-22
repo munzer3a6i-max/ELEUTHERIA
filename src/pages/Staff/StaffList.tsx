@@ -1,26 +1,24 @@
-import { useState } from 'react'
-import { Plus, Trash2, UserCog } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Settings as SettingsIcon, UserCog } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
+import { useCurrentUser } from '../../lib/useCurrentUser'
+import { ROLE_LABEL, ROLE_SUMMARY } from '../../lib/permissions'
 import PageHeader from '../../components/PageHeader'
-import Modal from '../../components/Modal'
-import { BilingualField, Field, TextInput, SelectInput, PrimaryButton, SecondaryButton } from '../../components/form'
-import { ROLES, ROLE_LABEL, ROLE_SUMMARY } from '../../lib/permissions'
-import type { StaffMember, StaffRole } from '../../types'
+import Card from '../../components/Card'
+import StatusBadge from '../../components/StatusBadge'
 
+/**
+ * The roster: who works here and how much of the caseload each one carries.
+ * Accounts, roles and passwords are one thing and belong in one place, which
+ * is Settings; this page links there rather than offering a second way to
+ * change the same records.
+ */
 export default function StaffList() {
   const staff = useAppStore((s) => s.staff)
   const requests = useAppStore((s) => s.requests)
-  const addStaff = useAppStore((s) => s.addStaff)
-  const updateStaffRole = useAppStore((s) => s.updateStaffRole)
-  const toggleStaffActive = useAppStore((s) => s.toggleStaffActive)
-  const deleteStaff = useAppStore((s) => s.deleteStaff)
   const { t, tb, language } = useTranslation()
-  const [addOpen, setAddOpen] = useState(false)
-
-  function handleDelete(id: string, name: string) {
-    if (window.confirm(`${t('action_delete')} ${name}?`)) deleteStaff(id)
-  }
+  const { canView } = useCurrentUser()
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -28,145 +26,70 @@ export default function StaffList() {
         title={t('nav_staff')}
         subtitle={t('page_staff_subtitle')}
         actions={
-          <PrimaryButton onClick={() => setAddOpen(true)} className="flex items-center gap-1.5">
-            <Plus className="size-3.5" /> {language === 'ar' ? 'إضافة موظف' : 'Add Staff'}
-          </PrimaryButton>
+          canView('system') && (
+            <Link to="/settings" className="btn btn-secondary">
+              <SettingsIcon className="size-3.5" /> {t('users_title')}
+            </Link>
+          )
         }
       />
 
-      <div className="overflow-x-auto rounded-panel border border-line bg-surface">
+      <Card bodyClassName="overflow-x-auto p-0">
         <table className="data-table">
           <thead>
             <tr>
-              <th className="px-4 py-3">{t('label_name')}</th>
-              <th className="px-4 py-3">{language === 'ar' ? 'الدور' : 'Role'}</th>
-              <th className="px-4 py-3">{t('label_email')}</th>
-              <th className="px-4 py-3">{language === 'ar' ? 'الطلبات المعالجة' : 'Requests Handled'}</th>
-              <th className="px-4 py-3">{t('label_status')}</th>
-              <th className="sticky end-0 bg-surface px-4 py-3 text-end">{t('label_action')}</th>
+              <th>{t('label_name')}</th>
+              <th>{t('perm_role')}</th>
+              <th>{t('label_email')}</th>
+              <th className="text-end">{language === 'ar' ? 'الطلبات المعالجة' : 'Requests Handled'}</th>
+              <th>{t('label_status')}</th>
             </tr>
           </thead>
           <tbody>
-            {staff.map((m) => {
-              const handled = requests.filter((r) => r.responsibleEmployeeId === m.id).length
+            {staff.map((member) => {
+              const handled = requests.filter((r) => r.responsibleEmployeeId === member.id).length
               return (
-                <tr key={m.id} className="text-xs">
-                  <td className="px-4 py-3">
-                    <span className="flex items-center gap-2.5 text-ink">
-                      <span className="flex size-7 items-center justify-center rounded-pill bg-raised">
+                <tr key={member.id}>
+                  <td>
+                    <span className="flex items-center gap-2.5">
+                      <span className="flex size-7 shrink-0 items-center justify-center rounded-pill bg-raised">
                         <UserCog className="size-3.5 text-ink-3" />
                       </span>
-                      {tb(m.name)}
+                      <span className="min-w-0">
+                        <span className="block font-medium text-ink">{tb(member.name)}</span>
+                        <span dir="ltr" className="num block text-[10.5px] text-ink-3 rtl:text-end">
+                          {member.username}
+                        </span>
+                      </span>
                     </span>
                   </td>
-                  <td className="px-4 py-3">
-                    <select
-                      value={m.role}
-                      onChange={(e) => updateStaffRole(m.id, e.target.value as StaffRole)}
-                      className="rounded-control border border-line bg-sunken px-2 py-1 text-[10.5px] text-ink focus:outline-none"
-                    >
-                      {ROLES.map((role) => (
-                        <option key={role} value={role}>
-                          {ROLE_LABEL[role][language]}
-                        </option>
-                      ))}
-                    </select>
+                  <td>
+                    <span className="block text-ink">{ROLE_LABEL[member.role][language]}</span>
+                    <span className="block text-[10px] text-ink-3">{ROLE_SUMMARY[member.role][language]}</span>
                   </td>
-                  <td className="px-4 py-3 text-ink-2">
-                    <span className="block">{m.email}</span>
-                    <span className="block text-[10px] text-ink-3">{ROLE_SUMMARY[m.role][language]}</span>
-                  </td>
-                  <td className="px-4 py-3 text-ink-2">{handled}</td>
-                  <td className="px-4 py-3">
-                    <button
-                      type="button"
-                      onClick={() => toggleStaffActive(m.id)}
-                      className={`rounded-control px-2 py-0.5 text-[10px] font-bold ${
-                        m.status === 'Active' ? 'bg-pos-soft text-pos' : 'bg-raised text-ink-3'
-                      }`}
-                    >
-                      {m.status === 'Active' ? t('label_active') : t('label_inactive')}
-                    </button>
-                  </td>
-                  <td className="sticky end-0 bg-surface px-4 py-3 text-end">
-                    <button type="button" onClick={() => handleDelete(m.id, m.name.en)} className="text-ink-3 hover:text-neg">
-                      <Trash2 className="size-3.5" />
-                    </button>
+                  <td dir="ltr" className="rtl:text-end">{member.email}</td>
+                  <td className="num text-end text-ink">{handled}</td>
+                  <td>
+                    <StatusBadge
+                      status={member.status === 'Active' ? t('label_active') : t('label_inactive')}
+                      tone={member.status === 'Active' ? 'pos' : 'neutral'}
+                    />
                   </td>
                 </tr>
               )
             })}
           </tbody>
         </table>
-      </div>
+      </Card>
 
-      {addOpen && (
-        <AddStaffModal
-          onClose={() => setAddOpen(false)}
-          onSubmit={(data) => {
-            addStaff(data)
-            setAddOpen(false)
-          }}
-        />
+      {canView('system') && (
+        <p className="text-[11.5px] text-ink-3">
+          {t('users_manage_here')}{' '}
+          <Link to="/settings" className="text-accent-text hover:text-accent">
+            {t('nav_settings')}
+          </Link>
+        </p>
       )}
     </div>
-  )
-}
-
-function AddStaffModal({
-  onClose,
-  onSubmit,
-}: {
-  onClose: () => void
-  onSubmit: (data: Omit<StaffMember, 'id' | 'status'>) => void
-}) {
-  const { t, language } = useTranslation()
-  const [nameEn, setNameEn] = useState('')
-  const [nameAr, setNameAr] = useState('')
-  const [role, setRole] = useState<StaffRole>('data_entry')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!nameEn.trim() || !email.trim()) return
-    onSubmit({ name: { en: nameEn.trim(), ar: nameAr.trim() }, role, email: email.trim(), phone: phone.trim() })
-  }
-
-  return (
-    <Modal title={language === 'ar' ? 'إضافة موظف' : 'Add Staff'} onClose={onClose}>
-      <form onSubmit={handleSubmit}>
-        <BilingualField
-          labelEn={t('label_english_name')}
-          labelAr={t('label_arabic_name')}
-          valueEn={nameEn}
-          valueAr={nameAr}
-          onChangeEn={setNameEn}
-          onChangeAr={setNameAr}
-          required
-        />
-        <Field label={language === 'ar' ? 'الدور' : 'Role'}>
-          <SelectInput value={role} onChange={(e) => setRole(e.target.value as StaffRole)}>
-            {ROLES.map((option) => (
-              <option key={option} value={option}>
-                {ROLE_LABEL[option][language]} — {ROLE_SUMMARY[option][language]}
-              </option>
-            ))}
-          </SelectInput>
-        </Field>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label={t('label_email')}>
-            <TextInput type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          </Field>
-          <Field label={t('label_phone')}>
-            <TextInput value={phone} onChange={(e) => setPhone(e.target.value)} />
-          </Field>
-        </div>
-        <div className="mt-4 flex justify-end gap-2">
-          <SecondaryButton onClick={onClose}>{t('action_cancel')}</SecondaryButton>
-          <PrimaryButton type="submit">{language === 'ar' ? 'إضافة موظف' : 'Add Staff'}</PrimaryButton>
-        </div>
-      </form>
-    </Modal>
   )
 }

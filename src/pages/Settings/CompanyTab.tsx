@@ -1,16 +1,15 @@
 import { useState } from 'react'
-import { useAppStore } from '../store/useAppStore'
-import { useTranslation } from '../i18n/useTranslation'
-import PageHeader from '../components/PageHeader'
-import { Field, TextInput, SelectInput, PrimaryButton, SecondaryButton } from '../components/form'
-import type { Language, Theme } from '../types'
+import { useAppStore } from '../../store/useAppStore'
+import { useTranslation } from '../../i18n/useTranslation'
+import { Field, TextInput, SelectInput, PrimaryButton, SecondaryButton } from '../../components/form'
+import type { Language, Theme } from '../../types'
 
-export default function Settings() {
+export default function CompanyTab() {
   const settings = useAppStore((s) => s.settings)
   const updateSettings = useAppStore((s) => s.updateSettings)
   const setLanguage = useAppStore((s) => s.setLanguage)
   const setTheme = useAppStore((s) => s.setTheme)
-  const { t, language } = useTranslation()
+  const { language } = useTranslation()
   const [form, setForm] = useState({
     companyName: settings.companyName,
     companyTagline: settings.companyTagline,
@@ -33,9 +32,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <PageHeader title={t('nav_settings')} subtitle={language === 'ar' ? 'تفضيلات النظام وملف الشركة' : 'Company profile and system preferences'} />
-
+    <div className="flex flex-col gap-4">
       <div className="max-w-lg rounded-panel border border-line bg-surface p-5">
         <h2 className="mb-4 panel-title">
           {language === 'ar' ? 'التفضيلات' : 'Preferences'}
@@ -101,7 +98,7 @@ export default function Settings() {
             <TextInput value="USD" disabled className="opacity-60" />
           </Field>
           <div className="mt-2 flex items-center gap-3">
-            <PrimaryButton type="submit">{t('action_save')}</PrimaryButton>
+            <PrimaryButton type="submit">{language === 'ar' ? 'حفظ التغييرات' : 'Save Changes'}</PrimaryButton>
             {saved && <span className="text-[11px] text-pos">{language === 'ar' ? 'تم الحفظ.' : 'Saved.'}</span>}
           </div>
         </form>

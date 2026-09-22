@@ -79,6 +79,7 @@ const ROUTE_AREAS: [string, Area][] = [
   ['/addons', 'system'],
   ['/settings', 'system'],
   ['/notifications', 'personal'],
+  ['/account', 'personal'],
   ['/', 'operations'],
 ]
 

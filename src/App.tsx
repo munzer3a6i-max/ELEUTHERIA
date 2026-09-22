@@ -2,6 +2,7 @@ import { Routes, Route, Outlet } from 'react-router-dom'
 import AppShell from './layouts/AppShell'
 import RootEffects from './components/RootEffects'
 import RequireArea from './components/RequireArea'
+import RequireAuth from './components/RequireAuth'
 import Overview from './pages/Overview'
 import FinancialCenter from './pages/Accounting/FinancialCenter'
 import Login from './pages/Login'
@@ -23,6 +24,7 @@ import AddonsPage from './pages/Addons/AddonsPage'
 import Reports from './pages/Reports'
 import Notifications from './pages/Notifications'
 import Settings from './pages/Settings'
+import Account from './pages/Account'
 import NotFound from './pages/NotFound'
 
 function App() {
@@ -31,7 +33,7 @@ function App() {
       <RootEffects />
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route element={<AppShell />}>
+        <Route element={<RequireAuth><AppShell /></RequireAuth>}>
           <Route element={<RequireArea><Outlet /></RequireArea>}>
           <Route path="/" element={<Overview />} />
           <Route path="/applicants" element={<ApplicantsList />} />
@@ -54,6 +56,7 @@ function App() {
           <Route path="/reports" element={<Reports />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/account" element={<Account />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Route>
