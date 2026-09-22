@@ -197,9 +197,11 @@ function AddApplicantModal({
     phone: string
     telephone: string
     recruitmentAgencyId: string | null
+    agentId: string | null
   }) => void
 }) {
   const agencies = useAppStore((s) => s.agencies)
+  const agents = useAppStore((s) => s.agents)
   const { t, tb, language } = useTranslation()
   const [englishName, setEnglishName] = useState('')
   const [arabicName, setArabicName] = useState('')
@@ -214,6 +216,7 @@ function AddApplicantModal({
   const [idNumber, setIdNumber] = useState('')
   const [phone, setPhone] = useState('')
   const [agencyId, setAgencyId] = useState('')
+  const [agentId, setAgentId] = useState('')
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -234,6 +237,7 @@ function AddApplicantModal({
       phone: phone.trim(),
       telephone: '',
       recruitmentAgencyId: agencyId || null,
+      agentId: agentId || null,
     })
   }
 
@@ -310,6 +314,23 @@ function AddApplicantModal({
               </option>
             ))}
           </SelectInput>
+        </Field>
+        <Field label={language === 'ar' ? 'الوكيل (اختياري)' : 'Introduced by agent (optional)'}>
+          <SelectInput value={agentId} onChange={(e) => setAgentId(e.target.value)}>
+            <option value="">{language === 'ar' ? 'جاءت مباشرة' : 'Came to us directly'}</option>
+            {agents
+              .filter((a) => a.status === 'Active')
+              .map((a) => (
+                <option key={a.id} value={a.id}>
+                  {tb(a.name)}
+                </option>
+              ))}
+          </SelectInput>
+          <p className="mt-1 text-[10.5px] text-ink-3">
+            {language === 'ar'
+              ? 'يستحق الوكيل نصف أتعابه عند الاختيار والنصف الآخر عند المغادرة.'
+              : 'An agent earns half their fee at selection and the other half at deployment.'}
+          </p>
         </Field>
         <div className="mt-4 flex justify-end gap-2">
           <SecondaryButton onClick={onClose}>{t('action_cancel')}</SecondaryButton>

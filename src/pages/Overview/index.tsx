@@ -7,7 +7,9 @@ import {
   CalendarClock,
   ClipboardList,
   FileWarning,
+  HandCoins,
   Landmark,
+  PlaneLanding,
   Plus,
   Receipt,
   Users,
@@ -27,6 +29,9 @@ const ALERT_ICON: Record<AlertKind, typeof AlertTriangle> = {
   passport: BookUser,
   invoice: FileWarning,
   payroll: Banknote,
+  commission: HandCoins,
+  charge: Receipt,
+  backout: PlaneLanding,
 }
 
 const ALERT_TONE: Record<AlertKind, string> = {
@@ -34,6 +39,9 @@ const ALERT_TONE: Record<AlertKind, string> = {
   passport: 'text-neg',
   invoice: 'text-warn',
   payroll: 'text-info',
+  commission: 'text-warn',
+  charge: 'text-warn',
+  backout: 'text-neg',
 }
 
 export default function Overview() {

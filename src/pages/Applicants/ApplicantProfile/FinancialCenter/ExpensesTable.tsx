@@ -7,6 +7,7 @@ import type { RecruitmentRequest, StatusHistoryEntry } from '../../../../types'
 
 export default function ExpensesTable({ request }: { request: RecruitmentRequest }) {
   const staff = useAppStore((s) => s.staff)
+  const applicants = useAppStore((s) => s.applicants)
   const paymentSources = useAppStore((s) => s.paymentSources)
   const addStatusUpdate = useAppStore((s) => s.addStatusUpdate)
   const updateStatusUpdate = useAppStore((s) => s.updateStatusUpdate)
@@ -97,6 +98,7 @@ export default function ExpensesTable({ request }: { request: RecruitmentRequest
         <StatusUpdateModal
           requestType={request.type}
           currentStatusLabel={currentLabel}
+          agentId={applicants.find((a) => a.id === request.applicantId)?.agentId ?? null}
           initial={statusModal === 'add' ? undefined : statusModal}
           onClose={() => setStatusModal(null)}
           onSubmit={(entry) => {

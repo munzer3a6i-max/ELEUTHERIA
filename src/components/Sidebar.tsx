@@ -12,6 +12,7 @@ import {
   Globe2,
   Handshake,
   Landmark,
+  PlaneLanding,
   LayoutDashboard,
   ListChecks,
   LogOut,
@@ -20,6 +21,7 @@ import {
   Receipt,
   Settings,
   UserCog,
+  UserPlus,
   Users,
   Wallet,
 } from 'lucide-react'
@@ -189,6 +191,7 @@ export default function Sidebar({
           <NavItem to="/applicants" icon={<Users className="size-4" />} label={t('nav_applicants')} />
           <NavItem to="/employers" icon={<Building2 className="size-4" />} label={t('nav_employers')} />
           <NavItem to="/agencies" icon={<Handshake className="size-4" />} label={t('nav_agencies')} />
+          <NavItem to="/agents" icon={<UserPlus className="size-4" />} label={t('nav_agents')} />
           <NavItem to="/recruitments" icon={<ClipboardList className="size-4" />} label={t('nav_recruitments')} />
           <NavItem to="/invoices" icon={<Receipt className="size-4" />} label={t('nav_invoices')} />
 
@@ -198,6 +201,7 @@ export default function Sidebar({
             <NavItem to="/accounting/payroll" icon={<Banknote className="size-3.5" />} label={t('acc_payroll_title')} />
             <NavItem to="/accounting/agency-accounts" icon={<Building2 className="size-3.5" />} label={t('acc_agency_accounts_title')} />
             <NavItem to="/accounting/office-expenses" icon={<Building className="size-3.5" />} label={t('acc_office_expenses_title')} />
+            <NavItem to="/accounting/backouts" icon={<PlaneLanding className="size-3.5" />} label={t('backout_title')} />
             <NavItem to="/accounting/reports" icon={<FileSpreadsheet className="size-3.5" />} label={t('acc_reports_title')} />
           </NavGroup>
           <NavItem to="/reports" icon={<BarChart3 className="size-4" />} label={t('nav_reports')} />

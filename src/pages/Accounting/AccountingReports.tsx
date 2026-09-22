@@ -12,7 +12,7 @@ import type { PeriodKey } from '../../lib/financials'
 import MonthlyTrendChart from './MonthlyTrendChart'
 import type { MonthPoint } from './MonthlyTrendChart'
 
-const SERIES = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)']
+const SERIES = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)', 'var(--series-4)', 'var(--series-5)']
 
 function StatementRow({
   label,
@@ -59,7 +59,10 @@ export default function AccountingReports() {
 
   const buckets = useMemo(() => expenseBuckets(financials.transactions), [financials.transactions])
   const revenue = financials.totalIncome
-  const grossProfit = revenue - buckets.recruitment
+  // Direct cost of putting a worker in a job: the pipeline fees, the agent who
+  // introduced her, and bringing her home again if she backs out.
+  const placementCost = buckets.recruitment + buckets.agent + buckets.backout
+  const grossProfit = revenue - placementCost
   const operating = buckets.payroll + buckets.office
   const net = financials.netProfit
   const receivables = invoices.reduce((sum, invoice) => sum + invoiceBalance(invoice), 0)
@@ -82,6 +85,8 @@ export default function AccountingReports() {
     { label: t('acc_recruitment_costs'), value: buckets.recruitment, color: SERIES[0] },
     { label: t('acc_salaries'), value: buckets.payroll, color: SERIES[1] },
     { label: t('acc_office_running'), value: buckets.office, color: SERIES[2] },
+    { label: t('agent_commissions'), value: buckets.agent, color: SERIES[3] },
+    { label: t('backout_costs'), value: buckets.backout, color: SERIES[4] },
   ].filter((row) => row.value > 0)
 
   const agencyRows = useMemo(
@@ -151,11 +156,14 @@ export default function AccountingReports() {
             <StatementRow label={t('acc_revenue')} value={formatMoney(revenue, currency, 0)} share={share(revenue)} accent="text-pos" />
             <StatementRow
               label={t('acc_cost_of_placements')}
-              value={`− ${formatMoney(buckets.recruitment, currency, 0)}`}
-              share={share(buckets.recruitment)}
+              value={`− ${formatMoney(placementCost, currency, 0)}`}
+              share={share(placementCost)}
               indent
               accent="text-neg"
             />
+            <StatementRow label={t('acc_recruitment_costs')} value={formatMoney(buckets.recruitment, currency, 0)} indent accent="text-ink-2" />
+            <StatementRow label={t('agent_commissions')} value={formatMoney(buckets.agent, currency, 0)} indent accent="text-ink-2" />
+            <StatementRow label={t('backout_costs')} value={formatMoney(buckets.backout, currency, 0)} indent accent="text-ink-2" />
             <StatementRow label={t('acc_gross_profit')} value={formatMoney(grossProfit, currency, 0)} share={share(grossProfit)} emphasis />
             <StatementRow label={t('acc_operating_expenses')} value={`− ${formatMoney(operating, currency, 0)}`} share={share(operating)} accent="text-neg" />
             <StatementRow label={t('acc_salaries')} value={formatMoney(buckets.payroll, currency, 0)} indent accent="text-ink-2" />

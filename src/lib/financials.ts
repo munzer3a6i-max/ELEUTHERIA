@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useAppStore, currentStatus, invoiceBalance, payrollTotal } from '../store/useAppStore'
 import { useTranslation } from '../i18n/useTranslation'
+import { contractForAgency } from './derivedBilling'
 import type { Bilingual, RecruitmentAgency, RecruitmentRequest } from '../types'
 
 export type PeriodKey = 'all' | 'month' | 'quarter' | 'year' | 'last12'
@@ -13,8 +14,12 @@ export interface DateRange {
 export interface Transaction {
   id: string
   kind: 'income' | 'expense'
-  /** Expense bucket — recruitment costs are per-agency, the rest are overhead. */
-  source: 'recruitment' | 'payroll' | 'office' | 'invoice'
+  /**
+   * Where the money came from or went. `agency` is income (a partner office
+   * settling its half of the contract), the rest of the non-`invoice` values
+   * are expense buckets.
+   */
+  source: 'recruitment' | 'payroll' | 'office' | 'invoice' | 'agent' | 'agency' | 'backout'
   title: string
   detail: string
   date: string
@@ -29,7 +34,12 @@ export interface AgencyAccount {
   workers: number
   income: number
   totalPaid: number
+  /** Still owed to us: unpaid employer invoices plus unsettled contract halves. */
   balance: number
+  /** What this office pays per domestic worker, from its current contract. */
+  contractPrice: number | null
+  /** Contract halves that have fallen due but are not settled yet. */
+  dueFromAgency: number
 }
 
 export interface Financials {
@@ -122,6 +132,11 @@ export function useFinancials(period: PeriodKey): Financials {
   const staff = useAppStore((s) => s.staff)
   const payroll = useAppStore((s) => s.payroll)
   const officeExpenses = useAppStore((s) => s.officeExpenses)
+  const agents = useAppStore((s) => s.agents)
+  const agentCommissions = useAppStore((s) => s.agentCommissions)
+  const agencyContracts = useAppStore((s) => s.agencyContracts)
+  const agencyCharges = useAppStore((s) => s.agencyCharges)
+  const backouts = useAppStore((s) => s.backouts)
   const { language } = useTranslation()
 
   return useMemo(() => {
@@ -191,6 +206,61 @@ export function useFinancials(period: PeriodKey): Financials {
       })
     }
 
+    // An agent's fee is incurred the day the milestone is reached, whether or
+    // not it has been sent yet — the same accrual rule as a stage cost.
+    for (const commission of agentCommissions) {
+      const agent = agents.find((a) => a.id === commission.agentId)
+      const applicant = applicants.find((a) => a.id === commission.applicantId)
+      const request = requests.find((r) => r.id === commission.requestId)
+      ledger.push({
+        id: `agent-${commission.id}`,
+        kind: 'expense',
+        source: 'agent',
+        title: agent ? pick(agent.name) : (language === 'ar' ? 'وكيل' : 'Agent'),
+        detail: `${commission.milestone} · ${applicant ? pick({ en: applicant.englishName, ar: applicant.arabicName }) : '-'}`,
+        date: commission.earnedOn,
+        amount: commission.amount,
+        agencyId: request?.recruitmentAgencyId ?? null,
+      })
+    }
+
+    // A partner office's half is income when it actually lands, which is the
+    // same cash rule the invoice payments above follow.
+    for (const charge of agencyCharges) {
+      if (charge.status !== 'Paid' || !charge.settledOn) continue
+      const agency = agencies.find((a) => a.id === charge.agencyId)
+      const applicant = applicants.find((a) => a.id === charge.applicantId)
+      ledger.push({
+        id: `charge-${charge.id}`,
+        kind: 'income',
+        source: 'agency',
+        title: agency ? pick({ en: agency.englishName, ar: agency.arabicName }) : charge.agencyId,
+        detail: `${charge.milestone} · ${applicant ? pick({ en: applicant.englishName, ar: applicant.arabicName }) : '-'}`,
+        date: charge.settledOn,
+        amount: charge.amount,
+        agencyId: charge.agencyId,
+      })
+    }
+
+    // Bringing a worker home inside the guarantee window is our bill to carry.
+    for (const backout of backouts) {
+      const applicant = applicants.find((a) => a.id === backout.applicantId)
+      const request = requests.find((r) => r.id === backout.requestId)
+      if (backout.liability !== 'Company') continue
+      for (const cost of backout.costs) {
+        ledger.push({
+          id: `backout-${cost.id}`,
+          kind: 'expense',
+          source: 'backout',
+          title: pick(cost.label),
+          detail: applicant ? pick({ en: applicant.englishName, ar: applicant.arabicName }) : cost.category,
+          date: cost.date,
+          amount: cost.amount,
+          agencyId: request?.recruitmentAgencyId ?? null,
+        })
+      }
+    }
+
     ledger.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
 
     const transactions = ledger.filter((tx) => inRange(tx.date, range))
@@ -213,6 +283,12 @@ export function useFinancials(period: PeriodKey): Financials {
       const agencyApplicants = applicants.filter((a) => a.recruitmentAgencyId === agency.id)
       const country = agencyApplicants[0]?.country ?? '-'
       const rows = transactions.filter((tx) => tx.agencyId === agency.id)
+      const dueFromAgency = agencyCharges
+        .filter((c) => c.agencyId === agency.id && c.status === 'Pending')
+        .reduce((total, c) => total + c.amount, 0)
+      const invoiceDue = invoices
+        .filter((i) => i.recruitmentAgencyId === agency.id)
+        .reduce((total, i) => total + invoiceBalance(i), 0)
       return {
         agency,
         country,
@@ -220,9 +296,9 @@ export function useFinancials(period: PeriodKey): Financials {
         workers: agencyApplicants.length,
         income: sum(rows, 'income'),
         totalPaid: sum(rows, 'expense'),
-        balance: invoices
-          .filter((i) => i.recruitmentAgencyId === agency.id)
-          .reduce((total, i) => total + invoiceBalance(i), 0),
+        balance: invoiceDue + dueFromAgency,
+        contractPrice: contractForAgency(agencyContracts, agency.id)?.pricePerWorker ?? null,
+        dueFromAgency,
       }
     })
 
@@ -240,7 +316,23 @@ export function useFinancials(period: PeriodKey): Financials {
         balance: agencyAccounts.reduce((total, a) => total + a.balance, 0),
       },
     }
-  }, [period, applicants, employers, agencies, requests, invoices, staff, payroll, officeExpenses, language])
+  }, [
+    period,
+    applicants,
+    employers,
+    agencies,
+    requests,
+    invoices,
+    staff,
+    payroll,
+    officeExpenses,
+    agents,
+    agentCommissions,
+    agencyContracts,
+    agencyCharges,
+    backouts,
+    language,
+  ])
 }
 
 /** Latest pipeline stage reached by an applicant, falling back to their record status. */
@@ -275,6 +367,8 @@ export function nextMonth(month: string): string {
 /** Operating expenses split by where they came from. */
 export function expenseBuckets(transactions: Transaction[]): {
   recruitment: number
+  agent: number
+  backout: number
   payroll: number
   office: number
 } {
@@ -282,7 +376,13 @@ export function expenseBuckets(transactions: Transaction[]): {
     transactions
       .filter((tx) => tx.kind === 'expense' && tx.source === source)
       .reduce((sum, tx) => sum + tx.amount, 0)
-  return { recruitment: total('recruitment'), payroll: total('payroll'), office: total('office') }
+  return {
+    recruitment: total('recruitment'),
+    agent: total('agent'),
+    backout: total('backout'),
+    payroll: total('payroll'),
+    office: total('office'),
+  }
 }
 
 export function ageFromDob(dob: string): number | null {

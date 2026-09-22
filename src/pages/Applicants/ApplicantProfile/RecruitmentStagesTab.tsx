@@ -4,6 +4,7 @@ import { useAppStore, formatMoney } from '../../../store/useAppStore'
 import { useTranslation } from '../../../i18n/useTranslation'
 import StatusUpdateModal from '../../../components/StatusUpdateModal'
 import StageStepper from './StageStepper'
+import PlacementMoney from './PlacementMoney'
 import type { RecruitmentRequest, StatusHistoryEntry } from '../../../types'
 
 export default function RecruitmentStagesTab({
@@ -12,6 +13,7 @@ export default function RecruitmentStagesTab({
   activeRequest: RecruitmentRequest | null
 }) {
   const staff = useAppStore((s) => s.staff)
+  const applicants = useAppStore((s) => s.applicants)
   const paymentSources = useAppStore((s) => s.paymentSources)
   const addStatusUpdate = useAppStore((s) => s.addStatusUpdate)
   const updateStatusUpdate = useAppStore((s) => s.updateStatusUpdate)
@@ -42,8 +44,9 @@ export default function RecruitmentStagesTab({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-      <div className="lg:col-span-5">
+      <div className="flex flex-col gap-4 lg:col-span-5">
         <StageStepper requestType={activeRequest.type} request={activeRequest} onEditStages={() => setStatusModal('add')} compact={false} />
+        <PlacementMoney request={activeRequest} />
       </div>
 
       <div className="lg:col-span-7 rounded-panel border border-line bg-surface p-4">
@@ -102,6 +105,7 @@ export default function RecruitmentStagesTab({
         <StatusUpdateModal
           requestType={activeRequest.type}
           currentStatusLabel={currentLabel}
+          agentId={applicants.find((a) => a.id === activeRequest.applicantId)?.agentId ?? null}
           initial={statusModal === 'add' ? undefined : statusModal}
           onClose={() => setStatusModal(null)}
           onSubmit={(entry) => {

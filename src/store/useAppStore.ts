@@ -20,6 +20,13 @@ import type {
   PayrollEntry,
   OfficeExpense,
   LedgerStatus,
+  Agent,
+  AgentCommission,
+  AgencyContract,
+  AgencyCharge,
+  Backout,
+  BackoutCost,
+  SettlementStatus,
 } from '../types'
 import {
   seedApplicants,
@@ -35,7 +42,13 @@ import {
   seedNotifications,
   seedPayroll,
   seedOfficeExpenses,
+  seedAgents,
+  seedAgentCommissions,
+  seedAgencyContracts,
+  seedAgencyCharges,
+  seedBackouts,
 } from '../data/seed'
+import { syncDerivedBilling } from '../lib/derivedBilling'
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10)
@@ -43,6 +56,15 @@ function todayIso(): string {
 
 function newId(prefix: string): string {
   return `${prefix}-${crypto.randomUUID()}`
+}
+
+/**
+ * Applies a change and immediately re-derives everything the milestones pay
+ * for. Any action that can move a stage, attach an agent or change a contract
+ * price goes through here, so the books cannot drift from the history.
+ */
+function withBilling<T extends Partial<AppState>>(state: AppState, changes: T) {
+  return { ...changes, ...syncDerivedBilling({ ...state, ...changes }) }
 }
 
 interface AppSettings {
@@ -68,6 +90,13 @@ interface AppState {
   paymentSources: PaymentSource[]
   payroll: PayrollEntry[]
   officeExpenses: OfficeExpense[]
+  agents: Agent[]
+  /** Derived from status history by syncDerivedBilling, never typed in. */
+  agentCommissions: AgentCommission[]
+  agencyContracts: AgencyContract[]
+  /** Derived from status history and the agency's contract price. */
+  agencyCharges: AgencyCharge[]
+  backouts: Backout[]
   notifications: AppNotification[]
   settings: AppSettings
   invoiceSequence: number
@@ -133,6 +162,23 @@ interface AppState {
   /** Copies a month's payroll to a new month, reset to Pending — the usual way a period is opened. */
   rollForwardPayroll: (fromMonth: string, toMonth: string) => number
 
+  addAgent: (data: Omit<Agent, 'id' | 'createdOn' | 'status'>) => string
+  updateAgent: (id: string, patch: Partial<Omit<Agent, 'id'>>) => void
+  deleteAgent: (id: string) => void
+  setCommissionStatus: (id: string, status: SettlementStatus, paymentSourceId?: string | null) => void
+
+  addAgencyContract: (data: Omit<AgencyContract, 'id'>) => string
+  updateAgencyContract: (id: string, patch: Partial<Omit<AgencyContract, 'id'>>) => void
+  deleteAgencyContract: (id: string) => void
+  setAgencyChargeStatus: (id: string, status: SettlementStatus, paymentSourceId?: string | null) => void
+
+  updateBackout: (id: string, patch: Partial<Omit<Backout, 'id' | 'costs'>>) => void
+  deleteBackout: (id: string) => void
+  addBackoutCost: (backoutId: string, cost: Omit<BackoutCost, 'id'>) => void
+  updateBackoutCost: (backoutId: string, costId: string, patch: Partial<Omit<BackoutCost, 'id'>>) => void
+  deleteBackoutCost: (backoutId: string, costId: string) => void
+  setBackoutCostStatus: (backoutId: string, costId: string, status: SettlementStatus) => void
+
   markNotificationRead: (id: string) => void
   markAllNotificationsRead: () => void
   addNotification: (title: string, detail: string) => void
@@ -153,6 +199,11 @@ export const useAppStore = create<AppState>()(
       paymentSources: seedPaymentSources,
       payroll: seedPayroll,
       officeExpenses: seedOfficeExpenses,
+      agents: seedAgents,
+      agentCommissions: seedAgentCommissions,
+      agencyContracts: seedAgencyContracts,
+      agencyCharges: seedAgencyCharges,
+      backouts: seedBackouts,
       notifications: seedNotifications,
       invoiceSequence: seedInvoices.length + 1,
       settings: {
@@ -187,16 +238,26 @@ export const useAppStore = create<AppState>()(
           updatedOn: todayIso(),
           updatedBy: 'Kylie',
         }
-        set((s) => ({ applicants: [applicant, ...s.applicants] }))
+        set((s) => withBilling(s, { applicants: [applicant, ...s.applicants] }))
         return id
       },
       updateApplicant: (id, patch) =>
-        set((s) => ({
-          applicants: s.applicants.map((a) =>
-            a.id === id ? { ...a, ...patch, updatedOn: todayIso(), updatedBy: 'Kylie' } : a,
-          ),
-        })),
-      deleteApplicant: (id) => set((s) => ({ applicants: s.applicants.filter((a) => a.id !== id) })),
+        set((s) =>
+          withBilling(s, {
+            applicants: s.applicants.map((a) =>
+              a.id === id ? { ...a, ...patch, updatedOn: todayIso(), updatedBy: 'Kylie' } : a,
+            ),
+          }),
+        ),
+      deleteApplicant: (id) =>
+        set((s) =>
+          withBilling(s, {
+            applicants: s.applicants.filter((a) => a.id !== id),
+            agentCommissions: s.agentCommissions.filter((c) => c.applicantId !== id),
+            agencyCharges: s.agencyCharges.filter((c) => c.applicantId !== id),
+            backouts: s.backouts.filter((b) => b.applicantId !== id),
+          }),
+        ),
       addExperience: (applicantId, entry) =>
         set((s) => ({
           applicants: s.applicants.map((a) =>
@@ -262,7 +323,14 @@ export const useAppStore = create<AppState>()(
       },
       updateAgency: (id, patch) =>
         set((s) => ({ agencies: s.agencies.map((a) => (a.id === id ? { ...a, ...patch } : a)) })),
-      deleteAgency: (id) => set((s) => ({ agencies: s.agencies.filter((a) => a.id !== id) })),
+      deleteAgency: (id) =>
+        set((s) =>
+          withBilling(s, {
+            agencies: s.agencies.filter((a) => a.id !== id),
+            agencyContracts: s.agencyContracts.filter((c) => c.agencyId !== id),
+            agencyCharges: s.agencyCharges.filter((c) => c.agencyId !== id),
+          }),
+        ),
 
       addRequest: (data) => {
         const id = newId('rr')
@@ -274,42 +342,58 @@ export const useAppStore = create<AppState>()(
           createdOn: todayIso(),
           updatedOn: todayIso(),
         }
-        set((s) => ({ requests: [request, ...s.requests] }))
+        set((s) => withBilling(s, { requests: [request, ...s.requests] }))
         return id
       },
       updateRequest: (id, patch) =>
-        set((s) => ({
-          requests: s.requests.map((r) => (r.id === id ? { ...r, ...patch, updatedOn: todayIso() } : r)),
-        })),
-      deleteRequest: (id) => set((s) => ({ requests: s.requests.filter((r) => r.id !== id) })),
+        set((s) =>
+          withBilling(s, {
+            requests: s.requests.map((r) => (r.id === id ? { ...r, ...patch, updatedOn: todayIso() } : r)),
+          }),
+        ),
+      deleteRequest: (id) =>
+        set((s) =>
+          withBilling(s, {
+            requests: s.requests.filter((r) => r.id !== id),
+            agentCommissions: s.agentCommissions.filter((c) => c.requestId !== id),
+            agencyCharges: s.agencyCharges.filter((c) => c.requestId !== id),
+            backouts: s.backouts.filter((b) => b.requestId !== id),
+          }),
+        ),
       addStatusUpdate: (requestId, entry) =>
-        set((s) => ({
-          requests: s.requests.map((r) =>
-            r.id === requestId
-              ? { ...r, statusHistory: [...r.statusHistory, { ...entry, id: newId('sh') }], updatedOn: todayIso() }
-              : r,
-          ),
-        })),
+        set((s) =>
+          withBilling(s, {
+            requests: s.requests.map((r) =>
+              r.id === requestId
+                ? { ...r, statusHistory: [...r.statusHistory, { ...entry, id: newId('sh') }], updatedOn: todayIso() }
+                : r,
+            ),
+          }),
+        ),
       updateStatusUpdate: (requestId, entryId, patch) =>
-        set((s) => ({
-          requests: s.requests.map((r) =>
-            r.id === requestId
-              ? {
-                  ...r,
-                  statusHistory: r.statusHistory.map((h) => (h.id === entryId ? { ...patch, id: h.id } : h)),
-                  updatedOn: todayIso(),
-                }
-              : r,
-          ),
-        })),
+        set((s) =>
+          withBilling(s, {
+            requests: s.requests.map((r) =>
+              r.id === requestId
+                ? {
+                    ...r,
+                    statusHistory: r.statusHistory.map((h) => (h.id === entryId ? { ...patch, id: h.id } : h)),
+                    updatedOn: todayIso(),
+                  }
+                : r,
+            ),
+          }),
+        ),
       deleteStatusUpdate: (requestId, entryId) =>
-        set((s) => ({
-          requests: s.requests.map((r) =>
-            r.id === requestId
-              ? { ...r, statusHistory: r.statusHistory.filter((h) => h.id !== entryId), updatedOn: todayIso() }
-              : r,
-          ),
-        })),
+        set((s) =>
+          withBilling(s, {
+            requests: s.requests.map((r) =>
+              r.id === requestId
+                ? { ...r, statusHistory: r.statusHistory.filter((h) => h.id !== entryId), updatedOn: todayIso() }
+                : r,
+            ),
+          }),
+        ),
 
       addInvoice: (data) => {
         const id = newId('inv')
@@ -380,6 +464,101 @@ export const useAppStore = create<AppState>()(
         return copies.length
       },
 
+      addAgent: (data) => {
+        const id = newId('agent')
+        const agent: Agent = { ...data, id, status: 'Active', createdOn: todayIso() }
+        set((s) => withBilling(s, { agents: [agent, ...s.agents] }))
+        return id
+      },
+      updateAgent: (id, patch) =>
+        set((s) => withBilling(s, { agents: s.agents.map((a) => (a.id === id ? { ...a, ...patch } : a)) })),
+      deleteAgent: (id) =>
+        set((s) =>
+          withBilling(s, {
+            agents: s.agents.filter((a) => a.id !== id),
+            // The candidates stay; they simply came to us directly from now on.
+            applicants: s.applicants.map((a) => (a.agentId === id ? { ...a, agentId: null } : a)),
+            agentCommissions: s.agentCommissions.filter((c) => c.agentId !== id),
+          }),
+        ),
+      setCommissionStatus: (id, status, paymentSourceId = null) =>
+        set((s) => ({
+          agentCommissions: s.agentCommissions.map((c) =>
+            c.id === id
+              ? {
+                  ...c,
+                  status,
+                  paidOn: status === 'Paid' ? todayIso() : null,
+                  paymentSourceId: status === 'Paid' ? paymentSourceId : null,
+                }
+              : c,
+          ),
+        })),
+
+      addAgencyContract: (data) => {
+        const id = newId('agc')
+        set((s) => withBilling(s, { agencyContracts: [{ ...data, id }, ...s.agencyContracts] }))
+        return id
+      },
+      updateAgencyContract: (id, patch) =>
+        set((s) =>
+          withBilling(s, {
+            agencyContracts: s.agencyContracts.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+          }),
+        ),
+      deleteAgencyContract: (id) =>
+        set((s) =>
+          withBilling(s, {
+            agencyContracts: s.agencyContracts.filter((c) => c.id !== id),
+            agencyCharges: s.agencyCharges.filter((c) => c.contractId !== id || c.status === 'Paid'),
+          }),
+        ),
+      setAgencyChargeStatus: (id, status, paymentSourceId = null) =>
+        set((s) => ({
+          agencyCharges: s.agencyCharges.map((c) =>
+            c.id === id
+              ? {
+                  ...c,
+                  status,
+                  settledOn: status === 'Paid' ? todayIso() : null,
+                  paymentSourceId: status === 'Paid' ? paymentSourceId : null,
+                }
+              : c,
+          ),
+        })),
+
+      updateBackout: (id, patch) =>
+        set((s) => ({ backouts: s.backouts.map((b) => (b.id === id ? { ...b, ...patch } : b)) })),
+      deleteBackout: (id) => set((s) => ({ backouts: s.backouts.filter((b) => b.id !== id) })),
+      addBackoutCost: (backoutId, cost) =>
+        set((s) => ({
+          backouts: s.backouts.map((b) =>
+            b.id === backoutId ? { ...b, costs: [...b.costs, { ...cost, id: newId('boc') }] } : b,
+          ),
+        })),
+      updateBackoutCost: (backoutId, costId, patch) =>
+        set((s) => ({
+          backouts: s.backouts.map((b) =>
+            b.id === backoutId
+              ? { ...b, costs: b.costs.map((c) => (c.id === costId ? { ...c, ...patch } : c)) }
+              : b,
+          ),
+        })),
+      deleteBackoutCost: (backoutId, costId) =>
+        set((s) => ({
+          backouts: s.backouts.map((b) =>
+            b.id === backoutId ? { ...b, costs: b.costs.filter((c) => c.id !== costId) } : b,
+          ),
+        })),
+      setBackoutCostStatus: (backoutId, costId, status) =>
+        set((s) => ({
+          backouts: s.backouts.map((b) =>
+            b.id === backoutId
+              ? { ...b, costs: b.costs.map((c) => (c.id === costId ? { ...c, status } : c)) }
+              : b,
+          ),
+        })),
+
       markNotificationRead: (id) =>
         set((s) => ({ notifications: s.notifications.map((n) => (n.id === id ? { ...n, read: true } : n)) })),
       markAllNotificationsRead: () =>
@@ -389,7 +568,27 @@ export const useAppStore = create<AppState>()(
           notifications: [{ id: newId('note'), title, detail, date: todayIso(), read: false }, ...s.notifications],
         })),
     }),
-    { name: 'mustaqdem-store' },
+    {
+      name: 'mustaqdem-store',
+      version: 2,
+      // A store persisted before agents existed has no agents, contracts or
+      // backouts. Seed those in rather than leaving the pages empty, then let
+      // the sync re-derive what the history says is owed.
+      migrate: (persisted) => {
+        const state = persisted as Partial<AppState>
+        return {
+          ...state,
+          agents: state.agents ?? seedAgents,
+          agentCommissions: state.agentCommissions ?? [],
+          agencyContracts: state.agencyContracts ?? seedAgencyContracts,
+          agencyCharges: state.agencyCharges ?? [],
+          backouts: state.backouts ?? [],
+        } as AppState
+      },
+      onRehydrateStorage: () => (state) => {
+        if (state) state.applicants = state.applicants.map((a) => ({ ...a, agentId: a.agentId ?? null }))
+      },
+    },
   ),
 )
 

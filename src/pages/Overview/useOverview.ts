@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useAppStore, currentStatus, invoiceBalance, payrollTotal } from '../../store/useAppStore'
+import { useAppStore, currentStatus, formatMoney, invoiceBalance, payrollTotal } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
 import { pipelineForType } from '../../data/statusPipelines'
 import type { Applicant, Bilingual, RecruitmentRequest } from '../../types'
@@ -10,8 +10,10 @@ const STALLED_AFTER_DAYS = 21
 const PASSPORT_WARNING_DAYS = 180
 /** An invoice older than this with money outstanding is chased. */
 const INVOICE_OVERDUE_DAYS = 30
+/** A contract half still unsettled this long after falling due is chased. */
+const CHARGE_OVERDUE_DAYS = 14
 
-export type AlertKind = 'stalled' | 'passport' | 'invoice' | 'payroll'
+export type AlertKind = 'stalled' | 'passport' | 'invoice' | 'payroll' | 'commission' | 'charge' | 'backout'
 
 export interface Alert {
   id: string
@@ -65,6 +67,11 @@ export function useOverview() {
   const invoices = useAppStore((s) => s.invoices)
   const staff = useAppStore((s) => s.staff)
   const payroll = useAppStore((s) => s.payroll)
+  const agents = useAppStore((s) => s.agents)
+  const agentCommissions = useAppStore((s) => s.agentCommissions)
+  const agencyCharges = useAppStore((s) => s.agencyCharges)
+  const backouts = useAppStore((s) => s.backouts)
+  const currency = useAppStore((s) => s.settings.currency)
   const { language } = useTranslation()
 
   return useMemo(() => {
@@ -162,6 +169,66 @@ export function useOverview() {
       })
     }
 
+    // Fees earned at a milestone that have not been sent to the agent yet.
+    const owedByAgent = new Map<string, number>()
+    for (const commission of agentCommissions) {
+      if (commission.status !== 'Pending') continue
+      owedByAgent.set(commission.agentId, (owedByAgent.get(commission.agentId) ?? 0) + commission.amount)
+    }
+    for (const [agentId, amount] of owedByAgent) {
+      const agent = agents.find((a) => a.id === agentId)
+      alerts.push({
+        id: `commission-${agentId}`,
+        kind: 'commission',
+        title: agent ? pick(agent.name) : agentId,
+        detail:
+          language === 'ar'
+            ? `عمولة مستحقة للوكيل بقيمة ${formatMoney(amount, currency, 0)}`
+            : `Agent commission of ${formatMoney(amount, currency, 0)} not paid out yet`,
+        weight: amount,
+        to: '/agents',
+      })
+    }
+
+    // Halves a partner office owes us and has not sent.
+    for (const charge of agencyCharges) {
+      if (charge.status !== 'Pending') continue
+      const age = daysBetween(charge.dueOn, today)
+      if (age < CHARGE_OVERDUE_DAYS) continue
+      const agency = agencies.find((a) => a.id === charge.agencyId)
+      const applicant = applicants.find((a) => a.id === charge.applicantId)
+      alerts.push({
+        id: `charge-${charge.id}`,
+        kind: 'charge',
+        title: agency ? pick({ en: agency.englishName, ar: agency.arabicName }) : charge.agencyId,
+        detail:
+          language === 'ar'
+            ? `${nameOf(applicant)} · ${charge.milestone} · مستحق منذ ${age} يومًا`
+            : `${nameOf(applicant)}, ${charge.milestone} half unpaid for ${age} days`,
+        weight: age,
+        to: '/agencies',
+      })
+    }
+
+    for (const backout of backouts) {
+      const unpaid = backout.costs
+        .filter((cost) => cost.status === 'Pending')
+        .reduce((sum, cost) => sum + cost.amount, 0)
+      if (unpaid <= 0) continue
+      const applicant = applicants.find((a) => a.id === backout.applicantId)
+      alerts.push({
+        id: `backout-${backout.id}`,
+        kind: 'backout',
+        title: nameOf(applicant),
+        detail:
+          language === 'ar'
+            ? `فواتير تراجع غير مسددة بقيمة ${formatMoney(unpaid, currency, 0)}`
+            : `${formatMoney(unpaid, currency, 0)} of return costs still unpaid`,
+        weight: unpaid,
+        to: '/accounting/backouts',
+      })
+    }
+
     alerts.sort((a, b) => b.weight - a.weight)
 
     // Latest stage updates across the whole desk, newest first.
@@ -206,5 +273,19 @@ export function useOverview() {
         openInvoices: invoices.filter((invoice) => invoiceBalance(invoice) > 0).length,
       },
     }
-  }, [applicants, agencies, employers, requests, invoices, staff, payroll, language])
+  }, [
+    applicants,
+    agencies,
+    employers,
+    requests,
+    invoices,
+    staff,
+    payroll,
+    agents,
+    agentCommissions,
+    agencyCharges,
+    backouts,
+    currency,
+    language,
+  ])
 }

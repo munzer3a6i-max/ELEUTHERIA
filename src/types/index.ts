@@ -76,6 +76,8 @@ export interface Applicant {
   documents: ApplicantDocument[]
   notes: ApplicantNote[]
   recruitmentAgencyId: string | null
+  /** The agent who introduced this candidate, when one did. */
+  agentId: string | null
   createdOn: string
   updatedOn: string
   updatedBy: string
@@ -226,4 +228,124 @@ export interface OfficeExpense {
   amount: number
   date: string
   status: LedgerStatus
+}
+
+
+// ---------------------------------------------------------------- agents --
+
+export type AgentStatus = 'Active' | 'Inactive'
+
+/**
+ * A person who introduces candidates. Unlike a partner agency, an agent works
+ * case by case: they bring the workers they find, and earn on each one that
+ * reaches a milestone.
+ */
+export interface Agent {
+  id: string
+  name: Bilingual
+  phone: string
+  email: string
+  /** Where this agent sources candidates, for example a province or city. */
+  area: string
+  status: AgentStatus
+  /** Earned when a candidate they introduced is selected by a client. */
+  selectionFee: number
+  /** Earned when that same candidate is deployed. */
+  deploymentFee: number
+  notes: string
+  createdOn: string
+}
+
+export type CommissionMilestone = 'Selected' | 'Deployed'
+
+/** Money owed to someone outside the company, and whether it has been sent. */
+export type SettlementStatus = 'Pending' | 'Paid'
+
+/**
+ * One half of an agent's fee for one candidate. Created automatically when the
+ * candidate's request reaches the milestone, so a commission can never exist
+ * for a stage that has not happened.
+ */
+export interface AgentCommission {
+  id: string
+  agentId: string
+  applicantId: string
+  requestId: string
+  milestone: CommissionMilestone
+  amount: number
+  earnedOn: string
+  status: SettlementStatus
+  paidOn: string | null
+  paymentSourceId: string | null
+}
+
+// ------------------------------------------------------ agency contracts --
+
+export type ContractStatus = 'Active' | 'Expired'
+
+/**
+ * The agreement with a partner office abroad. It fixes what they pay for each
+ * domestic worker placed with them; domestic workers are only placed through
+ * an agency holding one of these.
+ */
+export interface AgencyContract {
+  id: string
+  agencyId: string
+  reference: string
+  /** What the partner office pays for each domestic worker placed. */
+  pricePerWorker: number
+  signedOn: string
+  expiresOn: string
+  status: ContractStatus
+  notes: string
+}
+
+/** Half falls due when the worker is selected, half when her visa is issued. */
+export type AgencyChargeMilestone = 'Selected' | 'Visa Issued'
+
+export interface AgencyCharge {
+  id: string
+  agencyId: string
+  contractId: string
+  applicantId: string
+  requestId: string
+  milestone: AgencyChargeMilestone
+  amount: number
+  dueOn: string
+  status: SettlementStatus
+  settledOn: string | null
+  paymentSourceId: string | null
+}
+
+// -------------------------------------------------------------- backouts --
+
+/** Who carries the cost of bringing a worker home. */
+export type BackoutLiability = 'Company' | 'Employer' | 'Agency'
+
+export interface BackoutCost {
+  id: string
+  label: Bilingual
+  category: string
+  amount: number
+  date: string
+  status: SettlementStatus
+  paymentSourceId: string | null
+}
+
+/**
+ * A deployed worker who left the placement and returned home. Inside the
+ * guarantee window the company brings her back at its own expense, so each
+ * backout carries its own bills.
+ */
+export interface Backout {
+  id: string
+  requestId: string
+  applicantId: string
+  deployedOn: string
+  returnedOn: string
+  reason: string
+  liability: BackoutLiability
+  notes: string
+  costs: BackoutCost[]
+  createdOn: string
 }

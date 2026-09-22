@@ -226,6 +226,7 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
         <StatusUpdateModal
           requestType={request.type}
           currentStatusLabel={status}
+          agentId={applicant?.agentId ?? null}
           initial={statusModal === 'add' ? undefined : statusModal}
           onClose={() => setStatusModal(null)}
           onSubmit={(entry) => {

@@ -12,6 +12,11 @@ import type {
   AppNotification,
   PayrollEntry,
   OfficeExpense,
+  Agent,
+  AgentCommission,
+  AgencyContract,
+  AgencyCharge,
+  Backout,
 } from '../types'
 
 export const seedCountries: Country[] = [
@@ -208,6 +213,7 @@ export const seedApplicants: Applicant[] = [
       { id: 'n-2', author: 'Roz', date: '2024-05-18', text: 'Application received and file opened.' },
     ],
     recruitmentAgencyId: 'fra-1',
+    agentId: 'agent-1',
     createdOn: '2024-05-18',
     updatedOn: '2024-05-27',
     updatedBy: 'Roz',
@@ -241,6 +247,7 @@ export const seedApplicants: Applicant[] = [
     documents: [{ id: 'd-3', name: 'passport_scan.pdf', category: 'Identification', uploadedOn: '2024-03-30' }],
     notes: [{ id: 'n-3', author: 'Eman', date: '2024-05-05', text: 'Deployed successfully. Client confirmed arrival.' }],
     recruitmentAgencyId: 'fra-2',
+    agentId: 'agent-1',
     createdOn: '2024-03-30',
     updatedOn: '2024-05-05',
     updatedBy: 'Eman',
@@ -271,6 +278,7 @@ export const seedApplicants: Applicant[] = [
     documents: [],
     notes: [{ id: 'n-4', author: 'Roz', date: '2024-06-03', text: 'On hold pending updated medical documents from client.' }],
     recruitmentAgencyId: 'fra-1',
+    agentId: null,
     createdOn: '2024-06-01',
     updatedOn: '2024-06-03',
     updatedBy: 'Roz',
@@ -301,6 +309,7 @@ export const seedApplicants: Applicant[] = [
     documents: [{ id: 'd-4', name: 'passport_scan.pdf', category: 'Identification', uploadedOn: '2024-05-15' }],
     notes: [],
     recruitmentAgencyId: 'fra-3',
+    agentId: 'agent-2',
     createdOn: '2024-05-15',
     updatedOn: '2024-05-23',
     updatedBy: 'Eman',
@@ -331,6 +340,7 @@ export const seedApplicants: Applicant[] = [
     documents: [],
     notes: [],
     recruitmentAgencyId: 'fra-2',
+    agentId: null,
     createdOn: '2024-04-22',
     updatedOn: '2024-04-22',
     updatedBy: 'Roz',
@@ -361,6 +371,7 @@ export const seedApplicants: Applicant[] = [
     documents: [],
     notes: [],
     recruitmentAgencyId: 'fra-1',
+    agentId: null,
     createdOn: '2024-02-08',
     updatedOn: '2024-03-10',
     updatedBy: 'Tess',
@@ -383,7 +394,7 @@ export const seedRequests: RecruitmentRequest[] = [
       { id: 'sh-2', status: 'Ticket to Manila', date: '2024-05-21', cost: 45, paymentSourceId: 'ps-1', responsibleEmployeeId: 'st-roz', attachmentName: 'ticket_manila.pdf', notes: '' },
       { id: 'sh-3', status: 'Medical', date: '2024-05-23', cost: 60, paymentSourceId: 'ps-2', responsibleEmployeeId: 'st-roz', attachmentName: 'medical_receipt.pdf', notes: 'Passed medical exam.' },
       { id: 'sh-4', status: 'Vaccine', date: '2024-05-24', cost: 20, paymentSourceId: 'ps-2', responsibleEmployeeId: 'st-roz', attachmentName: null, notes: '' },
-      { id: 'sh-5', status: 'Selected', date: '2024-05-27', cost: 500, paymentSourceId: 'ps-1', responsibleEmployeeId: 'st-kylie', attachmentName: null, notes: 'First down payment to agent.' },
+      { id: 'sh-5', status: 'Selected', date: '2024-05-27', cost: 0, paymentSourceId: 'ps-1', responsibleEmployeeId: 'st-kylie', attachmentName: null, notes: 'First down payment to agent.' },
     ],
     createdOn: '2024-05-20',
     updatedOn: '2024-05-27',
@@ -403,7 +414,7 @@ export const seedRequests: RecruitmentRequest[] = [
       { id: 'sh-7', status: 'Ticket to Manila', date: '2024-04-03', cost: 45, paymentSourceId: 'ps-1', responsibleEmployeeId: 'st-eman', attachmentName: null, notes: '' },
       { id: 'sh-8', status: 'Medical', date: '2024-04-06', cost: 60, paymentSourceId: 'ps-2', responsibleEmployeeId: 'st-eman', attachmentName: 'medical_receipt.pdf', notes: '' },
       { id: 'sh-9', status: 'Vaccine', date: '2024-04-07', cost: 20, paymentSourceId: 'ps-2', responsibleEmployeeId: 'st-eman', attachmentName: null, notes: '' },
-      { id: 'sh-10', status: 'Selected', date: '2024-04-10', cost: 500, paymentSourceId: 'ps-1', responsibleEmployeeId: 'st-kylie', attachmentName: null, notes: '' },
+      { id: 'sh-10', status: 'Selected', date: '2024-04-10', cost: 0, paymentSourceId: 'ps-1', responsibleEmployeeId: 'st-kylie', attachmentName: null, notes: '' },
       { id: 'sh-11', status: 'Contract', date: '2024-04-12', cost: 0, paymentSourceId: 'ps-1', responsibleEmployeeId: 'st-eman', attachmentName: 'contract.pdf', notes: '' },
       { id: 'sh-12', status: 'TESDA', date: '2024-04-15', cost: 24.01, paymentSourceId: 'ps-2', responsibleEmployeeId: 'st-eman', attachmentName: null, notes: '' },
       { id: 'sh-13', status: 'OWWA', date: '2024-04-16', cost: 0, paymentSourceId: 'ps-2', responsibleEmployeeId: 'st-eman', attachmentName: null, notes: '' },
@@ -414,7 +425,8 @@ export const seedRequests: RecruitmentRequest[] = [
       { id: 'sh-18', status: 'OEC', date: '2024-04-26', cost: 38.41, paymentSourceId: 'ps-2', responsibleEmployeeId: 'st-eman', attachmentName: null, notes: '' },
       { id: 'sh-19', status: 'Visa Stamping', date: '2024-04-28', cost: 25, paymentSourceId: 'ps-2', responsibleEmployeeId: 'st-eman', attachmentName: null, notes: '' },
       { id: 'sh-20', status: 'Ticket', date: '2024-05-02', cost: 380, paymentSourceId: 'ps-1', responsibleEmployeeId: 'st-eman', attachmentName: 'ticket_receipt.pdf', notes: '' },
-      { id: 'sh-21', status: 'Deployed', date: '2024-05-05', cost: 500, paymentSourceId: 'ps-1', responsibleEmployeeId: 'st-kylie', attachmentName: null, notes: 'Second down payment to agent.' },
+      { id: 'sh-21', status: 'Deployed', date: '2024-05-05', cost: 0, paymentSourceId: 'ps-1', responsibleEmployeeId: 'st-kylie', attachmentName: null, notes: 'Second agent fee earned on deployment.' },
+      { id: 'sh-39', status: 'Back Out', date: '2024-06-20', cost: 0, paymentSourceId: 'ps-1', responsibleEmployeeId: 'st-kylie', attachmentName: null, notes: 'Left the household and asked to return home.' },
     ],
     createdOn: '2024-04-02',
     updatedOn: '2024-05-05',
@@ -448,7 +460,7 @@ export const seedRequests: RecruitmentRequest[] = [
       { id: 'sh-23', status: 'Ticket to Manila', date: '2024-05-18', cost: 45, paymentSourceId: 'ps-1', responsibleEmployeeId: 'st-eman', attachmentName: null, notes: '' },
       { id: 'sh-24', status: 'Medical', date: '2024-05-20', cost: 60, paymentSourceId: 'ps-2', responsibleEmployeeId: 'st-eman', attachmentName: null, notes: '' },
       { id: 'sh-25', status: 'Vaccine', date: '2024-05-21', cost: 20, paymentSourceId: 'ps-2', responsibleEmployeeId: 'st-eman', attachmentName: null, notes: '' },
-      { id: 'sh-26', status: 'Selected', date: '2024-05-23', cost: 500, paymentSourceId: 'ps-1', responsibleEmployeeId: 'st-kylie', attachmentName: null, notes: '' },
+      { id: 'sh-26', status: 'Selected', date: '2024-05-23', cost: 0, paymentSourceId: 'ps-1', responsibleEmployeeId: 'st-kylie', attachmentName: null, notes: '' },
     ],
     createdOn: '2024-05-15',
     updatedOn: '2024-05-23',
@@ -478,7 +490,7 @@ export const seedRequests: RecruitmentRequest[] = [
     mosanedNumber: 'MSD-2024-51120',
     notes: { en: '', ar: '' },
     statusHistory: [
-      { id: 'sh-27', status: 'Selected', date: '2024-02-08', cost: 0, paymentSourceId: 'ps-1', responsibleEmployeeId: 'st-tess', attachmentName: null, notes: '' },
+      { id: 'sh-27', status: 'Selected', date: '2024-02-08', cost: 150, paymentSourceId: 'ps-1', responsibleEmployeeId: 'st-tess', attachmentName: null, notes: '' },
       { id: 'sh-28', status: 'On Medical', date: '2024-02-12', cost: 60, paymentSourceId: 'ps-2', responsibleEmployeeId: 'st-tess', attachmentName: null, notes: '' },
       { id: 'sh-29', status: 'Vaccine', date: '2024-02-13', cost: 20, paymentSourceId: 'ps-2', responsibleEmployeeId: 'st-tess', attachmentName: null, notes: '' },
       { id: 'sh-30', status: 'ENJAZ', date: '2024-02-16', cost: 0, paymentSourceId: 'ps-2', responsibleEmployeeId: 'st-tess', attachmentName: null, notes: '' },
@@ -489,7 +501,7 @@ export const seedRequests: RecruitmentRequest[] = [
       { id: 'sh-35', status: 'Insurance', date: '2024-03-01', cost: 38, paymentSourceId: 'ps-2', responsibleEmployeeId: 'st-tess', attachmentName: null, notes: '' },
       { id: 'sh-36', status: 'OEC', date: '2024-03-03', cost: 38.41, paymentSourceId: 'ps-2', responsibleEmployeeId: 'st-tess', attachmentName: null, notes: '' },
       { id: 'sh-37', status: 'Ticket', date: '2024-03-06', cost: 380, paymentSourceId: 'ps-1', responsibleEmployeeId: 'st-tess', attachmentName: null, notes: '' },
-      { id: 'sh-38', status: 'Deployed', date: '2024-03-10', cost: 0, paymentSourceId: 'ps-1', responsibleEmployeeId: 'st-kylie', attachmentName: null, notes: '' },
+      { id: 'sh-38', status: 'Deployed', date: '2024-03-10', cost: 150, paymentSourceId: 'ps-1', responsibleEmployeeId: 'st-kylie', attachmentName: null, notes: '' },
     ],
     createdOn: '2024-02-08',
     updatedOn: '2024-03-10',
@@ -573,4 +585,91 @@ export const seedOfficeExpenses: OfficeExpense[] = [
   { id: 'oe-9', item: { en: 'Office Rent', ar: 'إيجار المكتب' }, category: 'Rent', amount: 320, date: '2024-06-05', status: 'Paid' },
   { id: 'oe-10', item: { en: 'Electricity', ar: 'الكهرباء' }, category: 'Utilities', amount: 68, date: '2024-06-12', status: 'Pending' },
   { id: 'oe-11', item: { en: 'Courier & Documents', ar: 'الشحن والمستندات' }, category: 'Logistics', amount: 25, date: '2024-06-14', status: 'Pending' },
+]
+
+
+// Agents introduce candidates one at a time and earn on each one that gets
+// through. Half the fee falls due at selection, the rest on deployment.
+export const seedAgents: Agent[] = [
+  {
+    id: 'agent-1',
+    name: { en: 'Nelson Bautista', ar: 'نيلسون باوتيستا' },
+    phone: '+63 918 220 4471',
+    email: 'nelson.bautista@outlook.ph',
+    area: 'Cavite and Laguna',
+    status: 'Active',
+    selectionFee: 500,
+    deploymentFee: 500,
+    notes: 'Sources mostly experienced household staff returning from the Gulf.',
+    createdOn: '2023-09-14',
+  },
+  {
+    id: 'agent-2',
+    name: { en: 'Grace Villamor', ar: 'غرايس فيلامور' },
+    phone: '+63 917 883 5520',
+    email: 'g.villamor@gmail.com',
+    area: 'Cebu',
+    status: 'Active',
+    selectionFee: 500,
+    deploymentFee: 500,
+    notes: 'Drivers and caregivers.',
+    createdOn: '2024-01-22',
+  },
+  {
+    id: 'agent-3',
+    name: { en: 'Ronaldo Espino', ar: 'رونالدو إسبينو' },
+    phone: '+63 920 447 1180',
+    email: 'respino.recruit@yahoo.com',
+    area: 'Davao',
+    status: 'Inactive',
+    selectionFee: 450,
+    deploymentFee: 450,
+    notes: 'Paused while his DMW accreditation is renewed.',
+    createdOn: '2022-11-30',
+  },
+]
+
+// One record per half fee, created the day the candidate reached the stage.
+export const seedAgentCommissions: AgentCommission[] = [
+  { id: 'ac-1', agentId: 'agent-1', applicantId: 'ap-1', requestId: 'rr-1', milestone: 'Selected', amount: 500, earnedOn: '2024-05-27', status: 'Paid', paidOn: '2024-05-29', paymentSourceId: 'ps-1' },
+  { id: 'ac-2', agentId: 'agent-1', applicantId: 'ap-2', requestId: 'rr-2', milestone: 'Selected', amount: 500, earnedOn: '2024-04-10', status: 'Paid', paidOn: '2024-04-12', paymentSourceId: 'ps-1' },
+  { id: 'ac-3', agentId: 'agent-1', applicantId: 'ap-2', requestId: 'rr-2', milestone: 'Deployed', amount: 500, earnedOn: '2024-05-05', status: 'Pending', paidOn: null, paymentSourceId: null },
+  { id: 'ac-4', agentId: 'agent-2', applicantId: 'ap-4', requestId: 'rr-4', milestone: 'Selected', amount: 500, earnedOn: '2024-05-23', status: 'Pending', paidOn: null, paymentSourceId: null },
+]
+
+// A domestic worker is only placed through a partner office holding one of
+// these, and the price here is what that office pays us for her.
+export const seedAgencyContracts: AgencyContract[] = [
+  { id: 'agc-1', agencyId: 'fra-1', reference: 'SDR-2024-DOM-01', pricePerWorker: 2400, signedOn: '2024-01-15', expiresOn: '2026-01-14', status: 'Active', notes: 'Domestic placements, Riyadh and Jeddah.' },
+  { id: 'agc-2', agencyId: 'fra-2', reference: 'PCM-2023-DOM-07', pricePerWorker: 2200, signedOn: '2023-08-01', expiresOn: '2025-07-31', status: 'Active', notes: 'Renewal under discussion.' },
+  { id: 'agc-3', agencyId: 'fra-3', reference: 'GGO-2024-DOM-03', pricePerWorker: 2600, signedOn: '2024-03-01', expiresOn: '2026-02-28', status: 'Active', notes: '' },
+]
+
+// Half falls due when the worker is selected, half when her visa is issued.
+export const seedAgencyCharges: AgencyCharge[] = [
+  { id: 'ach-1', agencyId: 'fra-1', contractId: 'agc-1', applicantId: 'ap-1', requestId: 'rr-1', milestone: 'Selected', amount: 1200, dueOn: '2024-05-27', status: 'Paid', settledOn: '2024-06-03', paymentSourceId: 'ps-2' },
+  { id: 'ach-2', agencyId: 'fra-2', contractId: 'agc-2', applicantId: 'ap-2', requestId: 'rr-2', milestone: 'Selected', amount: 1100, dueOn: '2024-04-10', status: 'Paid', settledOn: '2024-04-16', paymentSourceId: 'ps-2' },
+  { id: 'ach-3', agencyId: 'fra-2', contractId: 'agc-2', applicantId: 'ap-2', requestId: 'rr-2', milestone: 'Visa Issued', amount: 1100, dueOn: '2024-04-28', status: 'Paid', settledOn: '2024-05-02', paymentSourceId: 'ps-2' },
+  { id: 'ach-4', agencyId: 'fra-3', contractId: 'agc-3', applicantId: 'ap-4', requestId: 'rr-4', milestone: 'Selected', amount: 1300, dueOn: '2024-05-23', status: 'Pending', settledOn: null, paymentSourceId: null },
+]
+
+// Rosalinda left six weeks into the contract, inside the guarantee window, so
+// the return was ours to arrange and ours to pay for.
+export const seedBackouts: Backout[] = [
+  {
+    id: 'bo-1',
+    requestId: 'rr-2',
+    applicantId: 'ap-2',
+    deployedOn: '2024-05-05',
+    returnedOn: '2024-06-20',
+    reason: 'Could not settle with the household and asked to go home.',
+    liability: 'Company',
+    notes: 'Employer confirmed no dispute. Replacement offered under the contract.',
+    createdOn: '2024-06-20',
+    costs: [
+      { id: 'boc-1', label: { en: 'Return ticket to Manila', ar: 'تذكرة العودة إلى مانيلا' }, category: 'Travel', amount: 420, date: '2024-06-21', status: 'Paid', paymentSourceId: 'ps-1' },
+      { id: 'boc-2', label: { en: 'Accommodation while waiting', ar: 'الإقامة أثناء الانتظار' }, category: 'Accommodation', amount: 135, date: '2024-06-19', status: 'Paid', paymentSourceId: 'ps-1' },
+      { id: 'boc-3', label: { en: 'Exit clearance and fees', ar: 'تصريح المغادرة والرسوم' }, category: 'Government', amount: 90, date: '2024-06-20', status: 'Pending', paymentSourceId: null },
+    ],
+  },
 ]

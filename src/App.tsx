@@ -8,6 +8,7 @@ import ApplicantsList from './pages/Applicants/ApplicantsList'
 import ApplicantProfile from './pages/Applicants/ApplicantProfile'
 import EmployersList from './pages/Employers/EmployersList'
 import AgenciesList from './pages/Agencies/AgenciesList'
+import AgentsList from './pages/Agents/AgentsList'
 import RequestsList from './pages/Requests/RequestsList'
 import RequestDetail from './pages/Requests/RequestDetail'
 import InvoicesList from './pages/Invoices/InvoicesList'
@@ -16,6 +17,7 @@ import PayrollPage from './pages/Accounting/PayrollPage'
 import AgencyAccountsPage from './pages/Accounting/AgencyAccountsPage'
 import OfficeExpensesPage from './pages/Accounting/OfficeExpensesPage'
 import AccountingReports from './pages/Accounting/AccountingReports'
+import BackoutsPage from './pages/Accounting/BackoutsPage'
 import AddonsPage from './pages/Addons/AddonsPage'
 import Reports from './pages/Reports'
 import Notifications from './pages/Notifications'
@@ -34,6 +36,7 @@ function App() {
           <Route path="/applicants/:id" element={<ApplicantProfile />} />
           <Route path="/employers" element={<EmployersList />} />
           <Route path="/agencies" element={<AgenciesList />} />
+          <Route path="/agents" element={<AgentsList />} />
           <Route path="/recruitments" element={<RequestsList />} />
           <Route path="/recruitments/:id" element={<RequestDetail />} />
           <Route path="/invoices" element={<InvoicesList />} />
@@ -42,6 +45,7 @@ function App() {
           <Route path="/accounting/payroll" element={<PayrollPage />} />
           <Route path="/accounting/agency-accounts" element={<AgencyAccountsPage />} />
           <Route path="/accounting/office-expenses" element={<OfficeExpensesPage />} />
+          <Route path="/accounting/backouts" element={<BackoutsPage />} />
           <Route path="/accounting/reports" element={<AccountingReports />} />
           <Route path="/addons/:tab" element={<AddonsPage />} />
           <Route path="/addons" element={<AddonsPage />} />
