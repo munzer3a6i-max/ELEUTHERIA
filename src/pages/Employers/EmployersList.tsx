@@ -32,7 +32,7 @@ export default function EmployersList() {
         }
       />
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {employers.map((e) => {
           const activeWorkers = requests.filter((r) => r.employerId === e.id).length
           return (
@@ -137,7 +137,7 @@ function AddEmployerModal({
           onChangeAr={setArabicName}
           required
         />
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={t('label_email')}>
             <TextInput type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
           </Field>
@@ -151,7 +151,7 @@ function AddEmployerModal({
         <Field label={language === 'ar' ? 'العنوان الوطني' : 'National Address'}>
           <TextInput value={nationalAddress} onChange={(e) => setNationalAddress(e.target.value)} />
         </Field>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={language === 'ar' ? 'رقم الهوية الوطنية' : 'National ID Number'}>
             <TextInput value={nationalIdNumber} onChange={(e) => setNationalIdNumber(e.target.value)} />
           </Field>

@@ -68,7 +68,7 @@ export default function StatusUpdateModal({
           </SelectInput>
         </Field>
         {selectedDef?.costNote && <p className="-mt-2 mb-3 text-[10px] text-ink-3">{selectedDef.costNote}</p>}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={t('label_date')}>
             <TextInput type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
           </Field>
@@ -76,7 +76,7 @@ export default function StatusUpdateModal({
             <TextInput type="number" min={0} step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} />
           </Field>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={language === 'ar' ? 'مصدر الدفع' : 'Payment Source'}>
             <SelectInput value={paymentSourceId} onChange={(e) => setPaymentSourceId(e.target.value)}>
               {paymentSources.map((p) => (

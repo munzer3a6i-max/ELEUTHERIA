@@ -33,13 +33,13 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
   }
 
   return (
-    <div className="grid grid-cols-3 gap-4">
-      <div className="col-span-2 flex flex-col gap-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="lg:col-span-2 flex flex-col gap-4">
         <div className="rounded-panel border border-line bg-surface p-4">
           <h2 className="mb-3 panel-title">
             {language === 'ar' ? 'المعلومات الأساسية' : 'Basic Information'}
           </h2>
-          <div className="grid grid-cols-3 gap-x-6 gap-y-2 text-[11px]">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3 text-[11px]">
             <MetaField label={t('label_english_name')} value={applicant.englishName} onSave={(v) => updateApplicant(applicant.id, { englishName: v })} />
             <MetaField label={t('label_arabic_name')} value={applicant.arabicName} onSave={(v) => updateApplicant(applicant.id, { arabicName: v })} dir="rtl" />
             <MetaField label={language === 'ar' ? 'الجنس' : 'Gender'} value={applicant.gender} readOnly />

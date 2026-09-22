@@ -41,12 +41,12 @@ export default function RecruitmentStagesTab({
   }
 
   return (
-    <div className="grid grid-cols-12 gap-4">
-      <div className="col-span-5">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <div className="lg:col-span-5">
         <StageStepper requestType={activeRequest.type} request={activeRequest} onEditStages={() => setStatusModal('add')} compact={false} />
       </div>
 
-      <div className="col-span-7 rounded-panel border border-line bg-surface p-4">
+      <div className="lg:col-span-7 rounded-panel border border-line bg-surface p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="panel-title">
             {language === 'ar' ? 'سجل التحديثات' : 'Update Log'}

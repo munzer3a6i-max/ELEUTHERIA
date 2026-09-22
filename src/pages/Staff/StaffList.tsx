@@ -144,7 +144,7 @@ function AddStaffModal({
             <option value="user">{language === 'ar' ? 'مستخدم (إدخال بيانات)' : 'User (data entry)'}</option>
           </SelectInput>
         </Field>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={t('label_email')}>
             <TextInput type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </Field>

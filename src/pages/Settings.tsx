@@ -40,7 +40,7 @@ export default function Settings() {
         <h2 className="mb-4 panel-title">
           {language === 'ar' ? 'التفضيلات' : 'Preferences'}
         </h2>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={language === 'ar' ? 'اللغة' : 'Language'}>
             <SelectInput value={settings.language} onChange={(e) => setLanguage(e.target.value as Language)}>
               <option value="en">English</option>

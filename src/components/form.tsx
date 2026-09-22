@@ -53,7 +53,7 @@ export function BilingualField({
   required?: boolean
 }) {
   return (
-    <div className="mb-3 grid grid-cols-2 gap-3">
+    <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
       <label className="block">
         <span className="mb-1.5 block text-[11px] font-semibold text-ink-2">{labelEn}</span>
         <TextInput value={valueEn} onChange={(e) => onChangeEn(e.target.value)} required={required} />

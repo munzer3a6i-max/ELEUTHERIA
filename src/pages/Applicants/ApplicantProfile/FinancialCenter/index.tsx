@@ -66,8 +66,8 @@ export default function FinancialCenter({
         ))}
       </div>
 
-      <div className="grid grid-cols-12 gap-4">
-        <div className="col-span-9 flex flex-col gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="lg:col-span-9 flex flex-col gap-4">
           {activeSubTab === subTabs[0] && <ExpensesTable request={activeRequest} />}
           {activeSubTab === subTabs[1] && <IncomeTable invoice={invoice} onCreateInvoice={handleCreateInvoice} />}
           {activeSubTab === subTabs[2] && (
@@ -101,7 +101,7 @@ export default function FinancialCenter({
             </div>
           )}
         </div>
-        <div className="col-span-3">
+        <div className="lg:col-span-3">
           <StageBreakdownPanel request={activeRequest} invoice={invoice} />
         </div>
       </div>

@@ -16,13 +16,14 @@ import {
   ListChecks,
   LogOut,
   MapPin,
+  X,
   Receipt,
   Settings,
   UserCog,
   Users,
   Wallet,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
 import brandMark from '../assets/eleutheria-mark.png'
@@ -112,8 +113,18 @@ function GroupLabel({ children }: { children: React.ReactNode }) {
   return <p className="px-2.5 pb-1 pt-4 text-[10.5px] font-semibold text-ink-3 first:pt-1">{children}</p>
 }
 
-export default function Sidebar() {
+export default function Sidebar({
+  open,
+  isDesktop,
+  onClose,
+}: {
+  /** Drawer state below the desktop breakpoint; ignored once the sidebar docks. */
+  open: boolean
+  isDesktop: boolean
+  onClose: () => void
+}) {
   const location = useLocation()
+  const panel = useRef<HTMLElement>(null)
   const navigate = useNavigate()
   const { t, language } = useTranslation()
   const unreadCount = useAppStore((s) => s.notifications.filter((n) => !n.read).length)
@@ -121,21 +132,54 @@ export default function Sidebar() {
   const addonsActive = location.pathname.startsWith('/addons')
   const accountingActive = location.pathname.startsWith('/accounting')
 
+  // Escape closes the drawer, and opening it moves focus into the panel so a
+  // keyboard or screen reader lands on the navigation rather than behind it.
+  useEffect(() => {
+    if (isDesktop || !open) return
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    panel.current?.focus()
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, isDesktop, onClose])
+
   function handleLogout() {
     if (window.confirm(language === 'ar' ? 'تسجيل الخروج من النظام؟' : 'Log out?')) navigate('/login')
   }
 
   return (
-    <aside className="flex h-full w-60 shrink-0 flex-col justify-between border-e border-line bg-sunken">
+    <>
+      {!isDesktop && open && (
+        <div className="fixed inset-0 z-40 bg-page/80 backdrop-blur-[2px] lg:hidden" onClick={onClose} role="presentation" />
+      )}
+
+      <aside
+        ref={panel}
+        tabIndex={-1}
+        aria-label={t('nav_dashboard')}
+        inert={!isDesktop && !open}
+        className={`fixed inset-y-0 start-0 z-50 flex w-60 shrink-0 flex-col justify-between overflow-y-auto border-e border-line bg-sunken transition-transform duration-200 lg:static lg:z-auto lg:h-auto lg:translate-x-0 lg:transition-none ${
+          open ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full lg:rtl:translate-x-0'
+        }`}
+      >
       <div className="flex min-h-0 flex-col">
         <div className="flex items-center gap-2.5 border-b border-line px-4 py-3.5">
           <img src={brandMark} alt="" width={40} height={40} className="size-10 shrink-0" />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="truncate text-[13px] font-semibold uppercase tracking-[0.08em] text-accent-text">
               {settings.companyName}
             </p>
-            <p className="truncate text-[9.5px] text-ink-3">{settings.companyTagline}</p>
+            <p className="hidden truncate text-[9.5px] text-ink-3 lg:block">{settings.companyTagline}</p>
           </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t('action_cancel')}
+            className="btn btn-ghost size-8 shrink-0 p-0 lg:hidden"
+          >
+            <X className="size-4" />
+          </button>
         </div>
 
         <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2.5">
@@ -181,6 +225,7 @@ export default function Sidebar() {
           <LogOut className="size-4" /> {t('nav_logout')}
         </button>
       </div>
-    </aside>
+      </aside>
+    </>
   )
 }

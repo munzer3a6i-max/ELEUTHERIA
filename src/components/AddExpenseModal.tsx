@@ -54,7 +54,7 @@ export default function AddExpenseModal({
           onChangeEn={(v) => setForm((f) => ({ ...f, en: v }))}
           onChangeAr={(v) => setForm((f) => ({ ...f, ar: v }))}
         />
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={t('fin_category')}>
             <SelectInput value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}>
               {[...new Set([...CATEGORIES, form.category])].map((category) => (

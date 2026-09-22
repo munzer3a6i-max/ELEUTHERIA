@@ -55,7 +55,7 @@ export default function RequestsList() {
         }
       />
 
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         {(['All', 'Domestic', 'Profession'] as const).map((s) => (
           <button
             key={s}
@@ -196,7 +196,7 @@ function NewRequestModal({
   return (
     <Modal title={language === 'ar' ? 'إنشاء طلب استقدام' : 'New Recruitment Request'} onClose={onClose} width="max-w-lg">
       <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={language === 'ar' ? 'النوع' : 'Type'}>
             <SelectInput value={type} onChange={(e) => { setType(e.target.value as RequestType); setApplicantId('') }}>
               <option value="Domestic">{t('type_domestic')}</option>
@@ -240,7 +240,7 @@ function NewRequestModal({
           />
         </Field>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={language === 'ar' ? 'الموظف المسؤول' : 'Responsible Officer'}>
             <SelectInput value={responsibleEmployeeId} onChange={(e) => setResponsibleEmployeeId(e.target.value)}>
               {staff.map((s) => (

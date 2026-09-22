@@ -68,7 +68,7 @@ export default function ApplicantsList() {
           />
           <Search className="absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-ink-3" />
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           {TYPE_FILTERS.map((s) => (
             <button
               key={s}
@@ -82,7 +82,7 @@ export default function ApplicantsList() {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           {STATUS_FILTERS.map((s) => (
             <button
               key={s}
@@ -249,7 +249,7 @@ function AddApplicantModal({
           onChangeAr={setArabicName}
           required
         />
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={language === 'ar' ? 'الجنس' : 'Gender'}>
             <SelectInput value={gender} onChange={(e) => setGender(e.target.value as Gender)}>
               <option>Female</option>
@@ -260,7 +260,7 @@ function AddApplicantModal({
             <TextInput type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
           </Field>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={language === 'ar' ? 'الدولة' : 'Country'}>
             <SelectInput value={country} onChange={(e) => setCountry(e.target.value)}>
               {countries.map((c) => (
@@ -285,7 +285,7 @@ function AddApplicantModal({
         <Field label={language === 'ar' ? 'رقم الجواز' : 'Passport No.'}>
           <TextInput value={passportNo} onChange={(e) => setPassportNo(e.target.value)} required />
         </Field>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={language === 'ar' ? 'بداية الجواز' : 'Passport Start'}>
             <TextInput type="date" value={passportStart} onChange={(e) => setPassportStart(e.target.value)} />
           </Field>
@@ -293,7 +293,7 @@ function AddApplicantModal({
             <TextInput type="date" value={passportEnd} onChange={(e) => setPassportEnd(e.target.value)} />
           </Field>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={language === 'ar' ? 'رقم الهوية' : 'ID Number'}>
             <TextInput value={idNumber} onChange={(e) => setIdNumber(e.target.value)} />
           </Field>

@@ -53,7 +53,7 @@ export default function PayrollEntryModal({
   return (
     <Modal title={entry ? t('acc_edit_entry') : t('acc_new_entry')} onClose={onClose}>
       <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={t('acc_employee')}>
             <SelectInput value={form.staffId} onChange={(e) => setForm((f) => ({ ...f, staffId: e.target.value }))}>
               {staff.map((member) => (

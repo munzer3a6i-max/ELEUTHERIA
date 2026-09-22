@@ -145,7 +145,7 @@ function AddAgencyModal({
           onChangeAr={setArabicName}
           required
         />
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={language === 'ar' ? 'رقم الترخيص' : 'License Number'}>
             <TextInput value={licenseNumber} onChange={(e) => setLicenseNumber(e.target.value)} />
           </Field>
@@ -153,7 +153,7 @@ function AddAgencyModal({
             <TextInput type="date" value={licenseExpiry} onChange={(e) => setLicenseExpiry(e.target.value)} />
           </Field>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={t('label_phone')}>
             <TextInput value={phone} onChange={(e) => setPhone(e.target.value)} />
           </Field>

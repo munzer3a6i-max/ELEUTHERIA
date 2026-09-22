@@ -36,7 +36,7 @@ export default function QuickActions({
 
   return (
     <Card icon={<Zap className="size-4" />} title={t('fin_quick_actions')}>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Tile to="/applicants" icon={<UserPlus className="size-4" />} label={t('fin_add_worker')} />
         <Tile to="/agencies" icon={<Building2 className="size-4" />} label={t('fin_add_agency')} />
         <Tile onClick={onAddExpense} icon={<CreditCard className="size-4" />} label={t('fin_record_expense')} />

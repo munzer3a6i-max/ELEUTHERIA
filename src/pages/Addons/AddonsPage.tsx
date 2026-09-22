@@ -30,7 +30,7 @@ export default function AddonsPage() {
     <div className="flex flex-col gap-4 p-4">
       <PageHeader title={t('nav_addons')} subtitle={language === 'ar' ? 'بيانات الإعدادات المشتركة' : 'Shared configuration data'} />
 
-      <div className="flex items-center gap-1 border-b border-line pb-1.5">
+      <div className="flex flex-wrap items-center gap-1 border-b border-line pb-1.5">
         {TABS.map((tb) => (
           <button
             key={tb}
@@ -320,7 +320,7 @@ function StatusesTab() {
         <p className="text-[11px] text-ink-3">
           {language === 'ar' ? 'ثلاثة مسارات منفصلة' : 'Three separate pipelines'} - {counts.Domestic} {language === 'ar' ? 'منزلي' : 'Domestic'} + {counts.Profession} {language === 'ar' ? 'مهني' : 'Profession'} + {counts.Invoice} {language === 'ar' ? 'فواتير' : 'Invoice'} = {counts.Domestic + counts.Profession + counts.Invoice} {language === 'ar' ? 'إجمالي' : 'total'}
         </p>
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           {(['Domestic', 'Profession', 'Invoice'] as const).map((p) => (
             <button
               key={p}
@@ -335,7 +335,8 @@ function StatusesTab() {
           ))}
         </div>
       </div>
-      <table className="data-table">
+      <div className="overflow-x-auto">
+        <table className="data-table">
         <thead>
           <tr>
             <th className="py-2 pe-3">#</th>
@@ -358,7 +359,8 @@ function StatusesTab() {
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
     </div>
   )
 }

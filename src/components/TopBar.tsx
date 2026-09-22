@@ -1,10 +1,10 @@
-import { Bell, Languages, LogOut, Moon, Search, Settings as SettingsIcon, Sun, User } from 'lucide-react'
+import { Bell, Languages, LogOut, Menu, Moon, Search, Settings as SettingsIcon, Sun, User } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
 import { useTranslation } from '../i18n/useTranslation'
 
-export default function TopBar() {
+export default function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [profileOpen, setProfileOpen] = useState(false)
@@ -23,8 +23,17 @@ export default function TopBar() {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b border-line bg-page/90 px-4 backdrop-blur">
-      <form className="flex max-w-md flex-1 items-center" onSubmit={handleSearch} role="search">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b border-line bg-page/90 px-3 backdrop-blur sm:gap-4 sm:px-4">
+      <button
+        type="button"
+        onClick={onOpenNav}
+        aria-label={t('nav_dashboard')}
+        className="btn btn-ghost size-9 shrink-0 p-0 lg:hidden"
+      >
+        <Menu className="size-4.5" />
+      </button>
+
+      <form className="flex min-w-0 max-w-md flex-1 items-center" onSubmit={handleSearch} role="search">
         <div className="relative w-full">
           <Search className="pointer-events-none absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-ink-3" />
           <input
@@ -38,15 +47,16 @@ export default function TopBar() {
         </div>
       </form>
 
-      <div className="flex shrink-0 items-center gap-1.5">
+      <div className="flex shrink-0 items-center gap-0.5 sm:gap-1.5">
         <button
           type="button"
           onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
           title={t('toggle_language')}
-          className="btn btn-ghost"
+          aria-label={t('toggle_language')}
+          className="btn btn-ghost px-2 sm:px-3"
         >
           <Languages className="size-3.5" />
-          {t('toggle_language')}
+          <span className="hidden sm:inline">{t('toggle_language')}</span>
         </button>
 
         <button
@@ -73,7 +83,7 @@ export default function TopBar() {
           )}
         </button>
 
-        <div className="relative ms-1.5 border-s border-line ps-2.5">
+        <div className="relative ms-0.5 border-s border-line ps-1.5 sm:ms-1.5 sm:ps-2.5">
           <button
             type="button"
             onClick={() => setProfileOpen((v) => !v)}
@@ -83,7 +93,7 @@ export default function TopBar() {
             <span className="flex size-7 items-center justify-center rounded-pill border border-line-strong bg-raised">
               <User className="size-3.5 text-ink-2" />
             </span>
-            <span className="text-start">
+            <span className="hidden text-start md:block">
               <span className="block text-[12px] font-semibold leading-tight text-ink">
                 {signedIn ? tb(signedIn.name) : t('nav_staff')}
               </span>

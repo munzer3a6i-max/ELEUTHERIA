@@ -21,7 +21,7 @@ export default function ProfileTabs({
   ]
 
   return (
-    <div className="flex items-center gap-1 border-b border-line pt-1">
+    <div className="-mx-4 flex items-center gap-1 overflow-x-auto border-b border-line px-4 pt-1 sm:mx-0 sm:px-0">
       {tabs.map((tab) => {
         const isActive = tab.key === active
         const Icon = tab.icon
@@ -30,7 +30,7 @@ export default function ProfileTabs({
             key={tab.key}
             type="button"
             onClick={() => onChange(tab.key)}
-            className={`flex items-center gap-1.5 rounded-t px-3 pb-2.5 pt-2 text-[11px] transition-colors ${
+            className={`flex shrink-0 items-center gap-1.5 rounded-t px-3 pb-2.5 pt-2 text-[11px] whitespace-nowrap transition-colors ${
               isActive
                 ? 'border-b-2 border-accent-line bg-accent-soft/50 font-bold text-accent-text'
                 : 'border-b-2 border-transparent text-ink-2 hover:text-ink'

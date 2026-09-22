@@ -6,9 +6,9 @@ import type { Applicant, ApplicantStatus, RecruitmentRequest, Invoice } from '..
 
 function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex h-4 items-center">
-      <span className="w-28 shrink-0 text-[11px] text-ink-3">{label}</span>
-      <span className="text-[11px] text-ink">{value}</span>
+    <div className="flex min-h-4 items-center gap-2">
+      <span className="w-24 shrink-0 text-[11px] text-ink-3 sm:w-28">{label}</span>
+      <span className="min-w-0 truncate text-[11px] text-ink">{value}</span>
     </div>
   )
 }
@@ -78,8 +78,8 @@ export default function Header({
   }
 
   return (
-    <div className="grid grid-cols-12 gap-4">
-      <div className="col-span-8 flex items-center gap-5 rounded-panel border border-line bg-surface p-[17px]">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <div className="lg:col-span-8 flex items-center gap-5 rounded-panel border border-line bg-surface p-[17px]">
         <div className="flex flex-col items-center">
           <div className="flex size-24 items-center justify-center overflow-hidden rounded-pill border-2 border-accent-line bg-raised p-1 shadow-md">
             <div className="flex size-full items-center justify-center overflow-hidden rounded-pill bg-raised">
@@ -100,8 +100,8 @@ export default function Header({
           </button>
         </div>
 
-        <div className="flex-1">
-          <div className="mb-2.5 flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="mb-2.5 flex flex-wrap items-center gap-3">
             <h1 className="text-lg font-semibold tracking-[-0.01em] text-ink">
               {language === 'ar' ? applicant.arabicName || applicant.englishName : applicant.englishName}
             </h1>
@@ -117,7 +117,7 @@ export default function Header({
               ))}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
             <MetaRow
               label={language === 'ar' ? 'رقم الملف' : 'File No.'}
               value={activeRequest?.mosanedNumber || (activeRequest ? (language === 'ar' ? 'لم يُعيّن بعد' : 'Not yet assigned') : '-')}
@@ -143,7 +143,7 @@ export default function Header({
         </div>
       </div>
 
-      <div className="col-span-4 flex flex-col justify-between rounded-panel border border-line bg-surface p-[17px]">
+      <div className="lg:col-span-4 flex flex-col justify-between rounded-panel border border-line bg-surface p-[17px]">
         <div className="flex items-center justify-between border-b border-line pb-[9px]">
           <h2 className="text-[11px] font-semibold text-ink-3">
             {language === 'ar' ? 'الملخص المالي' : 'Financial Summary'}

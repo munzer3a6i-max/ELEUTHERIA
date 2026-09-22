@@ -19,10 +19,10 @@ const TONE_TEXT = {
 } as const
 
 const COLUMNS: Record<number, string> = {
-  2: 'md:grid-cols-2',
-  3: 'md:grid-cols-3',
-  4: 'md:grid-cols-2 xl:grid-cols-4',
-  5: 'md:grid-cols-3 xl:grid-cols-5',
+  2: 'grid-cols-2',
+  3: 'grid-cols-2 lg:grid-cols-3',
+  4: 'grid-cols-2 xl:grid-cols-4',
+  5: 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
 }
 
 /**
@@ -32,7 +32,7 @@ const COLUMNS: Record<number, string> = {
  */
 export default function StatStrip({ stats }: { stats: Stat[] }) {
   return (
-    <div className={`grid grid-cols-1 gap-3 ${COLUMNS[stats.length] ?? 'md:grid-cols-4'}`}>
+    <div className={`grid gap-3 ${COLUMNS[stats.length] ?? 'grid-cols-2 xl:grid-cols-4'}`}>
       {stats.map((stat) => (
         <div
           key={stat.label}

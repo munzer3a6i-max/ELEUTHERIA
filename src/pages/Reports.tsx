@@ -69,7 +69,7 @@ export default function Reports() {
         title={t('nav_reports')}
         subtitle={t('page_reports_subtitle')}
         actions={
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1">
             {(Object.keys(rangeLabels) as RangeOption[]).map((r) => (
               <button
                 key={r}
@@ -91,7 +91,7 @@ export default function Reports() {
         {scopedRequests.length} {language === 'ar' ? 'طلب' : 'requests'}, {scopedInvoices.length} {language === 'ar' ? 'فاتورة' : 'invoices'}
       </p>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="rounded-panel border border-line bg-surface p-4 text-center">
           <p className="text-2xl font-bold text-ink">{scopedRequests.length}</p>
           <p className="text-[11px] text-ink-3">{language === 'ar' ? 'الطلبات' : 'Requests'}</p>
@@ -106,7 +106,7 @@ export default function Reports() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-panel border border-line bg-surface p-4">
           <h2 className="mb-3 panel-title">
             {language === 'ar' ? 'الأداء حسب صاحب العمل' : 'Performance by Employer'}
@@ -116,7 +116,8 @@ export default function Reports() {
               {language === 'ar' ? 'لا توجد بيانات لهذه الفترة.' : 'No data in this range.'}
             </p>
           ) : (
-            <table className="data-table">
+            <div className="overflow-x-auto">
+              <table className="data-table">
               <thead>
                 <tr>
                   <th className="py-2">{language === 'ar' ? 'صاحب العمل' : 'Employer'}</th>
@@ -133,7 +134,8 @@ export default function Reports() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           )}
         </div>
 

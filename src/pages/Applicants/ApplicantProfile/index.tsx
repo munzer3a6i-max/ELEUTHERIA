@@ -74,33 +74,33 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
-        <nav className="flex items-center gap-1.5 text-xs text-ink-2">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <nav className="flex min-w-0 items-center gap-1.5 text-xs text-ink-2">
           <Link to="/applicants" className="hover:text-ink">
             {t('nav_applicants')}
           </Link>
           <span>/</span>
-          <span className="text-ink">{applicant.englishName}</span>
+          <span className="truncate text-ink">{applicant.englishName}</span>
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={handlePrint}
-            className="flex items-center gap-1.5 rounded-control border border-line-strong bg-raised px-3 py-1.5 text-[11px] text-ink-2 hover:border-accent-line"
+            className="btn btn-secondary"
           >
             <Printer className="size-3.5" /> {language === 'ar' ? 'طباعة' : 'Print'}
           </button>
           <button
             type="button"
             onClick={handleSendToClient}
-            className="flex items-center gap-1.5 rounded-control border border-line-strong bg-raised px-3 py-1.5 text-[11px] text-ink-2 hover:border-accent-line"
+            className="btn btn-secondary"
           >
             <Send className="size-3.5" /> {language === 'ar' ? 'إرسال للعميل' : 'Send to Client'}
           </button>
           <button
             type="button"
             onClick={handleDeleteApplicant}
-            className="rounded-control border border-neg/40 bg-neg-soft px-3 py-1.5 text-[11px] text-neg hover:border-neg"
+            className="btn btn-danger"
           >
             {t('action_delete')}
           </button>
@@ -111,15 +111,15 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
       <ProfileTabs active={activeTab} onChange={setActiveTab} />
 
       {activeTab === 'financial' && (
-        <div className="grid grid-cols-12 gap-4">
-          <div className="col-span-3">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div className="lg:col-span-3">
             <StageStepper
               requestType={applicant.type}
               request={activeRequest}
               onEditStages={() => setActiveTab('stages')}
             />
           </div>
-          <div className="col-span-9">
+          <div className="lg:col-span-9">
             <FinancialCenter applicant={applicant} activeRequest={activeRequest} />
           </div>
         </div>

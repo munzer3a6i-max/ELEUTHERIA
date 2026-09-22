@@ -35,13 +35,13 @@ export default function InvoicesList() {
     <div className="flex flex-col gap-4 p-4">
       <PageHeader title={t('nav_invoices')} subtitle={t('page_invoices_subtitle')} />
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard label={language === 'ar' ? 'عدد الفواتير' : 'Total Invoices'} value={String(filtered.length)} />
         <StatCard label={language === 'ar' ? 'إجمالي المبلغ' : 'Total Billed'} value={formatMoney(totalBilled)} />
         <StatCard label={language === 'ar' ? 'إجمالي المدفوع' : 'Total Paid'} value={formatMoney(totalPaid)} accent="text-pos" />
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         {STATUS_FILTERS.map((s) => (
           <button
             key={s}

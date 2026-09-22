@@ -92,15 +92,15 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
         </button>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <SummaryCard label={language === 'ar' ? 'المتقدم' : 'Applicant'} value={applicant ? (language === 'ar' ? applicant.arabicName || applicant.englishName : applicant.englishName) : '-'} to={applicant ? `/applicants/${applicant.id}` : undefined} />
         <SummaryCard label={language === 'ar' ? 'صاحب العمل' : 'Employer'} value={employer ? tb({ en: employer.englishName, ar: employer.arabicName }) : '-'} />
         <SummaryCard label={language === 'ar' ? 'مكتب الاستقدام' : 'Agency'} value={agency ? tb({ en: agency.englishName, ar: agency.arabicName }) : '-'} />
         <SummaryCard label={language === 'ar' ? 'الموظف المسؤول' : 'Officer'} value={officer ? tb(officer.name) : '-'} />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2 flex flex-col gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="lg:col-span-2 flex flex-col gap-4">
           <div className="rounded-panel border border-line bg-surface p-4">
             <div className="mb-3 flex items-center justify-between">
               <div>
@@ -169,7 +169,7 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
             <h2 className="mb-2 panel-title">
               {language === 'ar' ? 'ملاحظات' : 'Notes'}
             </h2>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <TextArea
                 value={request.notes.en}
                 onChange={(e) => updateRequest(requestId, { notes: { ...request.notes, en: e.target.value } })}
