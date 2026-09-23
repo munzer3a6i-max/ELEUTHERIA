@@ -251,7 +251,7 @@ export const translations = {
   sync_failed: { en: 'Not saved', ar: 'لم يُحفظ' },
   sync_connected: { en: 'Connected to the database', ar: 'متصل بقاعدة البيانات' },
   sync_connecting: { en: 'Connecting to the database…', ar: 'جارٍ الاتصال بقاعدة البيانات…' },
-  auth_unlinked: { en: 'That account exists, but no staff record points at it yet. An administrator links it in the database.', ar: 'الحساب موجود لكن لا يوجد سجل موظف مرتبط به بعد. يربطه المسؤول في قاعدة البيانات.' },
+  auth_unlinked: { en: 'That account exists, but no staff record points at it yet. An administrator can join the two from Settings, Users, with Link sign-in accounts.', ar: 'الحساب موجود لكن لا يوجد سجل موظف مرتبط به بعد. يمكن للمسؤول ربطهما من الإعدادات ثم المستخدمون عبر «ربط حسابات الدخول».' },
   auth_unreachable: { en: 'The database could not be reached. Check your connection and try again.', ar: 'تعذر الوصول إلى قاعدة البيانات. تحقق من الاتصال وحاول مجددًا.' },
   auth_email: { en: 'Email', ar: 'البريد الإلكتروني' },
   auth_bad_url: {
@@ -347,6 +347,18 @@ export const translations = {
   users_created: { en: 'Added, and they can sign in now.', ar: 'تمت الإضافة، ويمكنه الدخول الآن.' },
   users_refused: { en: 'That change was refused. Only an administrator can manage users.', ar: 'رُفض هذا التغيير. إدارة المستخدمين للمسؤول وحده.' },
   users_signs_in_with_email: { en: 'They sign in with this address.', ar: 'يدخل بهذا العنوان.' },
+  users_no_account: { en: 'No sign-in account', ar: 'لا يوجد حساب دخول' },
+  users_link_accounts: { en: 'Link sign-in accounts', ar: 'ربط حسابات الدخول' },
+  users_link_explain: {
+    en: 'Somebody here has no account to sign in with. If one was made for them in Supabase, this points their row at it by email address.',
+    ar: 'أحد المدرجين هنا بلا حساب دخول. إذا أُنشئ له حساب في Supabase، يربط هذا سجله به عبر البريد الإلكتروني.',
+  },
+  users_linked: { en: 'Linked', ar: 'تم الربط' },
+  users_still_unlinked: {
+    en: 'Still without an account (give them an email address that matches one, or add the account in Supabase):',
+    ar: 'ما زال بلا حساب (أعطه بريدًا مطابقًا لحساب موجود أو أنشئ الحساب في Supabase):',
+  },
+  users_none_to_link: { en: 'Nobody was matched. Check the addresses against Supabase, Authentication, Users.', ar: 'لم يُطابق أحد. راجع العناوين في Supabase ضمن Authentication ثم Users.' },
   users_email_edit_note: {
     en: 'Changing this does not change the address they sign in with; that is changed in Supabase.',
     ar: 'تغيير هذا لا يغيّر عنوان الدخول؛ يُغيَّر ذلك من Supabase.',

@@ -23,6 +23,7 @@ function check(passed, label, detail = '') {
 // --- the little of Supabase that the migrations lean on --------------------
 await db.exec(`
   create schema if not exists auth;
+  create table if not exists auth.users (id uuid primary key, email text);
   create or replace function auth.uid() returns uuid
     language sql stable as $$ select nullif(current_setting('test.uid', true), '')::uuid $$;
   do $$ begin
@@ -31,7 +32,7 @@ await db.exec(`
   end $$;
 `)
 
-for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql']) {
+for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql']) {
   try {
     await db.exec(readFileSync(file, 'utf8'))
     console.log(`applied  ${file}`)
@@ -55,7 +56,7 @@ const shape = async () => JSON.stringify((await db.query(`
 const before = await shape()
 let rerunError = null
 try {
-  for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql']) {
+  for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql']) {
     await db.exec(readFileSync(file, 'utf8'))
   }
 } catch (error) {
@@ -175,6 +176,44 @@ const adminSelfEdit = await as('admin', `update ops.staff set role = 'data_entry
 check(!adminSelfEdit.allowed, 'even an administrator cannot edit their own role', adminSelfEdit.error ? '' : '(allowed!)')
 const adminEditsOther = await as('admin', `update ops.staff set role = 'accountant' where username = 'roz'`)
 check(adminEditsOther.allowed, 'an administrator can change somebody else')
+
+console.log('\nlinking a staff row to a sign-in account\n')
+
+// Somebody added before the dashboard learned to make accounts, and the
+// account that was made for them by hand.
+await db.exec(`
+  insert into auth.users (id, email) values
+    ('55555555-5555-5555-5555-555555555555', 'Fely@example.com'),
+    ('66666666-6666-6666-6666-666666666666', 'spare@example.com');
+  insert into ops.staff (username, name_en, role, email)
+    values ('fely', 'Fely', 'data_entry', 'fely@example.com');
+  insert into ops.staff (username, name_en, role, email)
+    values ('nomail', 'No Mail', 'data_entry', '');
+  update ops.staff set email = 'kylie@example.com' where username = 'kylie';
+`)
+
+const asDataEntry = await as('data_entry', 'select * from ops.link_staff_accounts()')
+check(!asDataEntry.allowed && /administrator/i.test(asDataEntry.error ?? ''), 'data entry cannot read the project\'s addresses', asDataEntry.error ?? '(allowed!)')
+
+// Not through as(), which rolls back: this one has to leave its work behind.
+await db.exec(`set role authenticated; set test.uid = '${ids.admin}';`)
+const linked = await db.query('select * from ops.link_staff_accounts()')
+await db.exec('reset role; reset test.uid;')
+const fely = (await db.query(`select user_id from ops.staff where username = 'fely'`)).rows[0]
+check(fely.user_id === '55555555-5555-5555-5555-555555555555', 'an administrator links the row to the account with the same address, whatever its capitals')
+check(
+  (linked.rows ?? []).some((r) => r.username === 'nomail' && r.linked === false),
+  'a row with no address is reported rather than guessed at',
+  JSON.stringify(linked.rows),
+)
+
+// The one that must not happen: an account that already belongs to somebody.
+await db.exec(`insert into ops.staff (username, name_en, role, email) values ('twin', 'Twin', 'data_entry', 'fely@example.com')`)
+await db.exec(`set role authenticated; set test.uid = '${ids.admin}';`)
+await db.query('select * from ops.link_staff_accounts()')
+await db.exec('reset role; reset test.uid;')
+const twin = (await db.query(`select user_id from ops.staff where username = 'twin'`)).rows[0]
+check(twin.user_id === null, 'an account already spoken for is not handed to a second row')
 
 console.log('\nthe public view\n')
 const columns = (await db.query(

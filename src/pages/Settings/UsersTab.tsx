@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { KeyRound, Pencil, Plus, Trash2, UserCog, UserMinus, UserPlus } from 'lucide-react'
+import { KeyRound, Link2, Pencil, Plus, Trash2, UserCog, UserMinus, UserPlus } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
 import { useCurrentUser } from '../../lib/useCurrentUser'
 import { DEFAULT_PASSWORD, passwordProblem, usernameProblem } from '../../lib/passwords'
 import { ROLES, ROLE_LABEL, ROLE_SUMMARY } from '../../lib/permissions'
 import { isSupabaseConfigured } from '../../lib/supabase'
-import { createAccount } from '../../data/accounts'
+import { createAccount, linkAccounts } from '../../data/accounts'
 import Card from '../../components/Card'
 import Confirm from '../../components/Confirm'
 import Modal from '../../components/Modal'
@@ -26,6 +26,27 @@ export default function UsersTab() {
   const [editing, setEditing] = useState<StaffMember | 'new' | null>(null)
   const [removing, setRemoving] = useState<StaffMember | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [linking, setLinking] = useState(false)
+
+  // Connected, a staff row with no account is somebody who will be turned away
+  // at the sign-in screen with a message about the database. Worth saying here,
+  // where it can be fixed, rather than only there.
+  const unlinked = isSupabaseConfigured ? staff.filter((m) => !m.userId) : []
+
+  async function handleLink() {
+    setNotice(null)
+    setLinking(true)
+    const result = await linkAccounts()
+    setLinking(false)
+    if (result.error) {
+      setNotice(result.error)
+      return
+    }
+    const parts = []
+    if (result.linked > 0) parts.push(`${t('users_linked')}: ${result.linked}`)
+    if (result.unlinked.length > 0) parts.push(`${t('users_still_unlinked')} ${result.unlinked.join(', ')}`)
+    setNotice(parts.length > 0 ? parts.join(' — ') : t('users_none_to_link'))
+  }
 
   /** Turns a refusal from the store into something a person can act on. */
   function report(outcome: 'ok' | 'last-admin' | 'self' | 'username-taken'): boolean {
@@ -76,9 +97,22 @@ export default function UsersTab() {
         title={t('users_title')}
         subtitle={t('users_subtitle')}
         action={
-          <button type="button" onClick={() => setEditing('new')} className="btn btn-primary h-7">
-            <Plus className="size-3.5" /> {t('users_add')}
-          </button>
+          <span className="flex items-center gap-2">
+            {unlinked.length > 0 && (
+              <button
+                type="button"
+                onClick={handleLink}
+                disabled={linking}
+                title={t('users_link_explain')}
+                className="btn btn-secondary h-7"
+              >
+                <Link2 className="size-3.5" /> {t('users_link_accounts')}
+              </button>
+            )}
+            <button type="button" onClick={() => setEditing('new')} className="btn btn-primary h-7">
+              <Plus className="size-3.5" /> {t('users_add')}
+            </button>
+          </span>
         }
         bodyClassName="overflow-x-auto p-0"
       >
@@ -124,7 +158,11 @@ export default function UsersTab() {
                   <span className="mt-0.5 block text-[10px] text-ink-3">{ROLE_SUMMARY[member.role][language]}</span>
                 </td>
                 <td>
-                  {member.credentials?.temporary ? (
+                  {isSupabaseConfigured && !member.userId ? (
+                    <span className="chip chip-warn" title={t('users_link_explain')}>
+                      {t('users_no_account')}
+                    </span>
+                  ) : member.credentials?.temporary ? (
                     <span className="chip chip-warn">{t('auth_temporary')}</span>
                   ) : (
                     <span className="num text-[11px] text-ink-3">

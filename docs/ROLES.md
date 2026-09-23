@@ -93,6 +93,26 @@ Two consequences worth knowing:
   to the deployed dashboard and add it to Redirect URLs, or the link in a new
   colleague's inbox points at their own machine.
 
+### When somebody is told no staff record points at their account
+
+That message means the account exists and the staff row does not point at it —
+`user_id` is empty. It happens to anyone added before the dashboard learned to
+make the account itself, to anyone whose account was made by hand in Supabase,
+and to anyone whose second attempt at being added was refused after the account
+had already been created.
+
+Settings → Users shows **No sign-in account** beside such a row and offers
+**Link sign-in accounts**, which points every unlinked row at the account with
+the same email address. The matching happens in the database, through
+`ops.link_staff_accounts()` in `0008_link_accounts.sql`, because reading
+`auth.users` needs rights no browser has; the function refuses anyone who is
+not an administrator, skips a row with no address rather than guessing, and
+never hands an account that already belongs to somebody to a second row.
+
+If somebody stays unlinked, their staff row's email does not match any account.
+Correct the address on the row, or create the account in Supabase under
+Authentication → Users, and link again.
+
 Removing a user deletes the staff row, which takes away everything the account
 could reach -- signing in with it then gets as far as "no staff record points
 at this account". The auth account itself stays in Supabase, because deleting

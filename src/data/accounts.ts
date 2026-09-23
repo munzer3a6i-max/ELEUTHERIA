@@ -17,7 +17,9 @@
   matters; the account itself is deleted in the Supabase dashboard.
 */
 
-import { isolatedClient } from '../lib/supabase'
+import { isolatedClient, supabase } from '../lib/supabase'
+import { useAppStore } from '../store/useAppStore'
+import { loadEverything } from './sync'
 
 export type AccountOutcome =
   | 'ok'
@@ -86,4 +88,41 @@ export async function createAccount(email: string, password: string): Promise<Ac
   // token on a client that is about to be dropped.
   await client.auth.signOut()
   return { outcome: 'ok', userId: data.user.id }
+}
+
+export interface LinkResult {
+  /** How many staff rows were joined to an account by this call. */
+  linked: number
+  /** Who is still without one, by username. */
+  unlinked: string[]
+  error?: string
+}
+
+/**
+ * Points every staff row with no account at the one with the same address.
+ *
+ * The matching is done in the database, because reading auth.users needs
+ * rights no browser has. It refuses anyone who is not an administrator, skips
+ * a row with no address rather than guessing, and never hands an account that
+ * already belongs to somebody to a second row.
+ */
+export async function linkAccounts(): Promise<LinkResult> {
+  const client = supabase
+  if (!client) return { linked: 0, unlinked: [], error: 'No project is configured.' }
+
+  const { data, error } = await client.rpc('link_staff_accounts')
+  if (error) return { linked: 0, unlinked: [], error: error.message }
+
+  const rows = (data ?? []) as { username: string; linked: boolean }[]
+  const result = {
+    linked: rows.filter((r) => r.linked).length,
+    unlinked: rows.filter((r) => !r.linked).map((r) => r.username),
+  }
+
+  // The staff list in hand still says nobody is linked; read it back so the
+  // page shows what the database now holds.
+  const loaded = await loadEverything()
+  useAppStore.setState({ staff: loaded.staff })
+
+  return result
 }
