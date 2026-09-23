@@ -40,6 +40,29 @@ for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_securit
     process.exit(1)
   }
 }
+// A script people paste into a web editor by hand gets pasted twice, or half
+// of it does. Running the whole thing again has to be a no-op.
+const shape = async () => JSON.stringify((await db.query(`
+  select
+    (select count(*) from pg_tables where schemaname = 'ops') as tables,
+    (select count(*) from pg_policies where schemaname = 'ops') as policies,
+    (select count(*) from pg_indexes where schemaname = 'ops') as indexes,
+    (select count(*) from pg_trigger t join pg_class c on c.oid = t.tgrelid
+       join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'ops' and not t.tgisinternal) as triggers
+`)).rows[0])
+
+const before = await shape()
+let rerunError = null
+try {
+  for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql']) {
+    await db.exec(readFileSync(file, 'utf8'))
+  }
+} catch (error) {
+  rerunError = error.message.split('\n')[0]
+}
+check(rerunError === null, 'the migrations can be run a second time', rerunError ?? '')
+check(before === (await shape()), 'running them twice changes nothing', await shape())
 console.log()
 
 const one = async (sql) => (await db.query(sql)).rows[0]
@@ -183,6 +206,66 @@ for (const [label, sql] of [
   }
   await db.exec('rollback')
   check(refused, `anon is refused ${label}`)
+}
+
+// --- the pieces people actually paste ---------------------------------------
+// db/parts/*.sql is the same SQL cut into files small enough to survive a copy
+// and paste. Cut in the wrong place it would still look fine and build a
+// different database, so the pieces are applied to a second Postgres and the
+// two are compared.
+console.log('\nthe split files\n')
+const { readdirSync } = await import('node:fs')
+let parts = []
+try {
+  parts = readdirSync('db/parts').filter((f) => f.endsWith('.sql')).sort()
+} catch {
+  // Not generated yet; scripts/apply-migrations.mjs writes them.
+}
+
+if (parts.length === 0) {
+  console.log('  (none yet — run node scripts/apply-migrations.mjs)')
+} else {
+  const piecemeal = new PGlite()
+  await piecemeal.waitReady
+  await piecemeal.exec(`
+    create schema if not exists auth;
+    create or replace function auth.uid() returns uuid
+      language sql stable as $$ select nullif(current_setting('test.uid', true), '')::uuid $$;
+    do $$ begin
+      if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if;
+      if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if;
+    end $$;
+  `)
+
+  let broke = null
+  for (const file of parts) {
+    const body = readFileSync(`db/parts/${file}`, 'utf8')
+    // The storage part belongs to Supabase, not to Postgres.
+    if (/storage\.objects|storage\.buckets/.test(body)) continue
+    try {
+      await piecemeal.exec(body)
+    } catch (error) {
+      broke = `${file}: ${error.message.split('\n')[0]}`
+      break
+    }
+  }
+  check(broke === null, `all ${parts.length} parts apply in order`, broke ?? '')
+
+  const describe = async (client) => (await client.query(`
+    select
+      (select count(*) from pg_tables where schemaname = 'ops') tables,
+      (select count(*) from pg_policies where schemaname = 'ops') policies,
+      (select count(*) from pg_indexes where schemaname = 'ops') indexes,
+      (select string_agg(table_name || '.' || column_name, ',' order by table_name, column_name)
+         from information_schema.columns where table_schema = 'ops') columns
+  `)).rows[0]
+  const whole = await describe(db)
+  const pieces = await describe(piecemeal)
+  check(whole.tables === pieces.tables && whole.policies === pieces.policies && whole.indexes === pieces.indexes,
+    'the parts build the same tables, policies and indexes as the whole file',
+    `${pieces.tables}/${pieces.policies}/${pieces.indexes} vs ${whole.tables}/${whole.policies}/${whole.indexes}`)
+  check(whole.columns === pieces.columns, 'every column matches, so no statement was cut in half')
+  await piecemeal.close()
 }
 
 console.log(`\n${failures === 0 ? 'all checks passed' : `${failures} CHECK(S) FAILED`}`)

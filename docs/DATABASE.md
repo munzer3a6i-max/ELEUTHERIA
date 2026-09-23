@@ -31,11 +31,19 @@ promise. The single thing added to `public` is one read-only view,
 node scripts/apply-migrations.mjs
 ```
 
-That writes `db/bundle.sql`. Open the project, **SQL Editor**, paste the whole
-file, run it once. It creates the `ops` schema, 26 tables, the access rules,
-the storage buckets and the public view.
+That writes two things: `db/bundle.sql`, the whole schema in one file, and
+`db/parts/01..11.sql`, the same SQL cut into pieces of about 4 KB.
 
-If you would rather apply it directly, take the connection string from
+**Use the parts.** Paste them into the **SQL Editor** one at a time, in order.
+A long paste into a web editor can be cut off silently, and what you get is a
+syntax error in the middle of a table with no sign of how much was lost. Small
+files cannot fail that way. Every statement is written to be safe to run
+twice, so if you are ever unsure whether a part arrived whole, run it again.
+
+When they are all in, run `db/verify.sql`. It names anything missing rather
+than just counting, and tells you what to do next.
+
+Better still, skip the copying entirely. Take the connection string from
 **Project Settings → Database → Connection string** and run:
 
 ```bash

@@ -73,6 +73,10 @@ declare t text;
 begin
   foreach t in array array['countries', 'cities', 'professions', 'payment_sources', 'staff', 'settings']
   loop
+    execute format('drop policy if exists read_all_staff on ops.%I', t);
+    execute format('drop policy if exists write_admin on ops.%I', t);
+    execute format('drop policy if exists update_admin on ops.%I', t);
+    execute format('drop policy if exists delete_admin on ops.%I', t);
     execute format('create policy read_all_staff on ops.%I for select to authenticated using (ops.is_staff())', t);
     execute format('create policy write_admin on ops.%I for insert to authenticated with check (ops.is_admin())', t);
     execute format('create policy update_admin on ops.%I for update to authenticated using (ops.is_admin()) with check (ops.is_admin())', t);
@@ -91,6 +95,10 @@ begin
     'requests', 'request_status_history'
   ]
   loop
+    execute format('drop policy if exists read_all_staff on ops.%I', t);
+    execute format('drop policy if exists write_operations on ops.%I', t);
+    execute format('drop policy if exists update_operations on ops.%I', t);
+    execute format('drop policy if exists delete_operations on ops.%I', t);
     execute format('create policy read_all_staff on ops.%I for select to authenticated using (ops.is_staff())', t);
     execute format('create policy write_operations on ops.%I for insert to authenticated with check (ops.can_write_operations())', t);
     execute format('create policy update_operations on ops.%I for update to authenticated using (ops.can_write_operations()) with check (ops.can_write_operations())', t);
@@ -110,6 +118,10 @@ begin
     'backouts', 'backout_costs'
   ]
   loop
+    execute format('drop policy if exists read_finance on ops.%I', t);
+    execute format('drop policy if exists write_finance on ops.%I', t);
+    execute format('drop policy if exists update_finance on ops.%I', t);
+    execute format('drop policy if exists delete_finance on ops.%I', t);
     execute format('create policy read_finance on ops.%I for select to authenticated using (ops.can_read_finance())', t);
     execute format('create policy write_finance on ops.%I for insert to authenticated with check (ops.can_write_finance())', t);
     execute format('create policy update_finance on ops.%I for update to authenticated using (ops.can_write_finance()) with check (ops.can_write_finance())', t);
@@ -120,10 +132,14 @@ $$;
 
 -- Payroll is what colleagues earn, so it is the administrator's alone --
 -- narrower than the rest of finance, and deliberately so.
-drop policy read_finance   on ops.payroll_entries;
-drop policy write_finance  on ops.payroll_entries;
-drop policy update_finance on ops.payroll_entries;
-drop policy delete_finance on ops.payroll_entries;
+drop policy if exists read_finance   on ops.payroll_entries;
+drop policy if exists write_finance  on ops.payroll_entries;
+drop policy if exists update_finance on ops.payroll_entries;
+drop policy if exists delete_finance on ops.payroll_entries;
+drop policy if exists read_admin     on ops.payroll_entries;
+drop policy if exists write_admin    on ops.payroll_entries;
+drop policy if exists update_admin   on ops.payroll_entries;
+drop policy if exists delete_admin   on ops.payroll_entries;
 create policy read_admin   on ops.payroll_entries for select to authenticated using (ops.is_admin());
 create policy write_admin  on ops.payroll_entries for insert to authenticated with check (ops.is_admin());
 create policy update_admin on ops.payroll_entries for update to authenticated using (ops.is_admin()) with check (ops.is_admin());
@@ -131,13 +147,17 @@ create policy delete_admin on ops.payroll_entries for delete to authenticated us
 
 -- A notice addressed to somebody is theirs; one addressed to nobody is for the
 -- whole office.
+drop policy if exists read_own on ops.notifications;
 create policy read_own on ops.notifications for select to authenticated
   using (ops.is_staff() and (staff_id is null or staff_id in (select id from ops.staff where user_id = auth.uid())));
+drop policy if exists write_own on ops.notifications;
 create policy write_own on ops.notifications for insert to authenticated
   with check (ops.is_staff());
+drop policy if exists update_own on ops.notifications;
 create policy update_own on ops.notifications for update to authenticated
   using (ops.is_staff() and (staff_id is null or staff_id in (select id from ops.staff where user_id = auth.uid())))
   with check (ops.is_staff());
+drop policy if exists delete_own on ops.notifications;
 create policy delete_own on ops.notifications for delete to authenticated
   using (ops.is_staff() and (staff_id is null or staff_id in (select id from ops.staff where user_id = auth.uid())));
 
@@ -155,6 +175,7 @@ begin
 end;
 $$;
 
+drop trigger if exists staff_guard_self on ops.staff;
 create trigger staff_guard_self before update on ops.staff
   for each row execute function ops.guard_own_account();
 

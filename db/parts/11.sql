@@ -1,3 +1,6 @@
+-- Eleutheria schema, part 11 of 11.
+-- Run the parts in order, each one on its own. Running one twice is safe.
+
 -- File storage.
 --
 -- Three private buckets, because none of what they hold is public:

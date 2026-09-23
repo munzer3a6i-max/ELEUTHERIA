@@ -13,8 +13,78 @@
 // Each file runs inside its own transaction and is recorded in
 // ops.schema_migrations, so running this twice does not run anything twice.
 
-import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, readdirSync, mkdirSync, rmSync } from 'node:fs'
 import { createRequire } from 'node:module'
+
+/** How much SQL to put in one file people will paste by hand. */
+const PART_BYTES = 4000
+
+/**
+ * Splits SQL into whole statements.
+ *
+ * A semicolon only ends a statement when it is not inside a string, a comment
+ * or a dollar-quoted block -- and this schema is full of dollar-quoted blocks,
+ * since every `do $$ ... $$` and function body contains semicolons of its own.
+ */
+function splitStatements(sql) {
+  const statements = []
+  let start = 0
+  let i = 0
+  while (i < sql.length) {
+    const rest = sql.slice(i)
+    if (rest.startsWith('--')) {
+      const end = sql.indexOf('\n', i)
+      i = end === -1 ? sql.length : end + 1
+      continue
+    }
+    if (rest.startsWith('/*')) {
+      const end = sql.indexOf('*/', i + 2)
+      i = end === -1 ? sql.length : end + 2
+      continue
+    }
+    if (sql[i] === "'") {
+      i += 1
+      while (i < sql.length) {
+        if (sql[i] === "'" && sql[i + 1] === "'") i += 2
+        else if (sql[i] === "'") { i += 1; break }
+        else i += 1
+      }
+      continue
+    }
+    const dollar = /^\$([A-Za-z_]\w*)?\$/.exec(rest)
+    if (dollar) {
+      const tag = dollar[0]
+      const end = sql.indexOf(tag, i + tag.length)
+      i = end === -1 ? sql.length : end + tag.length
+      continue
+    }
+    if (sql[i] === ';') {
+      statements.push(sql.slice(start, i + 1).trim())
+      start = i + 1
+      i += 1
+      continue
+    }
+    i += 1
+  }
+  const tail = sql.slice(start).trim()
+  if (tail) statements.push(tail)
+  return statements.filter(Boolean)
+}
+
+/** Groups whole statements into files small enough to survive a copy and paste. */
+function toParts(sql) {
+  const parts = []
+  let current = ''
+  for (const statement of splitStatements(sql)) {
+    if (current && current.length + statement.length + 2 > PART_BYTES) {
+      parts.push(current)
+      current = ''
+    }
+    current += (current ? '\n\n' : '') + statement
+  }
+  if (current) parts.push(current)
+  return parts
+}
 
 const files = readdirSync('db/migrations').filter((f) => f.endsWith('.sql')).sort()
 const apply = process.argv.includes('--apply')
@@ -29,7 +99,35 @@ if (!apply || !url) {
     ...files.map((file) => `\n-- ======================================================== ${file} --\n\n${readFileSync(`db/migrations/${file}`, 'utf8')}`),
   ].join('\n')
   writeFileSync('db/bundle.sql', bundle)
-  console.log(`Bundled ${files.length} migration(s) into db/bundle.sql (${bundle.split('\n').length} lines).\n`)
+  console.log(`Bundled ${files.length} migration(s) into db/bundle.sql (${bundle.split('\n').length} lines, ${bundle.length} bytes).`)
+
+  // The same SQL in pieces. A long paste into a web editor can be truncated
+  // silently, and the result is a syntax error somewhere in the middle of a
+  // table; a handful of small files cannot fail that way, and every statement
+  // is safe to run twice, so a part that half-arrived can simply be run again.
+  rmSync('db/parts', { recursive: true, force: true })
+  mkdirSync('db/parts', { recursive: true })
+  // Storage is kept whole and last: it is small, it is the only part that
+  // touches Supabase's own schema, and that is also the only part a plain
+  // Postgres cannot run, which keeps the test suite honest about the rest.
+  const storage = files.filter((f) => f.includes('storage'))
+  const core = files.filter((f) => !f.includes('storage'))
+  const parts = [
+    ...toParts(core.map((f) => readFileSync(`db/migrations/${f}`, 'utf8')).join('\n\n')),
+    ...storage.map((f) => readFileSync(`db/migrations/${f}`, 'utf8').trim()),
+  ]
+  parts.forEach((body, index) => {
+    const n = String(index + 1).padStart(2, '0')
+    const header = [
+      `-- Eleutheria schema, part ${index + 1} of ${parts.length}.`,
+      '-- Run the parts in order, each one on its own. Running one twice is safe.',
+      '',
+      '',
+    ].join('\n')
+    writeFileSync(`db/parts/${n}.sql`, header + body + '\n')
+  })
+  console.log(`Split into db/parts/01..${String(parts.length).padStart(2, '0')}.sql (largest ${Math.max(...parts.map((p) => p.length))} bytes).\n`)
+
   console.log('Next: open Supabase, your project, SQL Editor, paste the file, run it.')
   console.log('Then: Project Settings, API, Exposed schemas — add `ops` beside `public`.\n')
   if (apply && !url) console.log('(--apply needs SUPABASE_DB_URL, so the bundle was written instead.)')
