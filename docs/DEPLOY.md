@@ -85,7 +85,17 @@ deploy again, because the value is baked in at build time.
    they can reach, and the database enforces it, not the browser.
 3. Change the starting password from **Account**.
 4. In Supabase → **Authentication → URL Configuration**, set the Site URL to the
-   deployed address. Password recovery emails point at whatever is set there.
+   deployed address, and add it to **Redirect URLs** as well. Every link
+   Supabase emails — confirming an address, resetting a password — is checked
+   against those, and falls back to the Site URL, which starts life as
+   `http://localhost:3000`. Leave it and a new colleague's confirmation link
+   points at their own machine.
+
+   The dashboard asks for the link to come back to whatever address it is being
+   used from, so setting these two correctly is usually the whole of it. If an
+   office where the administrator sets the passwords has no use for
+   confirmation emails at all, turn **Confirm email** off under Authentication,
+   Providers, Email, and there is no link to get wrong.
 
 ## Checking a build before pushing
 

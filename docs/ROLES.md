@@ -86,6 +86,12 @@ Two consequences worth knowing:
   cannot sign in until they open the link they are sent. The dashboard says so
   when it happens. For an office where the administrator sets passwords
   anyway, turning that setting off is reasonable.
+- **Where that link lands** is a Supabase setting, not ours. The dashboard asks
+  for it to come back to whatever address it is being used from, but Supabase
+  checks that against Authentication, URL Configuration, and falls back to the
+  Site URL — `http://localhost:3000` until somebody changes it. Set the Site URL
+  to the deployed dashboard and add it to Redirect URLs, or the link in a new
+  colleague's inbox points at their own machine.
 
 Removing a user deletes the staff row, which takes away everything the account
 could reach -- signing in with it then gets as far as "no staff record points

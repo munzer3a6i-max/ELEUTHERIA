@@ -47,11 +47,13 @@ try {
 }
 
 let mode = 'ok'
+let lastUrl = ''
 const user = { id: '00000000-1111-2222-3333-444444444444', email: 'x@y.z', identities: [{ id: 'i' }] }
 
 const server = createServer((request, response) => {
   request.on('data', () => {})
   request.on('end', () => {
+    lastUrl = request.url
     const send = (status, payload) => {
       response.writeHead(status, { 'content-type': 'application/json' })
       response.end(JSON.stringify(payload))
@@ -78,6 +80,11 @@ const server = createServer((request, response) => {
 }).listen(PORT)
 
 await import(`file://${bundle}`)
+
+// The confirmation link has to come back to the dashboard the person is being
+// added to. Left to itself Supabase sends them to the project's Site URL, which
+// is http://localhost:3000 until somebody changes it.
+globalThis.window = { location: { origin: 'https://dashboard.example' } }
 
 let failures = 0
 function check(passed, label, detail = '') {
@@ -108,6 +115,12 @@ for (const [when, want] of Object.entries(expected)) {
   }
   if (when === 'taken-quiet') check(got.userId === null, 'a taken address links no row')
 }
+
+check(
+  lastUrl.includes(`redirect_to=${encodeURIComponent('https://dashboard.example/login')}`),
+  'the confirmation link is told to come back to this dashboard',
+  lastUrl,
+)
 
 server.close()
 rmSync(work, { recursive: true, force: true })

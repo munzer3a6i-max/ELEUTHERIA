@@ -42,7 +42,20 @@ export async function createAccount(email: string, password: string): Promise<Ac
   const client = isolatedClient()
   if (!client) return { outcome: 'unreachable', userId: null }
 
-  const { data, error } = await client.auth.signUp({ email: email.trim(), password })
+  const { data, error } = await client.auth.signUp({
+    email: email.trim(),
+    password,
+    options: {
+      // Where the confirmation link should land. Without this, Supabase sends
+      // people to the project's Site URL, which starts life as
+      // http://localhost:3000 and stays there until somebody changes it -- so
+      // the link in a new colleague's inbox points at their own machine. This
+      // is the dashboard they are being added to, whichever address it is
+      // served from. Supabase still checks it against the project's allowed
+      // redirect list, so the Site URL is worth setting correctly as well.
+      emailRedirectTo: typeof window === 'undefined' ? undefined : `${window.location.origin}/login`,
+    },
+  })
 
   if (error) {
     const said = error.message
