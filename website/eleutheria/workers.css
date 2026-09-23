@@ -1,0 +1,186 @@
+/* Enough styling that the page looks finished on its own, and little enough
+   that your site's own styles can take it over. Everything is a plain class;
+   the layout uses logical properties so it flips for Arabic by itself. */
+
+.workers {
+  --workers-ink: #14181f;
+  --workers-muted: #667085;
+  --workers-line: #e5e8ee;
+  --workers-surface: #ffffff;
+  --workers-radius: 14px;
+
+  max-width: 1120px;
+  margin-inline: auto;
+  padding: 32px 16px 64px;
+  color: var(--workers-ink);
+}
+
+.workers-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.workers-head h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 650;
+}
+
+.workers-count {
+  margin: 0;
+  color: var(--workers-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.workers-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.workers-filters input,
+.workers-filters select {
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  color: inherit;
+  background: var(--workers-surface);
+  border: 1px solid var(--workers-line);
+  border-radius: 10px;
+}
+
+.workers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.worker-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--workers-surface);
+  border: 1px solid var(--workers-line);
+  border-radius: var(--workers-radius);
+}
+
+.worker-photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  background: #f2f4f8;
+  border-radius: 10px;
+}
+
+.worker-photo-empty {
+  display: grid;
+  place-items: center;
+  color: var(--workers-muted);
+  font-size: 2.5rem;
+  font-weight: 600;
+}
+
+.worker-name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.worker-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 0;
+  color: var(--workers-muted);
+  font-size: 0.875rem;
+}
+
+.worker-facts dd {
+  margin: 0;
+}
+
+.worker-profession {
+  color: var(--workers-ink);
+  font-weight: 550;
+}
+
+.worker-card-skeleton {
+  animation: workers-pulse 1.4s ease-in-out infinite;
+}
+
+.worker-line {
+  height: 12px;
+  background: #f2f4f8;
+  border-radius: 6px;
+}
+
+.worker-line-short {
+  width: 55%;
+}
+
+@keyframes workers-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .worker-card-skeleton {
+    animation: none;
+  }
+}
+
+.workers-message {
+  padding: 32px 0;
+  color: var(--workers-muted);
+  text-align: center;
+}
+
+.workers-error {
+  color: #b42318;
+}
+
+.workers-detail {
+  font-size: 0.875rem;
+  word-break: break-word;
+}
+
+.workers-error button {
+  padding: 8px 16px;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 1px solid currentColor;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.workers-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-color-scheme: dark) {
+  .workers {
+    --workers-ink: #eef1f6;
+    --workers-muted: #98a2b3;
+    --workers-line: #262b34;
+    --workers-surface: #161a21;
+  }
+
+  .worker-photo,
+  .worker-line {
+    background: #1e232b;
+  }
+}

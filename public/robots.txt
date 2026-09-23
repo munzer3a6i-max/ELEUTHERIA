@@ -1,0 +1,3 @@
+# The dashboard is for the office, not for search engines.
+User-agent: *
+Disallow: /
