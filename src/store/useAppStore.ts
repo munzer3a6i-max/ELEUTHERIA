@@ -169,8 +169,14 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
-function newId(prefix: string): string {
-  return `${prefix}-${crypto.randomUUID()}`
+/**
+ * Ids are plain uuids, with no readable prefix, because the database's columns
+ * are uuid columns: an id shaped `ap-<uuid>` is rejected the moment a record
+ * created here is saved. What kind of thing an id belongs to is answered by
+ * the collection it is in, not by the id.
+ */
+function newId(): string {
+  return crypto.randomUUID()
 }
 
 /**
@@ -416,7 +422,7 @@ export const useAppStore = create<AppState>()(
       updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
 
       addApplicant: (data) => {
-        const id = newId('ap')
+        const id = newId()
         const applicant: Applicant = {
           ...data,
           id,
@@ -457,7 +463,7 @@ export const useAppStore = create<AppState>()(
         let requests = state.requests
         if (request && goingOut && !request.statusHistory.some((h) => h.status === BACKOUT_STAGE)) {
           const entry: StatusHistoryEntry = {
-            id: newId('sh'),
+            id: newId(),
             status: BACKOUT_STAGE,
             date: todayIso(),
             cost: 0,
@@ -509,7 +515,7 @@ export const useAppStore = create<AppState>()(
       addExperience: (applicantId, entry) =>
         set((s) => ({
           applicants: s.applicants.map((a) =>
-            a.id === applicantId ? { ...a, experience: [...a.experience, { ...entry, id: newId('exp') }] } : a,
+            a.id === applicantId ? { ...a, experience: [...a.experience, { ...entry, id: newId() }] } : a,
           ),
         })),
       deleteExperience: (applicantId, entryId) =>
@@ -521,7 +527,7 @@ export const useAppStore = create<AppState>()(
       addEducation: (applicantId, entry) =>
         set((s) => ({
           applicants: s.applicants.map((a) =>
-            a.id === applicantId ? { ...a, education: [...a.education, { ...entry, id: newId('edu') }] } : a,
+            a.id === applicantId ? { ...a, education: [...a.education, { ...entry, id: newId() }] } : a,
           ),
         })),
       deleteEducation: (applicantId, entryId) =>
@@ -534,7 +540,7 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           applicants: s.applicants.map((a) =>
             a.id === applicantId
-              ? { ...a, documents: [...a.documents, { ...doc, id: newId('d'), uploadedOn: todayIso() }] }
+              ? { ...a, documents: [...a.documents, { ...doc, id: newId(), uploadedOn: todayIso() }] }
               : a,
           ),
         })),
@@ -548,13 +554,13 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           applicants: s.applicants.map((a) =>
             a.id === applicantId
-              ? { ...a, notes: [{ id: newId('n'), author: 'Kylie', date: todayIso(), text }, ...a.notes] }
+              ? { ...a, notes: [{ id: newId(), author: 'Kylie', date: todayIso(), text }, ...a.notes] }
               : a,
           ),
         })),
 
       addEmployer: (data) => {
-        const id = newId('em')
+        const id = newId()
         const employer: Employer = { ...data, id, status: 'Active', profileImageDataUrl: null, createdOn: todayIso() }
         set((s) => ({ employers: [employer, ...s.employers] }))
         return id
@@ -564,7 +570,7 @@ export const useAppStore = create<AppState>()(
       deleteEmployer: (id) => set((s) => ({ employers: s.employers.filter((e) => e.id !== id) })),
 
       addAgency: (data) => {
-        const id = newId('fra')
+        const id = newId()
         const agency: RecruitmentAgency = { ...data, id, status: 'Active', createdOn: todayIso() }
         set((s) => ({ agencies: [agency, ...s.agencies] }))
         return id
@@ -581,7 +587,7 @@ export const useAppStore = create<AppState>()(
         ),
 
       addRequest: (data) => {
-        const id = newId('rr')
+        const id = newId()
         const request: RecruitmentRequest = {
           ...data,
           id,
@@ -612,7 +618,7 @@ export const useAppStore = create<AppState>()(
         set((s) => {
           const requests = s.requests.map((r) =>
             r.id === requestId
-              ? { ...r, statusHistory: [...r.statusHistory, { ...entry, id: newId('sh') }], updatedOn: todayIso() }
+              ? { ...r, statusHistory: [...r.statusHistory, { ...entry, id: newId() }], updatedOn: todayIso() }
               : r,
           )
           // Logging the stage is what makes her a backout worker, wherever it
@@ -652,7 +658,7 @@ export const useAppStore = create<AppState>()(
         ),
 
       addInvoice: (data) => {
-        const id = newId('inv')
+        const id = newId()
         const seq = get().invoiceSequence
         const invoiceNumber = `INV-${new Date().getFullYear()}-${String(seq).padStart(4, '0')}`
         const invoice: Invoice = { ...data, id, invoiceNumber, payments: [], status: 'Issued', issuedOn: todayIso() }
@@ -665,7 +671,7 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           invoices: s.invoices.map((i) => {
             if (i.id !== invoiceId) return i
-            const payments = [...i.payments, { ...payment, id: newId('ip') }]
+            const payments = [...i.payments, { ...payment, id: newId() }]
             const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0)
             const status: Invoice['status'] =
               totalPaid >= i.servicePrice ? 'Completed' : totalPaid > 0 ? 'Partial Payment' : 'Issued'
@@ -680,7 +686,7 @@ export const useAppStore = create<AppState>()(
           ...rest,
           username: normaliseUsername(username),
           credentials: await makeCredentials(password, true),
-          id: newId('st'),
+          id: newId(),
           status: 'Active',
         }
         set((s) => ({ staff: [member, ...s.staff] }))
@@ -727,28 +733,28 @@ export const useAppStore = create<AppState>()(
         set((s) => ({ staff: s.staff.map((m) => (m.id === id ? { ...m, credentials } : m)) }))
       },
 
-      addCountry: (name) => set((s) => ({ countries: [...s.countries, { id: newId('co'), name }] })),
+      addCountry: (name) => set((s) => ({ countries: [...s.countries, { id: newId(), name }] })),
       deleteCountry: (id) => set((s) => ({ countries: s.countries.filter((c) => c.id !== id) })),
-      addCity: (data) => set((s) => ({ cities: [...s.cities, { ...data, id: newId('ci') }] })),
+      addCity: (data) => set((s) => ({ cities: [...s.cities, { ...data, id: newId() }] })),
       deleteCity: (id) => set((s) => ({ cities: s.cities.filter((c) => c.id !== id) })),
-      addProfession: (name) => set((s) => ({ professions: [...s.professions, { id: newId('pr'), name }] })),
+      addProfession: (name) => set((s) => ({ professions: [...s.professions, { id: newId(), name }] })),
       deleteProfession: (id) => set((s) => ({ professions: s.professions.filter((p) => p.id !== id) })),
       addPaymentSource: (data) =>
-        set((s) => ({ paymentSources: [...s.paymentSources, { ...data, id: newId('ps') }] })),
+        set((s) => ({ paymentSources: [...s.paymentSources, { ...data, id: newId() }] })),
       updatePaymentSource: (id, patch) =>
         set((s) => ({ paymentSources: s.paymentSources.map((p) => (p.id === id ? { ...p, ...patch } : p)) })),
       deletePaymentSource: (id) =>
         set((s) => ({ paymentSources: s.paymentSources.filter((p) => p.id !== id) })),
 
       addOfficeExpense: (data) =>
-        set((s) => ({ officeExpenses: [{ ...data, id: newId('oe') }, ...s.officeExpenses] })),
+        set((s) => ({ officeExpenses: [{ ...data, id: newId() }, ...s.officeExpenses] })),
       updateOfficeExpense: (id, patch) =>
         set((s) => ({ officeExpenses: s.officeExpenses.map((e) => (e.id === id ? { ...e, ...patch } : e)) })),
       setOfficeExpenseStatus: (id, status) =>
         set((s) => ({ officeExpenses: s.officeExpenses.map((e) => (e.id === id ? { ...e, status } : e)) })),
       deleteOfficeExpense: (id) =>
         set((s) => ({ officeExpenses: s.officeExpenses.filter((e) => e.id !== id) })),
-      addPayrollEntry: (data) => set((s) => ({ payroll: [{ ...data, id: newId('pay') }, ...s.payroll] })),
+      addPayrollEntry: (data) => set((s) => ({ payroll: [{ ...data, id: newId() }, ...s.payroll] })),
       updatePayrollEntry: (id, patch) =>
         set((s) => ({ payroll: s.payroll.map((e) => (e.id === id ? { ...e, ...patch } : e)) })),
       deletePayrollEntry: (id) => set((s) => ({ payroll: s.payroll.filter((e) => e.id !== id) })),
@@ -759,13 +765,13 @@ export const useAppStore = create<AppState>()(
         const already = new Set(get().payroll.filter((e) => e.month === toMonth).map((e) => e.staffId))
         const copies = source
           .filter((e) => !already.has(e.staffId))
-          .map((e) => ({ ...e, id: newId('pay'), month: toMonth, status: 'Pending' as LedgerStatus }))
+          .map((e) => ({ ...e, id: newId(), month: toMonth, status: 'Pending' as LedgerStatus }))
         if (copies.length > 0) set((s) => ({ payroll: [...copies, ...s.payroll] }))
         return copies.length
       },
 
       addAgent: (data) => {
-        const id = newId('agent')
+        const id = newId()
         const agent: Agent = { ...data, id, status: 'Active', createdOn: todayIso() }
         set((s) => withBilling(s, { agents: [agent, ...s.agents] }))
         return id
@@ -796,7 +802,7 @@ export const useAppStore = create<AppState>()(
         })),
 
       addAgencyContract: (data) => {
-        const id = newId('agc')
+        const id = newId()
         set((s) => withBilling(s, { agencyContracts: [{ ...data, id }, ...s.agencyContracts] }))
         return id
       },
@@ -833,7 +839,7 @@ export const useAppStore = create<AppState>()(
       addBackoutCost: (backoutId, cost) =>
         set((s) => ({
           backouts: s.backouts.map((b) =>
-            b.id === backoutId ? { ...b, costs: [...b.costs, { ...cost, id: newId('boc') }] } : b,
+            b.id === backoutId ? { ...b, costs: [...b.costs, { ...cost, id: newId() }] } : b,
           ),
         })),
       updateBackoutCost: (backoutId, costId, patch) =>
@@ -865,7 +871,7 @@ export const useAppStore = create<AppState>()(
         set((s) => ({ notifications: s.notifications.map((n) => ({ ...n, read: true })) })),
       addNotification: (title, detail) =>
         set((s) => ({
-          notifications: [{ id: newId('note'), title, detail, date: todayIso(), read: false }, ...s.notifications],
+          notifications: [{ id: newId(), title, detail, date: todayIso(), read: false }, ...s.notifications],
         })),
       },
       // The role of whoever is signed in, read fresh on every call.

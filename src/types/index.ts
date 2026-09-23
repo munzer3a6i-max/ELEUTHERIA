@@ -50,6 +50,11 @@ export interface Attachment {
   /** Empty for records that were kept before files themselves were stored. */
   dataUrl: string
   uploadedOn: string
+  /**
+   * Where the file lives in Storage, once the app is connected to a database.
+   * Until then the bytes are the dataUrl above and this is null.
+   */
+  path?: string | null
 }
 
 export type RequestType = 'Domestic' | 'Profession'

@@ -8,10 +8,11 @@
   own status history, so a commission or a charge can never exist for a stage
   that has not happened, and logging a stage cannot be forgotten in the books.
 
-  The sync is idempotent. Records are keyed by request and milestone, so
-  re-running it after any edit leaves settled rows untouched, refreshes the
-  amounts of unsettled ones, and removes only what the history no longer
-  supports — and never something already paid.
+  The sync is idempotent. Records are matched by request and milestone rather
+  than by id, so re-running it after any edit leaves settled rows untouched,
+  refreshes the amounts of unsettled ones, and removes only what the history no
+  longer supports — and never something already paid. The ids themselves are
+  plain uuids, because that is what the database's columns hold.
 */
 
 import {
@@ -111,7 +112,7 @@ export function syncDerivedBilling(input: BillingInput): BillingOutput {
           )
         } else {
           commissions.push({
-            id: `ac-${request.id}-${milestone.toLowerCase()}`,
+            id: crypto.randomUUID(),
             agentId: agent.id,
             applicantId: applicant.id,
             requestId: request.id,
@@ -157,7 +158,7 @@ export function syncDerivedBilling(input: BillingInput): BillingOutput {
           )
         } else {
           charges.push({
-            id: `ach-${request.id}-${milestone.toLowerCase().replace(' ', '-')}`,
+            id: crypto.randomUUID(),
             agencyId: contract.agencyId,
             contractId: contract.id,
             applicantId: applicant.id,
@@ -196,7 +197,7 @@ export function syncDerivedBilling(input: BillingInput): BillingOutput {
         })
       } else {
         backouts.push({
-          id: `bo-${request.id}`,
+          id: crypto.randomUUID(),
           requestId: request.id,
           applicantId: applicant.id,
           deployedOn,
