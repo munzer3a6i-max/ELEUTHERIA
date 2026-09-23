@@ -20,6 +20,10 @@ export const isSupabaseConfigured = Boolean(url && anonKey)
 
 export const supabase = isSupabaseConfigured
   ? createClient(url, anonKey, {
+      // The dashboard's own tables live in `ops`, away from whatever the
+      // website already keeps in `public`. The schema has to be listed under
+      // Project Settings, API, Exposed schemas for PostgREST to serve it.
+      db: { schema: 'ops' },
       auth: {
         persistSession: true,
         autoRefreshToken: true,

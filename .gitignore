@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+db/.pglite-dryrun/
+db/exported-files/
+db/bundle.sql

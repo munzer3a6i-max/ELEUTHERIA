@@ -1,141 +1,204 @@
-# Connecting the dashboard to a database
+# Connecting the dashboard to the database
 
-Today the dashboard keeps everything in the browser's `localStorage` under the
-key `mustaqdem-store`. Nothing is shared: each person who opens the app has
-their own private copy, and clearing browser data deletes it. This document
-covers moving that to a real database and publishing selected workers to
-eleutheria.agency.
+Today the dashboard keeps everything in the browser's `localStorage`. Nothing
+is shared: each person who opens the app has their own private copy, and
+clearing browser data deletes it. This is how to move that into the Supabase
+project at `ksfsapomxgxbdrwgesde`, which already holds the website's own
+tables.
 
-## The shape
+## The shape of it
 
 ```
-  Dashboard (browser)                 Website (eleutheria.agency)
-          |                                      |
-          | signed-in staff                      | anonymous visitors
-          v                                      v
-   Supabase Postgres  <-------- published_workers view (read only)
-   + Auth + Storage
+  Dashboard (browser)                    Website (eleutheria.agency)
+          |                                          |
+          | staff, signed in                         | anonymous visitors
+          v                                          v
+   ops.*  ──────────────────────────►  public.published_workers  (read only)
+   (everything this app owns)
+                                       public.*  (whatever the site already has,
+                                                  untouched by these migrations)
 ```
 
-Two audiences, two levels of access. Staff read and write operational data.
-The website reads one curated view and nothing else. Passport numbers,
-identity numbers, phone numbers, costs and payroll never leave the first box.
+Everything the dashboard owns lives in its own schema, `ops`. The website's
+existing tables are in `public` and these migrations do not touch, rename or
+shadow any of them — a separate schema makes that a guarantee rather than a
+promise. The single thing added to `public` is one read-only view,
+`published_workers`, which is what the site reads.
 
-## What you need to create
+## Step 1 — get the schema in
 
-1. **A Supabase project** (free tier is enough to start). Note the project URL
-   and the `anon` key from Project Settings, API.
-2. **Two storage buckets**, both private: `worker-photos` and `worker-documents`.
-   Photos are currently base64 strings inside `localStorage`, which will not
-   survive the move.
-3. **The schema.** Run these in order in the SQL editor:
-   - `db/migrations/0001_init.sql` - tables, indexes, triggers
-   - `db/migrations/0002_security.sql` - row level security, the public view
-4. **The first staff account.** Create a user in Authentication, then link it:
+```bash
+node scripts/apply-migrations.mjs
+```
+
+That writes `db/bundle.sql`. Open the project, **SQL Editor**, paste the whole
+file, run it once. It creates the `ops` schema, 26 tables, the access rules,
+the storage buckets and the public view.
+
+If you would rather apply it directly, take the connection string from
+**Project Settings → Database → Connection string** and run:
+
+```bash
+npm i -D pg --no-save
+SUPABASE_DB_URL='postgresql://...' node scripts/apply-migrations.mjs --apply
+```
+
+Each file runs in its own transaction and is recorded in
+`ops.schema_migrations`, so running it twice does not run anything twice. The
+connection string contains the database password: pass it on the command line,
+never into a file in this repository.
+
+## Step 2 — expose the schema
+
+**Project Settings → API → Exposed schemas**: add `ops` beside `public`.
+Without this the API answers "schema must be one of the following", and the
+Database tab in Settings will tell you so.
+
+## Step 3 — make the first account
+
+Passwords move to Supabase Auth, where they belong. The `12345` scheme in the
+browser was a lock on the office door; this is the real thing.
+
+1. **Authentication → Users → Add user**: email and a password, and tick
+   "Auto confirm user".
+2. In the SQL editor, link that auth user to a staff row:
 
    ```sql
-   insert into staff (user_id, name_en, email, role)
-   values ('<the auth user id>', 'Your name', 'you@eleutheria.agency', 'admin');
+   update ops.staff
+      set user_id = '<the auth user id>'
+    where username = 'kylie';
    ```
 
-   Nobody can read anything until a matching `staff` row exists with
-   `status = 'Active'`. That is deliberate.
+Nobody can read anything until a matching `ops.staff` row exists with
+`status = 'Active'`. That is deliberate — it is the same rule the test suite
+checks.
 
-## What the dashboard needs
+## Step 4 — point the app at it
 
-Environment variables, set in `.env.local` for development and in the host's
-dashboard for production:
-
-```
-VITE_SUPABASE_URL=https://<project>.supabase.co
-VITE_SUPABASE_ANON_KEY=<anon key>
-```
-
-The anon key is safe in the browser. It grants nothing on its own: every table
-is behind row level security, and the policies require an active staff row.
-The `service_role` key is the opposite of safe and must never appear in this
-repository or in any frontend build.
-
-## What the website needs
-
-The site is custom-coded, so the cleanest option is to read from the database
-on the server, where no key is exposed to visitors.
-
-**Option A, a read-only Postgres role.** Run once, with your own password:
-
-```sql
-create role website_reader login password '<choose a strong password>';
-grant usage on schema public to website_reader;
-grant select on published_workers to website_reader;
-```
-
-That role can read the view and nothing else, so a leaked connection string
-exposes only what is already public. Point the website's server at it:
-
-```sql
-select id, english_name, gender, age, country, profession, experience_years, photo_path
-from published_workers
-order by updated_at desc;
-```
-
-**Option B, Supabase's REST endpoint**, if you would rather not hold a database
-connection:
+`.env.local` (already gitignored):
 
 ```
-GET https://<project>.supabase.co/rest/v1/published_workers?select=*
-    apikey: <anon key>
+VITE_SUPABASE_URL=https://ksfsapomxgxbdrwgesde.supabase.co
+VITE_SUPABASE_ANON_KEY=<the anon key>
 ```
 
-Photos are private objects in storage, so the website should request a signed
-URL for `photo_path` server-side rather than linking the bucket directly.
+The anon key is meant to be public: it ships inside the browser bundle. Its
+safety comes from the rules below. The `service_role` key is the opposite of
+safe and must never appear in this repository, this app, or any build output.
 
-## What decides whether a worker appears on the site
+Then open **Settings → Database** in the dashboard. It says which of four
+things is true: not configured, unreachable, reachable but the schema is not
+exposed, or connected.
 
-The `applicants.published_to_website` column. A worker shows on the public site
-only when that flag is true **and** their status is `Available`, so someone who
-has been placed drops off the site automatically.
+## Step 5 — bring your data across
 
-The app already has this field, as `cvLinkedToWebsite` in
-`src/types/index.ts`. It was designed for exactly this and has never been wired
-to anything.
-
-## What the public view exposes
-
-Verified against the migration:
-
-```
-id, english_name, arabic_name, gender, age, country, profession,
-type, experience_years, photo_path, updated_at
+```bash
+# In the dashboard: Settings → Database → Export data
+node scripts/import-local-data.mjs eleutheria-export-2026-09-23.json --pglite   # dry run
+SUPABASE_DB_URL='postgresql://...' node scripts/import-local-data.mjs eleutheria-export-2026-09-23.json
 ```
 
-Date of birth is reduced to an age, and passport number, identity number,
-phone, telephone, CV path and passport copy are absent. The view lists its
-columns explicitly rather than using `select *`, so adding a sensitive column
-to `applicants` later cannot silently publish it. Anything added to that list
-becomes world readable, so add deliberately.
+Ids are derived from the app's own ids, so importing the same file twice
+updates the same rows instead of making a second copy. The dry run applies the
+migrations to a throwaway Postgres on your machine and imports into that, so
+you can see exactly what would land before anything touches the project.
 
-## Still to build in the app
+Attachments are the exception. Their bytes live in the browser as data URLs and
+Storage is not reachable over a database connection, so each one is written to
+`db/exported-files/` and its row keeps the name, type and size with no path.
+Upload those to the `bills` bucket and set `attachment_path` when you do.
 
-The schema is only the storage half. The application still needs:
+## Who can read and what
 
-- **A data layer.** Every page currently reads a synchronous array from memory.
-  Server data means loading, error and empty states on each screen.
-- **Real sign-in.** The login screen is a stub: its button calls `navigate('/')`.
-  There is no password and no session.
-- **File upload** to the storage buckets, replacing base64 photos.
-- **A migration** of whatever is presently in your browser's `localStorage`.
-- **A decision about concurrent edits**, once more than one person is working
-  in the app at the same time.
+The three roles the app already had are now the database's rules, which is the
+real reason for the move: until now they lived only in the browser, where
+anyone who opens the developer tools can edit them.
 
-## Testing the schema
+| | operations | finance | payroll | staff & settings |
+| --- | --- | --- | --- | --- |
+| **admin** | read, write | read, write | read, write | read, write |
+| **accountant** | read | read, write | — | read |
+| **data entry** | read, write | — | — | read |
+| **anon** (the website) | — | — | — | — |
 
-The migrations run against a real Postgres, not just a linter:
+Payroll is narrower than the rest of finance on purpose: it is what colleagues
+earn. And nobody can change their own role or status, administrator or not —
+a trigger refuses it, because that is the single edit that would undo
+everything above.
+
+`scripts/test-schema.mjs` proves all of this against a real Postgres:
 
 ```bash
 npm i -D @electric-sql/pglite --no-save
 node scripts/test-schema.mjs
 ```
 
-It applies both migrations, then asserts that the public view hides every
-sensitive column, that it returns only published and available workers, and
-that an anonymous caller is refused on the `applicants` table.
+It applies the migrations, creates one account of each role, then tries every
+kind of access from every role and reports what the database actually allowed.
+Thirty-one checks, including that an anonymous caller is refused the
+applicants table, the money and the staff list.
+
+One thing that surfaced while writing those tests, and which matters for the
+app code: **a forbidden `update` or `delete` does not raise an error.** The
+policy simply matches no rows, and PostgREST reports success. Any write that
+must be confirmed has to check the affected count, not the absence of an
+error.
+
+## What the website reads
+
+```
+GET https://ksfsapomxgxbdrwgesde.supabase.co/rest/v1/published_workers?select=*
+    apikey: <anon key>
+```
+
+Or, from the site's own server, a read-only role that can reach nothing else:
+
+```sql
+create role website_reader login password '<choose a strong password>';
+grant usage on schema public to website_reader;
+grant select on public.published_workers to website_reader;
+```
+
+The view exposes exactly this and nothing more:
+
+```
+id, english_name, arabic_name, gender, age, country, profession,
+type, experience_years, photo_path, updated_at
+```
+
+Date of birth is reduced to an age; passport number, identity number, phone,
+telephone, CV and passport copy are absent, and so is every commercial column —
+which agency she came through, which agent introduced her, what anybody was
+paid. The view lists its columns explicitly rather than using `select *`, so
+adding a sensitive column to `ops.applicants` later cannot silently publish it.
+
+A worker appears on the site when `published_to_website` is true **and** her
+status is `Available`, so someone who has been placed drops off the site by
+herself. In the app that switch is the `cvLinkedToWebsite` field.
+
+Photographs are private objects in Storage, so the site should ask its own
+server for a signed URL rather than linking the bucket. A public bucket would
+publish every worker's photograph, including the ones nobody chose to publish.
+
+## What is still to build
+
+The schema is the storage half. The application still needs:
+
+- **A data layer.** Every page reads a synchronous array from memory today.
+  Server data means loading, error and empty states on each screen.
+- **Sign-in against Supabase Auth**, replacing the password check that
+  currently runs in the browser.
+- **File upload** to the three buckets, replacing data URLs in `localStorage`
+  and the 2 MB cap that comes with them.
+- **A decision about concurrent edits**, once more than one person is working
+  in the app at the same time.
+
+Before that work starts, one thing needs looking at that cannot be seen from
+here: **what the website's own tables already hold.** If the site already has
+a workers table it reads from, publishing should write to that rather than
+adding a second source of truth beside it. To see it:
+
+```bash
+node scripts/inspect-schema.mjs                      # what the anon key can see
+SUPABASE_DB_URL='postgresql://...' node scripts/inspect-schema.mjs   # everything
+```

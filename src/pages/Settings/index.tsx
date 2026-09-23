@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Building2, UserCog } from 'lucide-react'
+import { Building2, Database, UserCog } from 'lucide-react'
 import { useTranslation } from '../../i18n/useTranslation'
 import PageHeader from '../../components/PageHeader'
 import CompanyTab from './CompanyTab'
 import UsersTab from './UsersTab'
+import DatabaseTab from './DatabaseTab'
 
-type TabKey = 'company' | 'users'
+type TabKey = 'company' | 'users' | 'database'
 
 export default function Settings() {
   const { t, language } = useTranslation()
@@ -14,6 +15,7 @@ export default function Settings() {
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     { key: 'users', label: t('users_tab_users'), icon: <UserCog className="size-3.5" /> },
     { key: 'company', label: t('users_tab_company'), icon: <Building2 className="size-3.5" /> },
+    { key: 'database', label: t('db_title'), icon: <Database className="size-3.5" /> },
   ]
 
   return (
@@ -45,7 +47,9 @@ export default function Settings() {
         ))}
       </div>
 
-      {tab === 'users' ? <UsersTab /> : <CompanyTab />}
+      {tab === 'users' && <UsersTab />}
+      {tab === 'company' && <CompanyTab />}
+      {tab === 'database' && <DatabaseTab />}
     </div>
   )
 }

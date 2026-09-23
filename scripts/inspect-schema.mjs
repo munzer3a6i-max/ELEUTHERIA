@@ -1,14 +1,19 @@
-// Prints what the Supabase project actually contains, so the dashboard can be
-// built against the real tables rather than assumed ones.
+// Prints what the Supabase project actually contains, so the next piece of
+// work is built against the real thing rather than an assumed one.
 //
 //   node scripts/inspect-schema.mjs
+//     Uses VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY from .env.local. Shows
+//     what an anonymous caller can see -- which is the same access anyone gets
+//     from the key that ships inside the website's JavaScript.
 //
-// Reads VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY from .env.local or the
-// environment. Read only: it lists tables and columns, then checks which of
-// them an anonymous caller can read, which is the same access anyone gets from
-// the key that ships inside the website's JavaScript.
+//   SUPABASE_DB_URL='postgresql://...' node scripts/inspect-schema.mjs
+//     Connects to the database directly and shows everything: every schema,
+//     every table, the row counts, and which of them have row level security.
+//
+// Read only either way. Nothing is created, altered or dropped.
 
 import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 
 function loadEnv() {
   const env = { ...process.env }
@@ -24,11 +29,74 @@ function loadEnv() {
 }
 
 const env = loadEnv()
+
+// ------------------------------------------------------ the full picture ---
+
+if (env.SUPABASE_DB_URL) {
+  let Client
+  try {
+    Client = createRequire(import.meta.url)('pg').Client
+  } catch {
+    console.error('Install the driver first:  npm i -D pg --no-save')
+    process.exit(1)
+  }
+  const client = new Client({ connectionString: env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false } })
+  await client.connect()
+  console.log(`${env.SUPABASE_DB_URL.replace(/:[^:@/]+@/, ':****@')}\n`)
+
+  const { rows: tables } = await client.query(`
+    select n.nspname as schema, c.relname as name, c.relkind as kind, c.relrowsecurity as rls,
+           coalesce(s.n_live_tup, 0) as rows
+      from pg_class c
+      join pg_namespace n on n.oid = c.relnamespace
+      left join pg_stat_user_tables s on s.relid = c.oid
+     where c.relkind in ('r', 'v', 'm')
+       and n.nspname not in ('pg_catalog', 'information_schema', 'pg_toast', 'extensions', 'graphql', 'graphql_public', 'net', 'pgsodium', 'pgsodium_masks', 'vault', 'realtime', 'supabase_functions', 'supabase_migrations', '_realtime')
+     order by n.nspname, c.relname
+  `)
+
+  let current = null
+  for (const table of tables) {
+    if (table.schema !== current) {
+      current = table.schema
+      console.log(`\n  ${current}`)
+    }
+    const kind = table.kind === 'r' ? 'table' : table.kind === 'v' ? 'view ' : 'matv '
+    const lock = table.kind === 'r' ? (table.rls ? 'rls' : 'OPEN') : ''
+    console.log(`    ${kind} ${table.name.padEnd(30)} ${String(table.rows).padStart(7)} rows  ${lock}`)
+  }
+
+  console.log('\n\nColumns of everything outside ops (this is the website\'s own data)\n')
+  const { rows: columns } = await client.query(`
+    select table_schema, table_name, column_name, data_type
+      from information_schema.columns
+     where table_schema not in ('pg_catalog', 'information_schema', 'ops')
+       and table_schema in (select nspname from pg_namespace where nspname in ('public'))
+     order by table_name, ordinal_position
+  `)
+  let currentTable = null
+  for (const column of columns) {
+    if (column.table_name !== currentTable) {
+      currentTable = column.table_name
+      console.log(`\n  ${column.table_schema}.${currentTable}`)
+    }
+    console.log(`    ${column.column_name.padEnd(30)} ${column.data_type}`)
+  }
+  console.log(`
+A table marked OPEN has no row level security. If the anon key can reach its
+schema, everything in it is world readable.
+`)
+  await client.end()
+  process.exit(0)
+}
+
+// --------------------------------------------- what the anon key can see ---
+
 const url = env.VITE_SUPABASE_URL
 const key = env.VITE_SUPABASE_ANON_KEY
 
 if (!url || !key) {
-  console.error('Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local first.')
+  console.error('Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local, or SUPABASE_DB_URL for the full picture.')
   process.exit(1)
 }
 
