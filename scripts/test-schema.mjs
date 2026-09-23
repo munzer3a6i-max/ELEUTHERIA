@@ -212,6 +212,29 @@ const anonOnApplicants = (await db.query(
 )).rows[0].n
 check(anonOnApplicants === 0, 'anon is granted nothing at all on ops.applicants', `${anonOnApplicants} grant(s)`)
 
+// The policy has to carry the reading on a project where the role that owns
+// the function does not bypass row level security -- which is the case this
+// script cannot reproduce, since it runs as a superuser and superusers bypass
+// it regardless. A plain role standing in for that owner shows what the policy
+// alone allows: the published row, and nothing else on the table.
+await db.exec(`
+  do $$ begin
+    if not exists (select 1 from pg_roles where rolname = 'definer_stand_in') then
+      create role definer_stand_in nologin;
+    end if;
+  end $$;
+  grant usage on schema ops to definer_stand_in;
+  grant select on ops.applicants to definer_stand_in;
+`)
+await db.exec('begin; set local role definer_stand_in;')
+const throughPolicy = (await db.query('select english_name from ops.applicants')).rows
+await db.exec('rollback')
+check(
+  throughPolicy.length === 1 && throughPolicy[0].english_name === 'Maricel S. Dela Cruz',
+  'the policy alone is enough to read the published row, and only that row',
+  `[${throughPolicy.map((r) => r.english_name)}]`,
+)
+
 const anonColumns = (await db.query(
   `select count(*)::int n from information_schema.column_privileges
     where table_schema = 'ops' and grantee = 'anon'`,

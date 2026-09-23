@@ -284,14 +284,22 @@ So `0007_public_projection.sql` arranges it to leave nothing to fix:
 - `ops.published_workers_rows()` does the reading. It is the security definer
   now, with its `search_path` pinned so `ops.applicants` cannot be made to mean
   something else.
-- It is owned by `ops_website_reader`, a role that cannot log in and exists for
-  this one job, and one policy on `ops.applicants` lets *that role* read a
-  published, available row. Row level security is forced on that table, so
-  without the policy even an owner reads nothing — and because the policy names
-  this role alone, a signed-in stranger gains nothing from it.
+- One policy on `ops.applicants` lets the role that function runs as — whoever
+  owns it, which is whoever ran the migration — read a published, available
+  row. Row level security is forced on that table, and forced means forced, so
+  without the policy even an owner reads nothing. The policy names `anon` and
+  `authenticated` *out* of it, so a signed-in stranger with no staff row still
+  gains nothing: everyone who reaches the data through the application is
+  governed by the policies in `0002_security.sql` and nothing else.
 - `public.published_workers` is `security_invoker`, so the linter has nothing to
   say about it. The caller needs no rights on any table, only permission to run
   the function.
+
+An earlier draft gave the reading a role of its own and handed the function
+over to it, which is tidier on paper and does not work: transferring ownership
+requires the new owner to hold CREATE on the schema, and Postgres refuses that
+for anyone but a superuser — which the `postgres` role in Supabase is not. The
+migration cleans that role up if it was ever created.
 
 The upshot: `anon` is granted nothing on `ops.applicants`, and the twelve
 columns above are the whole of what the internet can reach. If the linter ever

@@ -49,10 +49,6 @@ grant usage on schema ops to anon;
 
 grant execute on function ops.published_workers_rows() to anon, authenticated;
 
--- Handed over last, so that the revoke and the grants above are made by the
--- role that still owns it at the time.
-alter function ops.published_workers_rows() owner to ops_website_reader;
-
 -- A view rather than an rpc endpoint, so the website keeps reading a table-
 -- shaped thing it can filter and order in the ordinary way.
 drop view if exists public.published_workers;

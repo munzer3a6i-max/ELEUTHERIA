@@ -20,13 +20,12 @@
 --   * a function does the reading. It is security definer, which is where the
 --     borrowed rights now live, and its search_path is pinned so the name
 --     ops.applicants cannot be made to mean anything else.
---   * the function belongs to a role of its own, ops_website_reader, which
---     cannot log in and exists for this one job. A single policy on
---     ops.applicants lets that role read a published, available row and
---     nothing else. Row level security is forced on that table, and forced
---     means forced, so without the policy even the owner's rights read
---     nothing -- and because the policy names this role alone, a signed-in
---     stranger gains nothing from it.
+--   * one policy lets the role that function runs as -- whoever owns it, which
+--     is whoever runs this file -- read a published, available row. Row level
+--     security is forced on ops.applicants, and forced means forced, so
+--     without the policy even an owner reads nothing. The policy excludes
+--     `anon` and `authenticated` by name, so a signed-in stranger with no
+--     staff row still gains nothing from it.
 --   * the view is security_invoker, so the linter has nothing to say. The
 --     anonymous caller needs no rights on any table -- only permission to run
 --     the function, which decides for itself what comes back.
@@ -46,37 +45,36 @@ begin
 end
 $$;
 
--- The role the reading is done as. It cannot log in, holds nothing but the one
--- grant below, and exists so that the permission to read published rows can be
--- given to a job rather than to a person or to everybody.
+-- An earlier draft of this file gave the reading its own role and handed the
+-- function over to it. That is tidier on paper and needs privileges the
+-- Supabase SQL editor does not have: transferring ownership requires the new
+-- owner to hold CREATE on the schema, which is refused for anyone but a
+-- superuser. Clear away what that draft left behind, if it ran.
 do $$
 begin
-  if not exists (select 1 from pg_roles where rolname = 'ops_website_reader') then
-    create role ops_website_reader nologin noinherit;
+  if exists (select 1 from pg_roles where rolname = 'ops_website_reader') then
+    execute 'revoke all on ops.applicants from ops_website_reader';
+    execute 'revoke all on schema ops from ops_website_reader';
+    execute 'drop owned by ops_website_reader';
+    execute 'drop role ops_website_reader';
   end if;
-end
-$$;
-
--- Owning a function means being able to hand it over: on some versions the
--- creator is an administrator of the role it just made, on others the
--- membership has to be asked for. Either way this is a no-op the second time.
-do $$
-begin
-  execute format('grant ops_website_reader to %I', current_user);
 exception when others then
+  -- Leaving a role with no privileges behind is untidy, never dangerous, and
+  -- not worth failing this file over.
   null;
 end
 $$;
 
-grant usage on schema ops to ops_website_reader;
-
-grant select on ops.applicants to ops_website_reader;
-
--- A published, available worker may be read -- by this role, and by no other.
--- Every other policy on this table is `to authenticated`, and this one stays
--- out of their way: a signed-in stranger with no staff row still reads nothing.
+-- A published, available worker may be read by the role this file's function
+-- runs as, and by nobody who signs in through the application: `anon` and
+-- `authenticated` are named out of it, so the caseload stays behind the
+-- policies in 0002_security.sql for everyone who reaches it that way.
 drop policy if exists website_published_read on ops.applicants;
 
 create policy website_published_read on ops.applicants
-  for select to ops_website_reader
-  using (published_to_website and status = 'Available');
+  for select to public
+  using (
+    published_to_website
+    and status = 'Available'
+    and current_user not in ('anon', 'authenticated')
+  );
