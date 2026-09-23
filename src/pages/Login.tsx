@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { KeyRound, TriangleAlert, User } from 'lucide-react'
+import { Download, KeyRound, TriangleAlert, User } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import { signIn } from '../data/session'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { useTranslation } from '../i18n/useTranslation'
 import { DEFAULT_PASSWORD } from '../lib/passwords'
+import { exportLocalData } from '../lib/connection'
 import { Field, TextInput, PrimaryButton } from '../components/form'
 import brandLogo from '../assets/eleutheria-logo.png'
 
@@ -19,6 +20,18 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+
+  // Configuring a project moves the accounts to the server, which would
+  // otherwise put whatever this browser still holds out of reach -- and that
+  // is exactly the moment somebody needs to export it.
+  const localData = useMemo(() => {
+    try {
+      const raw = localStorage.getItem('mustaqdem-store')
+      return raw ? (JSON.parse(raw).state?.applicants?.length ?? 0) : 0
+    } catch {
+      return 0
+    }
+  }, [])
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -87,6 +100,17 @@ export default function Login() {
         <PrimaryButton type="submit" disabled={busy} className="mt-1 h-9 w-full">
           {t('auth_sign_in')}
         </PrimaryButton>
+
+        {isSupabaseConfigured && localData > 0 && (
+          <button
+            type="button"
+            onClick={exportLocalData}
+            className="btn btn-ghost mt-4 h-8 w-full text-[11px] text-ink-3"
+          >
+            <Download className="size-3.5" />
+            {t('db_export')} ({localData} {t('nav_applicants').toLowerCase()})
+          </button>
+        )}
 
         {!anyChanged && !isSupabaseConfigured && (
           <p className="mt-4 rounded-control border border-line bg-sunken p-2.5 text-[10.5px] leading-relaxed text-ink-3">

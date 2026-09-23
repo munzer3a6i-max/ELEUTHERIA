@@ -115,16 +115,36 @@ exposed, or connected.
 
 ## Step 5 — bring your data across
 
+Export first, from **Settings → Database → Export data**. If the project is
+already configured and you cannot sign in yet, the sign-in screen offers the
+same export — the accounts move to the server before the data does, and that
+is exactly when somebody needs to get at what the browser still holds.
+
+Then, from the project directory:
+
 ```bash
-# In the dashboard: Settings → Database → Export data
-node scripts/import-local-data.mjs eleutheria-export-2026-09-23.json --pglite   # dry run
+npm i -D @electric-sql/pglite --no-save
+node scripts/import-local-data.mjs eleutheria-export-2026-09-23.json --pglite
+
+npm i -D pg --no-save
 SUPABASE_DB_URL='postgresql://...' node scripts/import-local-data.mjs eleutheria-export-2026-09-23.json
 ```
 
+The dry run applies the migrations to a throwaway Postgres on your machine and
+imports into that, so you can see exactly what would land before anything
+touches the project. The connection string is under **Project Settings →
+Database → Connection string**; take the URI, and if the direct connection will
+not open, use the session pooler one. It contains the database password, so
+pass it on the command line rather than putting it in a file here.
+
 Ids are derived from the app's own ids, so importing the same file twice
-updates the same rows instead of making a second copy. The dry run applies the
-migrations to a throwaway Postgres on your machine and imports into that, so
-you can see exactly what would land before anything touches the project.
+updates the same rows instead of making a second copy.
+
+Commissions, agency charges and backouts are the exception, and deliberately
+so: the triggers create them from the stage log as it is imported, and the file
+only says which of them had been settled. So those rows come out of the
+database's own reckoning, with the payments you had already recorded against
+them.
 
 Attachments are the exception. Their bytes live in the browser as data URLs and
 Storage is not reachable over a database connection, so each one is written to

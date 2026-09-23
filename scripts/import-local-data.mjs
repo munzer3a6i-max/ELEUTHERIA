@@ -74,7 +74,8 @@ if (dryRun) {
         if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if;
       end $$;
     `)
-    for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql']) {
+    for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql',
+                        'db/migrations/0004_derived_billing.sql']) {
       await db.exec(readFileSync(file, 'utf8'))
     }
   }
@@ -96,15 +97,27 @@ if (dryRun) {
 }
 
 const counts = {}
-async function upsert(table, rows, columns) {
+
+/**
+ * Writes rows, updating rather than duplicating when one is already there.
+ *
+ * `conflict` names what makes a row the same row -- usually its id, but for
+ * the tables the database derives it is the milestone it belongs to, because
+ * the trigger will have created its own row with its own id before this runs.
+ * `keep` narrows what an existing row takes from the file: for those tables,
+ * only which of them were settled, since everything else follows from the
+ * stage log and the database has already worked it out.
+ */
+async function upsert(table, rows, columns, { conflict = 'id', keep = null } = {}) {
   if (rows.length === 0) return
   for (const row of rows) {
     const values = columns.map((c) => row[c])
     const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ')
-    const updates = columns.filter((c) => c !== 'id').map((c) => `${c} = excluded.${c}`).join(', ')
+    const updatable = (keep ?? columns.filter((c) => c !== 'id'))
+    const updates = updatable.map((c) => `${c} = excluded.${c}`).join(', ')
     await query(
       `insert into ops.${table} (${columns.join(', ')}) values (${placeholders})
-       on conflict (id) do update set ${updates}`,
+       on conflict (${conflict}) do update set ${updates}`,
       values,
     )
   }
@@ -273,32 +286,53 @@ try {
     milestone: c.milestone, amount: c.amount, due_on: c.dueOn, status: c.status,
     settled_on: nullIfBlank(c.settledOn), payment_source_id: idFor('source', c.paymentSourceId),
   })), ['id', 'agency_id', 'contract_id', 'applicant_id', 'request_id', 'milestone', 'amount', 'due_on',
-        'status', 'settled_on', 'payment_source_id'])
+        'status', 'settled_on', 'payment_source_id'],
+    // The trigger has already derived these from the stage log; what the file
+    // knows and the database does not is which halves were settled.
+    { conflict: 'request_id, milestone', keep: ['status', 'settled_on', 'payment_source_id'] })
 
   await upsert('agent_commissions', (state.agentCommissions ?? []).map((c) => ({
     id: idFor('commission', c.id), agent_id: idFor('agent', c.agentId), applicant_id: idFor('applicant', c.applicantId),
     request_id: idFor('request', c.requestId), milestone: c.milestone, amount: c.amount, earned_on: c.earnedOn,
     status: c.status, paid_on: nullIfBlank(c.paidOn), payment_source_id: idFor('source', c.paymentSourceId),
   })), ['id', 'agent_id', 'applicant_id', 'request_id', 'milestone', 'amount', 'earned_on', 'status',
-        'paid_on', 'payment_source_id'])
+        'paid_on', 'payment_source_id'],
+    { conflict: 'request_id, milestone', keep: ['status', 'paid_on', 'payment_source_id'] })
 
+  // A backout the trigger has already opened keeps its own id, so its bills are
+  // attached to that one rather than to the id the file remembers.
   const backouts = state.backouts ?? []
-  await upsert('backouts', backouts.map((b) => ({
-    id: idFor('backout', b.id), request_id: idFor('request', b.requestId), applicant_id: idFor('applicant', b.applicantId),
-    deployed_on: nullIfBlank(b.deployedOn), returned_on: b.returnedOn, reason: b.reason,
-    liability: b.liability, notes: b.notes,
-  })), ['id', 'request_id', 'applicant_id', 'deployed_on', 'returned_on', 'reason', 'liability', 'notes'])
+  for (const backout of backouts) {
+    const { rows: landed } = await query(
+      `insert into ops.backouts (id, request_id, applicant_id, deployed_on, returned_on, reason, liability, notes)
+       values ($1, $2, $3, $4, $5, $6, $7, $8)
+       on conflict (request_id) do update
+         set reason = excluded.reason, notes = excluded.notes, liability = excluded.liability
+       returning id`,
+      [idFor('backout', backout.id), idFor('request', backout.requestId), idFor('applicant', backout.applicantId),
+       nullIfBlank(backout.deployedOn), backout.returnedOn, backout.reason, backout.liability, backout.notes],
+    )
+    counts.backouts = (counts.backouts ?? 0) + 1
 
-  await upsert('backout_costs', backouts.flatMap((b) => b.costs.map((c) => {
-    const file = attachment(c.attachment, `backout-${c.id}`)
-    return {
-      id: idFor('backout-cost', c.id), backout_id: idFor('backout', b.id), label_en: c.label.en, label_ar: c.label.ar,
-      category: c.category, amount: c.amount, spent_on: c.date, status: c.status,
-      payment_source_id: idFor('source', c.paymentSourceId),
-      attachment_path: file.path, attachment_name: file.name, attachment_type: file.type, attachment_size: file.size,
+    for (const cost of backout.costs) {
+      const file = attachment(cost.attachment, `backout-${cost.id}`)
+      await query(
+        `insert into ops.backout_costs
+           (id, backout_id, label_en, label_ar, category, amount, spent_on, status, payment_source_id,
+            attachment_path, attachment_name, attachment_type, attachment_size)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+         on conflict (id) do update set
+           backout_id = excluded.backout_id, label_en = excluded.label_en, label_ar = excluded.label_ar,
+           category = excluded.category, amount = excluded.amount, spent_on = excluded.spent_on,
+           status = excluded.status, payment_source_id = excluded.payment_source_id,
+           attachment_name = excluded.attachment_name`,
+        [idFor('backout-cost', cost.id), landed[0].id, cost.label.en, cost.label.ar, cost.category,
+         cost.amount, cost.date, cost.status, idFor('source', cost.paymentSourceId),
+         file.path, file.name, file.type, file.size],
+      )
+      counts.backout_costs = (counts.backout_costs ?? 0) + 1
     }
-  })), ['id', 'backout_id', 'label_en', 'label_ar', 'category', 'amount', 'spent_on', 'status',
-        'payment_source_id', 'attachment_path', 'attachment_name', 'attachment_type', 'attachment_size'])
+  }
 
   await upsert('notifications', (state.notifications ?? []).map((n) => ({
     id: idFor('notification', n.id) ?? randomUUID(), title: n.title, detail: n.detail,
