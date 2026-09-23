@@ -32,7 +32,22 @@ if (!path) {
 const dryRun = flags.includes('--pglite')
 const toSql = flags.includes('--sql')
 
-const raw = JSON.parse(readFileSync(path, 'utf8'))
+let raw
+try {
+  raw = JSON.parse(readFileSync(path, 'utf8'))
+} catch (problem) {
+  if (problem.code === 'ENOENT') {
+    console.error(`Could not find ${path}\n`)
+    console.error('Paths are read relative to the folder you are in. On Windows, ~ is not')
+    console.error('a shortcut for anything, so write the whole path:\n')
+    console.error('  node scripts/import-local-data.mjs "C:\\Users\\you\\Downloads\\export.json" --sql\n')
+    console.error('Or copy the export next to package.json and name it on its own:\n')
+    console.error('  node scripts/import-local-data.mjs export.json --sql')
+    process.exit(1)
+  }
+  console.error(`${path} is not readable as JSON: ${problem.message}`)
+  process.exit(1)
+}
 const state = raw.state ?? raw
 
 /** A stable uuid for one of the app's ids, so re-importing overwrites. */
@@ -51,12 +66,17 @@ const nullIfBlank = (value) => (value === '' || value === undefined ? null : val
 const monthStart = (month) => (month ? `${month}-01` : null)
 
 let files = 0
+
+/** Windows will not have a colon or a slash in a filename, and nor will this. */
+const safeName = (name) => String(name ?? 'file').replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_').slice(0, 80)
+
 function attachment(value, label) {
   if (!value) return { path: null, name: null, type: null, size: null }
   if (value.dataUrl) {
     mkdirSync('db/exported-files', { recursive: true })
     const comma = value.dataUrl.indexOf(',')
-    writeFileSync(`db/exported-files/${label}-${value.name}`, Buffer.from(value.dataUrl.slice(comma + 1), 'base64'))
+    writeFileSync(`db/exported-files/${safeName(label)}-${safeName(value.name)}`,
+      Buffer.from(value.dataUrl.slice(comma + 1), 'base64'))
     files += 1
   }
   return { path: null, name: value.name ?? null, type: value.type || null, size: value.size ?? null }
