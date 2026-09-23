@@ -103,6 +103,27 @@ const orphans = await pasted.query(
     where not exists (select 1 from ops.backouts b where b.id = c.backout_id)`)
 check(orphans.rows[0].n === 0, "a backout's bills are attached to the row the trigger opened")
 
+// --- and the same import in pieces ------------------------------------------
+// A piece that is cut in the wrong place would still run and build a different
+// database, so the pieces are applied to a third Postgres and compared.
+const { readdirSync } = await import('node:fs')
+const pieces = readdirSync('db/import-parts').filter((f) => f.endsWith('.sql')).sort()
+const piecemeal = await freshDatabase()
+let cutBadly = null
+for (const piece of pieces) {
+  try {
+    await piecemeal.exec(readFileSync(`db/import-parts/${piece}`, 'utf8'))
+  } catch (error) {
+    cutBadly = `${piece}: ${error.message.split('\n')[0]}`
+    break
+  }
+}
+check(cutBadly === null, `all ${pieces.length} pieces apply in order`, cutBadly ?? '')
+const viaPieces = await shapeOf(piecemeal)
+check(TABLES.every((t) => viaPieces[t] === viaFile[t]), 'the pieces land the same database as the whole file',
+  TABLES.filter((t) => viaPieces[t] !== viaFile[t]).map((t) => `${t}: ${viaPieces[t]} vs ${viaFile[t]}`).join(', '))
+await piecemeal.close()
+
 // --- twice is the same as once ---------------------------------------------
 await pasted.exec(sql)
 const again = await shapeOf(pasted)

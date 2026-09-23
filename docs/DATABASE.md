@@ -157,9 +157,14 @@ every other step so far:
 node scripts/import-local-data.mjs eleutheria-export-2026-09-23.json --sql
 ```
 
-That writes `db/import.sql`. `scripts/test-import.mjs` runs both routes and
-checks they land the same database, because a file that is nearly right is
-worse than no file at all.
+That writes `db/import.sql` — open it in a text editor, select all, paste it
+into the SQL editor, run it once. It also writes `db/import-parts/`, the same
+import in pieces of about 4 KB, for pasting one at a time if a long paste
+arrives truncated.
+
+`scripts/test-import.mjs` runs every route — over a connection, as one file,
+and as the pieces — and checks they all land the same database, because a file
+that is nearly right is worse than no file at all.
 
 Somebody has to run that one command, though. If there is no terminal at hand
 at all, send the export file over and the SQL can be generated for you --

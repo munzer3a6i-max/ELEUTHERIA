@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 db/.pglite-dryrun/
 db/exported-files/
+db/import.sql
+db/import-parts/

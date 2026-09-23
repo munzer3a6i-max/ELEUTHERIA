@@ -21,7 +21,7 @@
 // path, so nothing is lost and it is obvious what still needs uploading.
 
 import { createHash, randomUUID } from 'node:crypto'
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs'
 import { createRequire } from 'node:module'
 
 const [, , path, ...flags] = process.argv
@@ -166,6 +166,23 @@ const counts = {}
  */
 async function upsert(table, rows, columns, { conflict = 'id', keep = null } = {}) {
   if (rows.length === 0) return
+
+  if (toSql) {
+    // One statement per table rather than per row. The column list is most of
+    // the text, and repeating it a hundred and fifty times triples the file
+    // somebody has to paste.
+    const updates = (keep ?? columns.filter((c) => c !== 'id')).map((c) => `${c} = excluded.${c}`).join(', ')
+    const tuples = rows.map((row) => `  (${columns.map((c) => literal(row[c])).join(', ')})`)
+    for (let at = 0; at < tuples.length; at += 25) {
+      statements.push(
+        `insert into ops.${table} (${columns.join(', ')})\nvalues\n${tuples.slice(at, at + 25).join(',\n')}\n` +
+          `on conflict (${conflict}) do update set ${updates};`,
+      )
+    }
+    counts[table] = (counts[table] ?? 0) + rows.length
+    return
+  }
+
   for (const row of rows) {
     const values = columns.map((c) => row[c])
     const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ')
@@ -421,8 +438,47 @@ if (toSql) {
     'begin;',
     '',
   ].join('\n')
-  writeFileSync('db/import.sql', `${header}${statements.join('\n')}\n\ncommit;\n`)
-  console.log(`\n${total} rows written to db/import.sql (${statements.length} statements).`)
+  const whole = `${header}${statements.join('\n\n')}\n\ncommit;\n`
+  writeFileSync('db/import.sql', whole)
+  console.log(`\n${total} rows written to db/import.sql (${statements.length} statements, ${whole.length} bytes).`)
+
+  // The same import in pieces, for pasting into a web editor that may cut a
+  // long one off without saying so. Each piece is its own transaction and can
+  // be run again on its own.
+  rmSync('db/import-parts', { recursive: true, force: true })
+  mkdirSync('db/import-parts', { recursive: true })
+  const pieces = []
+  let current = []
+  let size = 0
+  for (const statement of statements) {
+    if (size > 0 && size + statement.length > 4000) {
+      pieces.push(current)
+      current = []
+      size = 0
+    }
+    current.push(statement)
+    size += statement.length
+  }
+  if (current.length > 0) pieces.push(current)
+
+  pieces.forEach((group, index) => {
+    const name = `${String(index + 1).padStart(2, '0')}.sql`
+    writeFileSync(
+      `db/import-parts/${name}`,
+      [
+        `-- Import, piece ${index + 1} of ${pieces.length}. Run the pieces in order.`,
+        '-- Running one twice updates the same rows rather than duplicating them.',
+        '',
+        'begin;',
+        '',
+        group.join('\n\n'),
+        '',
+        'commit;',
+        '',
+      ].join('\n'),
+    )
+  })
+  console.log(`Also split into ${pieces.length} files in db/import-parts/, for pasting one at a time.`)
   if (files > 0) console.log(`${files} attachment(s) written to db/exported-files/.`)
   process.exit(0)
 }
