@@ -1,0 +1,76 @@
+/*
+  Making somebody an account they can actually sign in with.
+
+  A staff row says what a person may do; it is not what lets them in. Connected,
+  the password lives in Supabase Auth, and until an auth user exists and the
+  staff row points at it, a new colleague is refused at the door with no
+  explanation that makes sense to them.
+
+  So adding a user creates the auth account first and carries its id into the
+  staff row. It is done through an isolated client, because signing somebody up
+  signs them in, and the administrator doing the adding must not be thrown out
+  of their own session to make room.
+
+  Deleting is the half that cannot be done from here: removing an auth user
+  needs the service_role key, which has no business in a browser. Removing the
+  staff row takes away everything the account could do, which is the part that
+  matters; the account itself is deleted in the Supabase dashboard.
+*/
+
+import { isolatedClient } from '../lib/supabase'
+
+export type AccountOutcome =
+  | 'ok'
+  /** Made, but Supabase is set to make them confirm the address first. */
+  | 'needs-confirmation'
+  | 'email-taken'
+  /** The project has new sign-ups switched off, so nothing can be created. */
+  | 'signups-disabled'
+  | 'invalid-email'
+  | 'weak-password'
+  | 'unreachable'
+
+export interface AccountResult {
+  outcome: AccountOutcome
+  /** The auth user to point a staff row at, when there is one. */
+  userId: string | null
+  /** What the server said, for the cases nothing above covers. */
+  detail?: string
+}
+
+export async function createAccount(email: string, password: string): Promise<AccountResult> {
+  const client = isolatedClient()
+  if (!client) return { outcome: 'unreachable', userId: null }
+
+  const { data, error } = await client.auth.signUp({ email: email.trim(), password })
+
+  if (error) {
+    const said = error.message
+    if (/already registered|already exists|user_repeated/i.test(said)) {
+      return { outcome: 'email-taken', userId: null }
+    }
+    if (/signup|sign-up|sign up/i.test(said) && /disabled|not allowed/i.test(said)) {
+      return { outcome: 'signups-disabled', userId: null, detail: said }
+    }
+    if (/password/i.test(said)) return { outcome: 'weak-password', userId: null, detail: said }
+    if (/email/i.test(said)) return { outcome: 'invalid-email', userId: null, detail: said }
+    return { outcome: 'unreachable', userId: null, detail: said }
+  }
+
+  // With confirmations on, signing up with an address that already exists is
+  // answered with a user and an empty identities list rather than an error, so
+  // that a stranger cannot learn who has an account. Read it as taken.
+  if (!data.user || (data.user.identities ?? []).length === 0) {
+    return { outcome: 'email-taken', userId: null }
+  }
+
+  // No session means the project asks for the address to be confirmed. The
+  // account is real and the staff row should still point at it; they simply
+  // cannot sign in until they follow the link.
+  if (!data.session) return { outcome: 'needs-confirmation', userId: data.user.id }
+
+  // Nothing of the new session is kept, but ending it is tidier than leaving a
+  // token on a client that is about to be dropped.
+  await client.auth.signOut()
+  return { outcome: 'ok', userId: data.user.id }
+}

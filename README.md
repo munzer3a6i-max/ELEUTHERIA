@@ -49,6 +49,7 @@ node scripts/test-billing.mjs   # the derived money rules
 node scripts/test-rows.mjs      # app shapes to columns and back
 node scripts/test-sync.mjs      # what the save path sends
 node scripts/test-import.mjs    # the three import routes agree
+node scripts/test-accounts.mjs # what Supabase Auth's answers are read as
 ```
 
 ## A word about keys

@@ -65,7 +65,33 @@ them:
 - A second account with a username somebody already has.
 
 Demoting *yourself* while another administrator exists is allowed, and asks
-first, because it closes the Settings page behind you.
+first, because it closes the Settings page behind you. Adding and removing an
+account both ask too, and the question names the person it is about.
+
+### What "add a user" does once there is a database
+
+Connected, a staff row says what somebody may do and is not what lets them in;
+the password lives in Supabase Auth. So adding a user does two things: it
+creates the auth account, and it writes the staff row pointing at it through
+`user_id`. Without the first, the person is refused at the door with nothing
+to explain it, which is exactly what happened before this was wired up.
+
+Two consequences worth knowing:
+
+- **The email address is required**, because it is what they sign in with. The
+  username is still theirs, and is what the app calls them; it is not what
+  Supabase checks.
+- **If the project asks people to confirm their address** (Supabase,
+  Authentication, Providers, Email, "Confirm email"), the account is made but
+  cannot sign in until they open the link they are sent. The dashboard says so
+  when it happens. For an office where the administrator sets passwords
+  anyway, turning that setting off is reasonable.
+
+Removing a user deletes the staff row, which takes away everything the account
+could reach -- signing in with it then gets as far as "no staff record points
+at this account". The auth account itself stays in Supabase, because deleting
+one needs the `service_role` key and that key has no business in a browser.
+Delete it from the Supabase dashboard if you want it gone entirely.
 
 ## What the password is, and is not
 

@@ -31,7 +31,7 @@ await db.exec(`
   end $$;
 `)
 
-for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql']) {
+for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql']) {
   try {
     await db.exec(readFileSync(file, 'utf8'))
     console.log(`applied  ${file}`)
@@ -55,7 +55,7 @@ const shape = async () => JSON.stringify((await db.query(`
 const before = await shape()
 let rerunError = null
 try {
-  for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql']) {
+  for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql']) {
     await db.exec(readFileSync(file, 'utf8'))
   }
 } catch (error) {
@@ -194,6 +194,29 @@ await db.exec('rollback')
 check(published.length === 1 && published[0].english_name === 'Maricel S. Dela Cruz', 'anon sees only published, available workers', `[${published.map((r) => r.english_name)}]`)
 const expectedAge = Math.floor((Date.now() - Date.parse('1994-03-02')) / 31_557_600_000)
 check(published[0]?.age === expectedAge, 'the date of birth is reduced to an age', `age ${published[0]?.age}`)
+
+// The arrangement that keeps a well-meant fix in the Supabase dashboard from
+// taking the website down: the view borrows nobody's rights, so the linter has
+// nothing to report, and anon holds no privilege on the table behind it.
+const invoker = (await db.query(
+  `select coalesce((select option_value from pg_options_to_table(c.reloptions)
+      where option_name = 'security_invoker'), 'false') as value
+     from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public' and c.relname = 'published_workers'`,
+)).rows[0]?.value
+check(invoker === 'true', 'the view runs as its caller, so there is nothing for a linter to fix', `security_invoker=${invoker}`)
+
+const anonOnApplicants = (await db.query(
+  `select count(*)::int n from information_schema.role_table_grants
+    where table_schema = 'ops' and table_name = 'applicants' and grantee = 'anon'`,
+)).rows[0].n
+check(anonOnApplicants === 0, 'anon is granted nothing at all on ops.applicants', `${anonOnApplicants} grant(s)`)
+
+const anonColumns = (await db.query(
+  `select count(*)::int n from information_schema.column_privileges
+    where table_schema = 'ops' and grantee = 'anon'`,
+)).rows[0].n
+check(anonColumns === 0, 'nor on any column of any ops table', `${anonColumns} grant(s)`)
 
 for (const [label, sql] of [
   ['the applicants table', 'select * from ops.applicants'],

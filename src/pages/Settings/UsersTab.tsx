@@ -5,7 +5,10 @@ import { useTranslation } from '../../i18n/useTranslation'
 import { useCurrentUser } from '../../lib/useCurrentUser'
 import { DEFAULT_PASSWORD, passwordProblem, usernameProblem } from '../../lib/passwords'
 import { ROLES, ROLE_LABEL, ROLE_SUMMARY } from '../../lib/permissions'
+import { isSupabaseConfigured } from '../../lib/supabase'
+import { createAccount } from '../../data/accounts'
 import Card from '../../components/Card'
+import Confirm from '../../components/Confirm'
 import Modal from '../../components/Modal'
 import StatusBadge from '../../components/StatusBadge'
 import { BilingualField, Field, TextInput, SelectInput, PrimaryButton, SecondaryButton } from '../../components/form'
@@ -21,6 +24,7 @@ export default function UsersTab() {
   const { member: me } = useCurrentUser()
 
   const [editing, setEditing] = useState<StaffMember | 'new' | null>(null)
+  const [removing, setRemoving] = useState<StaffMember | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
   /** Turns a refusal from the store into something a person can act on. */
@@ -44,10 +48,12 @@ export default function UsersTab() {
     report(updateStaff(member.id, { role }))
   }
 
-  function handleDelete(member: StaffMember) {
+  function handleDelete() {
+    if (!removing) return
     setNotice(null)
-    if (!window.confirm(`${t('users_delete_confirm')}\n\n${tb(member.name)} (${member.username})`)) return
-    report(deleteStaff(member.id))
+    const outcome = deleteStaff(removing.id)
+    setRemoving(null)
+    report(outcome)
   }
 
   async function handleReset(member: StaffMember) {
@@ -165,7 +171,10 @@ export default function UsersTab() {
                       type="button"
                       title={t('action_delete')}
                       aria-label={`${t('action_delete')}: ${member.username}`}
-                      onClick={() => handleDelete(member)}
+                      onClick={() => {
+                        setNotice(null)
+                        setRemoving(member)
+                      }}
                       className="text-ink-3 hover:text-neg"
                     >
                       <Trash2 className="size-3.5" />
@@ -193,7 +202,19 @@ export default function UsersTab() {
         <UserModal
           member={editing === 'new' ? null : editing}
           onClose={() => setEditing(null)}
-          onProblem={setNotice}
+          onNotice={setNotice}
+        />
+      )}
+
+      {removing && (
+        <Confirm
+          title={t('users_delete_title')}
+          message={`${t('users_delete_confirm')}${isSupabaseConfigured ? ` ${t('users_delete_note')}` : ''}`}
+          detail={`${tb(removing.name)} — ${removing.username}${removing.email ? ` · ${removing.email}` : ''}`}
+          confirmLabel={t('action_delete')}
+          tone="danger"
+          onConfirm={handleDelete}
+          onClose={() => setRemoving(null)}
         />
       )}
     </div>
@@ -203,16 +224,17 @@ export default function UsersTab() {
 function UserModal({
   member,
   onClose,
-  onProblem,
+  onNotice,
 }: {
   member: StaffMember | null
   onClose: () => void
-  onProblem: (message: string) => void
+  onNotice: (message: string) => void
 }) {
   const staff = useAppStore((s) => s.staff)
   const addStaff = useAppStore((s) => s.addStaff)
   const updateStaff = useAppStore((s) => s.updateStaff)
   const { t, language } = useTranslation()
+  const connected = isSupabaseConfigured
 
   const [nameEn, setNameEn] = useState(member?.name.en ?? '')
   const [nameAr, setNameAr] = useState(member?.name.ar ?? '')
@@ -223,6 +245,8 @@ function UserModal({
   const [phone, setPhone] = useState(member?.phone ?? '')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // Set once everything checks out, which is what the confirmation asks about.
+  const [confirming, setConfirming] = useState(false)
 
   const taken = staff.filter((m) => m.id !== member?.id).map((m) => m.username)
 
@@ -246,7 +270,7 @@ function UserModal({
         role,
       })
       if (outcome !== 'ok') {
-        onProblem(outcome === 'last-admin' ? t('users_last_admin') : t('users_username_taken'))
+        onNotice(outcome === 'last-admin' ? t('users_last_admin') : t('users_username_taken'))
         return
       }
       onClose()
@@ -259,7 +283,38 @@ function UserModal({
       return
     }
 
+    // Connected, the address is not a detail on a card: it is the thing they
+    // type to get in, and Supabase Auth has nothing to make an account from
+    // without it.
+    if (connected && !email.trim()) {
+      setError(t('users_email_required'))
+      return
+    }
+
+    setConfirming(true)
+  }
+
+  /** Everything is checked and the administrator has said yes. */
+  async function create() {
+    setError(null)
     setBusy(true)
+
+    let userId: string | null = null
+    let note = t('users_created')
+
+    if (connected) {
+      const account = await createAccount(email, password)
+      if (account.outcome === 'email-taken') return refuse(t('users_email_taken'))
+      if (account.outcome === 'signups-disabled') return refuse(t('users_signups_disabled'))
+      if (account.outcome === 'invalid-email') return refuse(t('users_email_invalid'))
+      if (account.outcome === 'weak-password') return refuse(t('users_password_weak'))
+      if (account.outcome === 'unreachable') {
+        return refuse(`${t('users_unreachable')}${account.detail ? ` (${account.detail})` : ''}`)
+      }
+      if (account.outcome === 'needs-confirmation') note = t('users_needs_confirmation')
+      userId = account.userId
+    }
+
     const outcome = await addStaff({
       name: { en: nameEn.trim(), ar: nameAr.trim() },
       username,
@@ -267,13 +322,42 @@ function UserModal({
       role,
       email: email.trim(),
       phone: phone.trim(),
+      userId,
     })
     setBusy(false)
-    if (outcome !== 'ok') {
-      setError(t('users_username_taken'))
-      return
-    }
+    // Anything other than a taken username is the role refusing the action, not
+    // the name being in use; saying so saves somebody renaming for no reason.
+    if (outcome === 'username-taken') return refuse(t('users_username_taken'))
+    if (outcome !== 'ok') return refuse(t('users_refused'))
+
+    onNotice(`${note} — ${nameEn.trim()}`)
     onClose()
+  }
+
+  function refuse(message: string) {
+    setBusy(false)
+    setConfirming(false)
+    setError(message)
+  }
+
+  if (confirming) {
+    return (
+      <Confirm
+        title={t('users_add_confirm_title')}
+        message={connected ? t('users_add_confirm') : t('users_add_confirm_local')}
+        detail={[
+          nameEn.trim(),
+          connected ? email.trim() : username,
+          ROLE_LABEL[role][language],
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+        confirmLabel={t('users_add')}
+        busy={busy}
+        onConfirm={create}
+        onClose={() => setConfirming(false)}
+      />
+    )
   }
 
   return (
@@ -317,8 +401,16 @@ function UserModal({
           </SelectInput>
         </Field>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label={t('label_email')}>
-            <TextInput type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Field
+            label={t('label_email')}
+            hint={connected ? (member ? t('users_email_edit_note') : t('users_signs_in_with_email')) : undefined}
+          >
+            <TextInput
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required={connected && !member}
+            />
           </Field>
           <Field label={t('label_phone')}>
             <TextInput value={phone} onChange={(e) => setPhone(e.target.value)} />

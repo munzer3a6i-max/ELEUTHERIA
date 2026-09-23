@@ -229,6 +229,8 @@ export interface NewStaff {
   role: StaffRole
   username: string
   password: string
+  /** The Supabase auth account this staff row belongs to, once there is one. */
+  userId?: string | null
 }
 
 export type StaffPatch = Partial<Pick<StaffMember, 'name' | 'phone' | 'email' | 'role' | 'username'>>
@@ -687,11 +689,13 @@ export const useAppStore = create<AppState>()(
         })),
       deleteInvoice: (id) => set((s) => ({ invoices: s.invoices.filter((i) => i.id !== id) })),
 
-      addStaff: async ({ password, username, ...rest }) => {
+      addStaff: async ({ password, username, userId = null, ...rest }) => {
         if (usernameTaken(get().staff, username)) return 'username-taken'
         const member: StaffMember = {
           ...rest,
-          userId: null,
+          // Connected, this is the auth account they sign in with; without one
+          // the row is a name in a list and nobody can get in as them.
+          userId,
           username: normaliseUsername(username),
           credentials: await makeCredentials(password, true),
           id: newId(),

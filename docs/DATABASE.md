@@ -260,14 +260,43 @@ The view exposes exactly this and nothing more:
 
 ```
 id, english_name, arabic_name, gender, age, country, profession,
-type, experience_years, photo_path, updated_at
+type, experience_years, photo_path, cv_path, updated_at
 ```
 
 Date of birth is reduced to an age; passport number, identity number, phone,
-telephone, CV and passport copy are absent, and so is every commercial column —
+telephone and passport copy are absent, and so is every commercial column —
 which agency she came through, which agent introduced her, what anybody was
-paid. The view lists its columns explicitly rather than using `select *`, so
-adding a sensitive column to `ops.applicants` later cannot silently publish it.
+paid. The photograph and the CV are there because the site is meant to show
+them. The column list is written out rather than `select *`, so adding a
+sensitive column to `ops.applicants` later cannot silently publish it.
+
+### Why it is a function behind a view
+
+Left as a plain view over a locked table, the projection runs with its owner's
+rights — which is how an anonymous caller reads it while `ops.applicants` stays
+shut. Supabase's database linter reports that as a **security definer view**,
+and offers to fix it by setting `security_invoker` on. Accepting that offer
+takes the borrowed rights away, the anonymous caller loses its only way in, and
+the website goes dark with a permission error. That has happened once here.
+
+So `0007_public_projection.sql` arranges it to leave nothing to fix:
+
+- `ops.published_workers_rows()` does the reading. It is the security definer
+  now, with its `search_path` pinned so `ops.applicants` cannot be made to mean
+  something else.
+- It is owned by `ops_website_reader`, a role that cannot log in and exists for
+  this one job, and one policy on `ops.applicants` lets *that role* read a
+  published, available row. Row level security is forced on that table, so
+  without the policy even an owner reads nothing — and because the policy names
+  this role alone, a signed-in stranger gains nothing from it.
+- `public.published_workers` is `security_invoker`, so the linter has nothing to
+  say about it. The caller needs no rights on any table, only permission to run
+  the function.
+
+The upshot: `anon` is granted nothing on `ops.applicants`, and the twelve
+columns above are the whole of what the internet can reach. If the linter ever
+flags this again, read what it says before accepting a fix — and if the site
+does go dark with a permission error, running `0007` again puts it back.
 
 A worker appears on the site when `published_to_website` is true **and** her
 status is `Available`, so someone who has been placed drops off the site by

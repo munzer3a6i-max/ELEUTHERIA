@@ -85,6 +85,27 @@ export const supabase = isSupabaseConfigured
     })
   : null
 
+/**
+ * A second client, for work that must not disturb whoever is signed in.
+ *
+ * Creating an account is the case that needs it: `signUp` signs the new user
+ * in, and on the shared client that would throw the administrator out of their
+ * own session halfway through adding somebody. This one keeps nothing and
+ * remembers nothing, so the session it opens dies with the call.
+ */
+export function isolatedClient() {
+  if (!isSupabaseConfigured) return null
+  return createClient(url, anonKey, {
+    db: { schema: 'ops' },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      storageKey: 'eleutheria-isolated',
+    },
+  })
+}
+
 /** Narrow the client where a caller genuinely requires a configured project. */
 export function requireSupabase() {
   if (!supabase) {

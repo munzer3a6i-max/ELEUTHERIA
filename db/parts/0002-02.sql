@@ -1,4 +1,4 @@
--- 0002_security.sql, piece 2 of 4.
+-- 0002_security.sql, piece 2 of 3.
 -- Run the pieces in order, each on its own. Running one twice is safe.
 
 -- ---------------------------------------------------------- the policies --

@@ -321,6 +321,40 @@ export const translations = {
   users_tab_company: { en: 'Company', ar: 'الشركة' },
   users_tab_users: { en: 'Users', ar: 'المستخدمون' },
   users_manage_here: { en: 'Accounts and roles are managed in Settings.', ar: 'تُدار الحسابات والأدوار من الإعدادات.' },
+  users_add_confirm_title: { en: 'Add this user?', ar: 'إضافة هذا المستخدم؟' },
+  users_add_confirm: {
+    en: 'They will be able to sign in with this email and password, with the permissions of the role you chose.',
+    ar: 'سيتمكن من الدخول بهذا البريد وكلمة المرور، وبصلاحيات الدور الذي اخترته.',
+  },
+  users_add_confirm_local: {
+    en: 'They will be able to sign in with this username and password once the dashboard is connected to the database.',
+    ar: 'سيتمكن من الدخول بهذا الاسم وكلمة المرور بمجرد اتصال النظام بقاعدة البيانات.',
+  },
+  users_delete_title: { en: 'Remove this user?', ar: 'حذف هذا المستخدم؟' },
+  users_delete_note: {
+    en: 'Their sign-in account stays in Supabase and can be deleted there; without a staff row it opens nothing.',
+    ar: 'يبقى حساب الدخول في Supabase ويمكن حذفه من هناك؛ وبدون سجل موظف لا يفتح شيئًا.',
+  },
+  users_email_required: { en: 'An email address is needed: it is what they sign in with.', ar: 'البريد الإلكتروني مطلوب لأنه وسيلة الدخول.' },
+  users_email_taken: { en: 'That email address already has an account.', ar: 'هذا البريد الإلكتروني له حساب بالفعل.' },
+  users_email_invalid: { en: 'That does not look like an email address Supabase will accept.', ar: 'لا يبدو هذا بريدًا إلكترونيًا مقبولًا.' },
+  users_password_weak: { en: 'Supabase refused that password as too weak. Try a longer one.', ar: 'رفضت Supabase كلمة المرور لضعفها. جرّب كلمة أطول.' },
+  users_unreachable: { en: 'The account could not be created — the database could not be reached.', ar: 'تعذر إنشاء الحساب — لم يمكن الوصول إلى قاعدة البيانات.' },
+  users_needs_confirmation: {
+    en: 'Made, but this project asks people to confirm their email first. They must open the link sent to them before they can sign in. Turn that off in Supabase under Authentication, Providers, Email if you would rather set passwords yourself.',
+    ar: 'تم الإنشاء، لكن المشروع يطلب تأكيد البريد الإلكتروني أولًا. عليه فتح الرابط المُرسل إليه قبل الدخول. يمكن إيقاف ذلك من Supabase في Authentication ثم Providers ثم Email إذا كنت تفضل تعيين كلمات المرور بنفسك.',
+  },
+  users_created: { en: 'Added, and they can sign in now.', ar: 'تمت الإضافة، ويمكنه الدخول الآن.' },
+  users_refused: { en: 'That change was refused. Only an administrator can manage users.', ar: 'رُفض هذا التغيير. إدارة المستخدمين للمسؤول وحده.' },
+  users_signs_in_with_email: { en: 'They sign in with this address.', ar: 'يدخل بهذا العنوان.' },
+  users_email_edit_note: {
+    en: 'Changing this does not change the address they sign in with; that is changed in Supabase.',
+    ar: 'تغيير هذا لا يغيّر عنوان الدخول؛ يُغيَّر ذلك من Supabase.',
+  },
+  users_signups_disabled: {
+    en: 'This project has new sign-ups switched off, so no account could be created. Turn them on in Supabase under Authentication, Sign In / Providers.',
+    ar: 'التسجيل الجديد موقوف في هذا المشروع، لذا لم يُنشأ أي حساب. فعّله من Supabase في Authentication ثم Sign In / Providers.',
+  },
 
   // Roles and access
   perm_no_access: { en: 'You do not have access to this page', ar: 'ليس لديك صلاحية لهذه الصفحة' },
