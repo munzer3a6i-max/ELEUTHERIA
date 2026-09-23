@@ -36,6 +36,8 @@ import type {
 export type Tables = Partial<Record<TableName, Row[]>>
 
 export interface Assembled {
+  /** Absent when the database has no settings row yet. */
+  settings: rows.CompanySettings | null
   countries: Country[]
   cities: City[]
   professions: Profession[]
@@ -81,6 +83,7 @@ export function assemble(tables: Tables): Assembled {
   const costs = by(tables.backout_costs, 'backout_id')
 
   return {
+    settings: tables.settings?.[0] ? rows.settingsRows.in(tables.settings[0]) : null,
     countries: (tables.countries ?? []).map(rows.countryRows.in),
     cities: (tables.cities ?? []).map(rows.cityRows.in),
     professions: (tables.professions ?? []).map(rows.professionRows.in),

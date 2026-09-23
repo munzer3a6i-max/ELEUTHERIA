@@ -71,6 +71,7 @@ const mapped = await page.evaluate(async () => {
   const push = (mapper, items, parentId) =>
     out.push({ table: mapper.table, rows: items.map((item) => mapper.out(item, parentId)) })
 
+  out.push({ table: 'settings', rows: [rows.settingsRows.out(s.settings)] })
   push(rows.countryRows, s.countries)
   push(rows.cityRows, s.cities)
   push(rows.professionRows, s.professions)
@@ -115,6 +116,13 @@ const mapped = await page.evaluate(async () => {
   // Dropped fields are the ones the database deliberately does not hold:
   // timestamps it sets itself, files that live in Storage, passwords that live
   // in auth.users, and children kept in their own tables.
+  // The company's own details, which the Settings screen edits.
+  const company = rows.settingsRows.in(rows.settingsRows.out(s.settings))
+  for (const key of Object.keys(company)) {
+    if (JSON.stringify(company[key]) !== JSON.stringify(s.settings[key])) {
+      trips.push(`settings.${key}: ${s.settings[key]} -> ${company[key]}`)
+    }
+  }
   trip('country', rows.countryRows, s.countries)
   trip('city', rows.cityRows, s.cities)
   trip('profession', rows.professionRows, s.professions)
@@ -282,7 +290,9 @@ const differences = await page2.evaluate(async (tables) => {
   return {
     problems,
     stages,
-    counts: Object.fromEntries(Object.entries(back).map(([k, v]) => [k, v.length])),
+    counts: Object.fromEntries(
+      Object.entries(back).filter(([, v]) => Array.isArray(v)).map(([k, v]) => [k, v.length]),
+    ),
   }
 }, readBack)
 await browser2.close()

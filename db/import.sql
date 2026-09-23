@@ -1,5 +1,5 @@
 -- Everything this browser held, as SQL.
--- Written from /tmp/eleutheria-1SAkhr/export.json on 2026-09-23.
+-- Written from /tmp/eleutheria-RmSFQd/export.json on 2026-09-23.
 --
 -- Paste into the Supabase SQL editor and run it once. Running it twice
 -- updates the same rows rather than making a second copy of everything.

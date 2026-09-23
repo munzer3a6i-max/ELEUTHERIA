@@ -22,6 +22,7 @@ export type Projection = Map<TableName, Map<string, Row>>
 
 /** Parents first. Deletes walk this backwards. */
 export const TABLE_ORDER: TableName[] = [
+  'settings',
   'countries',
   'cities',
   'professions',
@@ -51,6 +52,7 @@ export const TABLE_ORDER: TableName[] = [
 
 type Slice = Pick<
   AppState,
+  | 'settings'
   | 'countries' | 'cities' | 'professions' | 'paymentSources' | 'staff' | 'agencies' | 'agents'
   | 'employers' | 'applicants' | 'requests' | 'invoices' | 'payroll' | 'officeExpenses'
   | 'agencyContracts' | 'agencyCharges' | 'agentCommissions' | 'backouts' | 'notifications'
@@ -60,6 +62,7 @@ export function project(state: Slice): Projection {
   const projection: Projection = new Map(TABLE_ORDER.map((table) => [table, new Map()]))
   const put = (table: TableName, row: Row) => projection.get(table)!.set(String(row.id), row)
 
+  put('settings', rows.settingsRows.out(state.settings))
   for (const c of state.countries) put('countries', rows.countryRows.out(c))
   for (const c of state.cities) put('cities', rows.cityRows.out(c))
   for (const p of state.professions) put('professions', rows.professionRows.out(p))

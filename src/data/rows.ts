@@ -136,6 +136,38 @@ export const paymentSourceRows = {
   }),
 }
 
+/**
+ * One row, holding what the company is called and what it bills in. Language
+ * and theme are not here: those are how one person likes to read the screen,
+ * not something the office agrees on.
+ */
+export const settingsRows = {
+  table: 'settings',
+  out: (s: CompanySettings): Row => ({
+    id: true,
+    company_name: s.companyName,
+    company_tagline: s.companyTagline,
+    license_number: s.licenseNumber,
+    address: s.address,
+    currency: s.currency,
+  }),
+  in: (r: Row): CompanySettings => ({
+    companyName: text(r.company_name),
+    companyTagline: text(r.company_tagline),
+    licenseNumber: text(r.license_number),
+    address: text(r.address),
+    currency: text(r.currency) || 'USD',
+  }),
+}
+
+export interface CompanySettings {
+  companyName: string
+  companyTagline: string
+  licenseNumber: string
+  address: string
+  currency: string
+}
+
 // ---------------------------------------------------------------- people --
 
 /**

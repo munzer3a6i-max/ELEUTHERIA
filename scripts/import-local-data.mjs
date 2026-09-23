@@ -68,6 +68,7 @@ const monthStart = (month) => (month ? `${month}-01` : null)
 let files = 0
 
 /** Windows will not have a colon or a slash in a filename, and nor will this. */
+// eslint-disable-next-line no-control-regex -- control characters are exactly what this removes
 const safeName = (name) => String(name ?? 'file').replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_').slice(0, 80)
 
 function attachment(value, label) {

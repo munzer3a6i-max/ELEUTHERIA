@@ -33,6 +33,7 @@ const MOVES_MONEY: TableName[] = ['request_status_history', 'applicants', 'agent
 
 /** Which area a table belongs to, so a role is not asked to write what it cannot. */
 const AREA: Record<TableName, 'finance' | 'operations' | 'system'> = {
+  settings: 'system',
   countries: 'system',
   cities: 'system',
   professions: 'system',
@@ -95,7 +96,7 @@ export async function loadEverything(): Promise<Assembled> {
 }
 
 /** Just the tables the database maintains, after something moved a milestone. */
-async function reloadDerived(): Promise<Partial<Assembled>> {
+async function reloadDerived(): Promise<Pick<Assembled, 'agentCommissions' | 'agencyCharges' | 'backouts'>> {
   const client = requireSupabase()
   const tables: Tables = {}
   await Promise.all(
@@ -239,10 +240,15 @@ export function retrySaving(): void {
  */
 export async function connect(): Promise<void> {
   status({ kind: 'loading' })
-  const loaded = await loadEverything()
+  const { settings, ...loaded } = await loadEverything()
 
   applying = true
-  useAppStore.setState(loaded)
+  useAppStore.setState({
+    ...loaded,
+    // The company's details come from the database; the language and theme
+    // stay as this person set them on this machine.
+    settings: { ...useAppStore.getState().settings, ...(settings ?? {}) },
+  })
   applying = false
 
   lastSaved = project(useAppStore.getState())

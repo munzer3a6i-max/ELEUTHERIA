@@ -82,15 +82,16 @@ public, graphql_public, ops
 Passwords move to Supabase Auth, where they belong. The `12345` scheme in the
 browser was a lock on the office door; this is the real thing.
 
-1. **Authentication → Users → Add user**: email and a password, and tick
-   "Auto confirm user".
-2. In the SQL editor, link that auth user to a staff row:
+1. **Authentication → Users → Add user**: a real email and a password you
+   choose, and tick "Auto confirm user".
+2. Open `db/bootstrap.sql`, put that email and your name at the top, and run
+   it in the SQL editor.
 
-   ```sql
-   update ops.staff
-      set user_id = '<the auth user id>'
-    where username = 'kylie';
-   ```
+That links the account to an administrator row and fills in the lists behind
+the dropdowns — countries, cities, professions, payment sources — and nothing
+else. No workers, no requests, no money: those you enter yourself. It can be
+run again safely, and it refuses with a clear message if the auth user is not
+there yet.
 
 Nobody can read anything until a matching `ops.staff` row exists with
 `status = 'Active'`. That is deliberate — it is the same rule the test suite
@@ -113,7 +114,10 @@ Then open **Settings → Database** in the dashboard. It says which of four
 things is true: not configured, unreachable, reachable but the schema is not
 exposed, or connected.
 
-## Step 5 — bring your data across
+## Step 5 — bring your data across, if it is worth bringing
+
+Skip this if what is in the browser is demo data. An empty database plus
+step 3 is a working dashboard; this is only for carrying real records over.
 
 Export first, from **Settings → Database → Export data**. If the project is
 already configured and you cannot sign in yet, the sign-in screen offers the
