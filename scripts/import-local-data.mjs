@@ -7,6 +7,11 @@
 //
 //   node scripts/import-local-data.mjs export.json --pglite
 //
+// Or, for somebody who would rather not touch a terminal at all, write the
+// whole import out as SQL to paste into the editor:
+//
+//   node scripts/import-local-data.mjs export.json --sql
+//
 // Ids are derived from the app's own ids, so importing the same file twice
 // updates the same rows instead of making a second copy of everything.
 //
@@ -25,6 +30,7 @@ if (!path) {
   process.exit(1)
 }
 const dryRun = flags.includes('--pglite')
+const toSql = flags.includes('--sql')
 
 const raw = JSON.parse(readFileSync(path, 'utf8'))
 const state = raw.state ?? raw
@@ -58,7 +64,37 @@ function attachment(value, label) {
 
 // --- connect ---------------------------------------------------------------
 let query, close
-if (dryRun) {
+
+/** A value written the way SQL wants it, or passed through if it is an expression. */
+function literal(value) {
+  if (value === null || value === undefined) return 'null'
+  if (typeof value === 'object' && value.raw) return value.raw
+  if (typeof value === 'number') return String(value)
+  if (typeof value === 'boolean') return value ? 'true' : 'false'
+  if (Array.isArray(value)) return `'{${value.map((v) => `"${String(v).replace(/"/g, '\\"')}"`).join(',')}}'`
+  return `'${String(value).replace(/'/g, "''")}'`
+}
+
+const statements = []
+
+if (toSql) {
+  // Nothing is executed: the parameters are written into the statement and the
+  // lot is saved for the SQL editor.
+  query = (sql, params = []) => {
+    const rendered = sql.replace(/\$(\d+)/g, (_, n) => literal(params[Number(n) - 1]))
+    if (/^\s*(begin|commit|rollback)\s*$/i.test(rendered)) return { rows: [] }
+    statements.push(rendered.trim().replace(/\s+$/, '') + ';')
+    // The backouts loop asks which row it landed on; in a file, that is a
+    // question the database answers when the file runs.
+    if (/insert into ops\.backouts /.test(rendered)) {
+      const match = rendered.match(/values \(([^,]+), ([^,]+),/)
+      return { rows: [{ id: { raw: `(select id from ops.backouts where request_id = ${match[2]})` } }] }
+    }
+    return { rows: [] }
+  }
+  close = () => {}
+  console.log('writing the import out as SQL\n')
+} else if (dryRun) {
   // Kept on disk so the script can be run twice and the second run can be
   // seen not to duplicate anything.
   const { PGlite } = await import('@electric-sql/pglite')
@@ -349,6 +385,28 @@ try {
 
 const total = Object.values(counts).reduce((sum, n) => sum + n, 0)
 for (const [table, n] of Object.entries(counts)) console.log(`  ${String(n).padStart(4)}  ${table}`)
+
+if (toSql) {
+  const header = [
+    '-- Everything this browser held, as SQL.',
+    `-- Written from ${path} on ${new Date().toISOString().slice(0, 10)}.`,
+    '--',
+    '-- Paste into the Supabase SQL editor and run it once. Running it twice',
+    '-- updates the same rows rather than making a second copy of everything.',
+    '--',
+    '-- Commissions, agency charges and backouts are barely in here: the',
+    '-- triggers work those out from the stage log as it arrives, and what',
+    '-- follows only says which of them had been settled.',
+    '',
+    'begin;',
+    '',
+  ].join('\n')
+  writeFileSync('db/import.sql', `${header}${statements.join('\n')}\n\ncommit;\n`)
+  console.log(`\n${total} rows written to db/import.sql (${statements.length} statements).`)
+  if (files > 0) console.log(`${files} attachment(s) written to db/exported-files/.`)
+  process.exit(0)
+}
+
 console.log(`\n${total} rows sent.`)
 
 // What is actually in the database afterwards. On a second run of the same

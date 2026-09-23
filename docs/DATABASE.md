@@ -120,7 +120,9 @@ already configured and you cannot sign in yet, the sign-in screen offers the
 same export — the accounts move to the server before the data does, and that
 is exactly when somebody needs to get at what the browser still holds.
 
-Then, from the project directory:
+### If you have the project on your machine
+
+A terminal, in the folder holding `package.json`:
 
 ```bash
 npm i -D @electric-sql/pglite --no-save
@@ -145,6 +147,24 @@ so: the triggers create them from the stage log as it is imported, and the file
 only says which of them had been settled. So those rows come out of the
 database's own reckoning, with the payments you had already recorded against
 them.
+
+### If you would rather not open a terminal
+
+The import can be written out as SQL instead, and pasted into the editor like
+every other step so far:
+
+```bash
+node scripts/import-local-data.mjs eleutheria-export-2026-09-23.json --sql
+```
+
+That writes `db/import.sql`. `scripts/test-import.mjs` runs both routes and
+checks they land the same database, because a file that is nearly right is
+worse than no file at all.
+
+Somebody has to run that one command, though. If there is no terminal at hand
+at all, send the export file over and the SQL can be generated for you --
+bearing in mind that an export holds passport and identity numbers, so it is
+not a file to post anywhere public.
 
 Attachments are the exception. Their bytes live in the browser as data URLs and
 Storage is not reachable over a database connection, so each one is written to
