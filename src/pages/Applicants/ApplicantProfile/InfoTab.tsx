@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Trash2, Globe, FileText, Upload } from 'lucide-react'
+import { Plus, Trash2, Globe, FileText, Upload, ExternalLink } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
 import { useTranslation } from '../../../i18n/useTranslation'
 import Modal from '../../../components/Modal'
 import { Field, TextInput, PrimaryButton, SecondaryButton } from '../../../components/form'
+import { clearWorkerCv, setWorkerCv, useCvUrl } from '../../../lib/cvs'
 import type { Applicant } from '../../../types'
 
 export default function InfoTab({ applicant }: { applicant: Applicant }) {
@@ -27,9 +28,18 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
 
   function handleCv(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (!file) return
-    updateApplicant(applicant.id, { cvFileName: file.name })
     e.target.value = ''
+    if (!file) return
+    setWorkerCv(applicant, file).catch((problem: Error) => window.alert(problem.message))
+  }
+
+  function handleCvRemove() {
+    const sure = window.confirm(
+      language === 'ar'
+        ? 'حذف السيرة الذاتية؟ ستُزال أيضاً من الموقع.'
+        : 'Remove this CV? It is taken off the website as well.',
+    )
+    if (sure) clearWorkerCv(applicant).catch((problem: Error) => window.alert(problem.message))
   }
 
   return (
@@ -80,18 +90,7 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
               <input type="file" className="hidden" onChange={handleCv} />
             </label>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-xs text-ink-2">
-              <FileText className="size-4 text-ink-3" />
-              {applicant.cvFileName ?? (language === 'ar' ? 'لم يتم رفع سيرة ذاتية' : 'No CV uploaded')}
-            </span>
-            <span className="flex items-center gap-1.5 text-[11px] text-ink-3">
-              <Globe className="size-3.5" />
-              {applicant.cvLinkedToWebsite
-                ? language === 'ar' ? 'منشورة على الموقع' : 'On the website'
-                : language === 'ar' ? 'غير منشورة على الموقع' : 'Not on the website'}
-            </span>
-          </div>
+          <CvRow applicant={applicant} onRemove={handleCvRemove} />
         </div>
 
         <div className="rounded-panel border border-line bg-surface p-4">
@@ -238,6 +237,50 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
           }}
         />
       )}
+    </div>
+  )
+}
+
+/**
+ * What the office has, and where it can be read. The file itself opens through
+ * a signed link to the private copy, never the public one: the office should
+ * see the document whether or not this worker is on the website.
+ */
+function CvRow({ applicant, onRemove }: { applicant: Applicant; onRemove: () => void }) {
+  const { language } = useTranslation()
+  const url = useCvUrl(applicant)
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <span className="flex items-center gap-2 text-xs text-ink-2">
+        <FileText className="size-4 text-ink-3" />
+        {applicant.cvFileName ?? (language === 'ar' ? 'لم يتم رفع سيرة ذاتية' : 'No CV uploaded')}
+        {url && (
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1 text-[11px] font-medium text-accent hover:underline"
+          >
+            <ExternalLink className="size-3" /> {language === 'ar' ? 'فتح' : 'Open'}
+          </a>
+        )}
+        {applicant.cvFileName && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="flex items-center gap-1 text-[11px] text-ink-3 hover:text-neg"
+          >
+            <Trash2 className="size-3" /> {language === 'ar' ? 'حذف' : 'Remove'}
+          </button>
+        )}
+      </span>
+      <span className="flex items-center gap-1.5 text-[11px] text-ink-3">
+        <Globe className="size-3.5" />
+        {applicant.cvLinkedToWebsite
+          ? language === 'ar' ? 'منشورة على الموقع' : 'On the website'
+          : language === 'ar' ? 'غير منشورة على الموقع' : 'Not on the website'}
+      </span>
     </div>
   )
 }

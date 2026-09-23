@@ -111,6 +111,22 @@
   font-weight: 550;
 }
 
+.worker-cv {
+  margin-top: auto;
+  padding: 7px 10px;
+  color: inherit;
+  font-size: 0.8125rem;
+  font-weight: 550;
+  text-align: center;
+  text-decoration: none;
+  border: 1px solid var(--workers-line);
+  border-radius: 9px;
+}
+
+.worker-cv:hover {
+  border-color: currentColor;
+}
+
 .worker-card-skeleton {
   animation: workers-pulse 1.4s ease-in-out infinite;
 }
@@ -132,7 +148,23 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .worker-card-skeleton {
+  .worker-cv {
+  margin-top: auto;
+  padding: 7px 10px;
+  color: inherit;
+  font-size: 0.8125rem;
+  font-weight: 550;
+  text-align: center;
+  text-decoration: none;
+  border: 1px solid var(--workers-line);
+  border-radius: 9px;
+}
+
+.worker-cv:hover {
+  border-color: currentColor;
+}
+
+.worker-card-skeleton {
     animation: none;
   }
 }

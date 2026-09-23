@@ -8,7 +8,7 @@
 //   <WorkersPage language="ar" />
 
 import { useMemo, useState } from 'react'
-import { optionsFor, photoUrl, type Worker } from './workers'
+import { cvUrl, optionsFor, photoUrl, type Worker } from './workers'
 import { useWorkers } from './useWorkers'
 import './workers.css'
 
@@ -31,6 +31,7 @@ const TEXT = {
   age: { en: 'years old', ar: 'سنة' },
   count: { en: 'workers', ar: 'عاملة' },
   noPhoto: { en: 'No photograph', ar: 'بدون صورة' },
+  cv: { en: 'View CV', ar: 'عرض السيرة الذاتية' },
 } as const
 
 function say(key: keyof typeof TEXT, language: Language): string {
@@ -160,6 +161,7 @@ export function WorkersPage({ language = 'en', limit }: WorkersPageProps) {
 export function WorkerCard({ worker, language }: { worker: Worker; language: Language }) {
   const name = language === 'ar' && worker.arabic_name ? worker.arabic_name : worker.english_name
   const url = photoUrl(worker)
+  const cv = cvUrl(worker)
 
   return (
     <article className="worker-card">
@@ -187,6 +189,12 @@ export function WorkerCard({ worker, language }: { worker: Worker; language: Lan
           </dd>
         )}
       </dl>
+
+      {cv && (
+        <a className="worker-cv" href={cv} target="_blank" rel="noreferrer">
+          {say('cv', language)}
+        </a>
+      )}
     </article>
   )
 }

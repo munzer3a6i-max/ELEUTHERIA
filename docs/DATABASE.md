@@ -293,6 +293,27 @@ https://<project>.supabase.co/storage/v1/object/public/published-photos/<photo_p
 `photo_path` is null for a worker whose photograph was never uploaded, so the
 site needs a placeholder for that case.
 
+### The CV
+
+The same arrangement, one bucket along. The office's upload goes into the
+private `worker-documents`, and publishing the worker copies it into
+`published-cvs`, which anyone may read:
+
+```
+https://<project>.supabase.co/storage/v1/object/public/published-cvs/<cv_path>
+```
+
+`cv_path` is on the view, so the site can link straight to it; `cv_file_name`
+holds the name the office uploaded and stays inside `ops`, because a visitor
+has no use for it.
+
+This is the one place where the dashboard hands a document to strangers, so it
+is worth being plain about what it means: while a worker is on the website, her
+CV can be read by anyone who has the link, with no key and no sign-in. Nothing
+narrows that to people the office knows. Keep passport scans and identity
+papers out of the CV -- they belong in `worker-documents`, which is private --
+and unpublishing the worker deletes the public copy.
+
 ## What is still to build
 
 The schema is the storage half. The application still needs:
@@ -301,8 +322,6 @@ The schema is the storage half. The application still needs:
   Server data means loading, error and empty states on each screen.
 - **Sign-in against Supabase Auth**, replacing the password check that
   currently runs in the browser.
-- **File upload** to the three buckets, replacing data URLs in `localStorage`
-  and the 2 MB cap that comes with them.
 - **A decision about concurrent edits**, once more than one person is working
   in the app at the same time.
 

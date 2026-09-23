@@ -10,10 +10,11 @@ workers the office publishes appear on the site.
    **On the website**.
 2. That sets one column, and she appears in `public.published_workers`, a view
    holding nothing but name, gender, age, country, profession, kind, years of
-   experience and the photograph. Her passport number, identity number, phone,
-   documents and every money row stay behind row level security.
-3. Her photograph is copied into the public `published-photos` bucket. Turning
-   the switch off deletes it again and takes her out of the view.
+   experience, the photograph and the CV. Her passport number, identity number,
+   phone, other documents and every money row stay behind row level security.
+3. Her photograph and her CV are copied into the public `published-photos` and
+   `published-cvs` buckets. Turning the switch off deletes both again and takes
+   her out of the view.
 
 Nothing is rebuilt or deployed in between. The site reads the view live, so she
 is there on the next page load and gone within one of being unpublished. Only
@@ -57,7 +58,7 @@ already uses `@supabase/supabase-js`, the same query is
 | File | What it is |
 | --- | --- |
 | `config.ts` | The project URL and anon key. Both are public; the service_role key must never appear here. |
-| `workers.ts` | The `Worker` type, `fetchWorkers()`, and `photoUrl()` for the public photograph address. |
+| `workers.ts` | The `Worker` type, `fetchWorkers()`, and `photoUrl()` / `cvUrl()` for the public photograph and CV addresses. |
 | `useWorkers.ts` | A hook: loads, reloads, cancels a request the filters have overtaken. |
 | `WorkersPage.tsx` | The page itself — search, three filters, cards, and the loading, empty and failed states. |
 | `workers.css` | Plain classes, laid out with logical properties so it flips for Arabic. Replace it with the site's own styling if you prefer. |
@@ -75,7 +76,8 @@ const { workers, loading, error } = useWorkers({ type: 'Domestic' })
 ```
 
 `photoUrl(worker)` returns an ordinary image address, or `null` when she has no
-photograph, so `<img src>` needs nothing else.
+photograph, so `<img src>` needs nothing else. `cvUrl(worker)` is the same for
+the CV: a link to open, or `null` when there is none published.
 
 ## Showing something else about a worker
 

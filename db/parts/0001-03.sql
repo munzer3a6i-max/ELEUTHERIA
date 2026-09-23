@@ -23,6 +23,8 @@ create table if not exists ops.applicants (
                            check (status in ('Available', 'Unavailable', 'Selected', 'Deployed', 'Back Out')),
   photo_path             text,
   cv_path                text,
+  -- The name the office uploaded, beside the uuid the file is stored under.
+  cv_file_name           text,
   passport_copy_path     text,
   -- The switch that decides whether this worker appears on the public site.
   published_to_website   boolean not null default false,
@@ -64,21 +66,4 @@ create table if not exists ops.applicant_notes (
   author_id     uuid references ops.staff (id) on delete set null,
   body          text not null,
   created_at    timestamptz not null default now()
-);
-
--- ------------------------------------------------------------ placements --
-
-create table if not exists ops.requests (
-  id                       uuid primary key default gen_random_uuid(),
-  type                     text not null check (type in ('Domestic', 'Profession')),
-  contract_duration_months smallint not null default 24,
-  applicant_id             uuid not null references ops.applicants (id) on delete restrict,
-  employer_id              uuid not null references ops.employers (id) on delete restrict,
-  responsible_staff_id     uuid references ops.staff (id) on delete set null,
-  agency_id                uuid references ops.agencies (id) on delete set null,
-  mosaned_number           text not null default '',
-  notes_en                 text not null default '',
-  notes_ar                 text not null default '',
-  created_at               timestamptz not null default now(),
-  updated_at               timestamptz not null default now()
 );

@@ -54,6 +54,7 @@ A view, `public.published_workers`. These are all of its columns:
 | `type` | text | `Domestic` or `Profession` (i.e. a skilled worker). |
 | `experience_years` | int | |
 | `photo_path` | text \| null | A key inside the `published-photos` bucket. |
+| `cv_path` | text \| null | A key inside the `published-cvs` bucket. |
 | `updated_at` | timestamptz | |
 
 The view already filters: it holds only workers whose office record is both
@@ -100,13 +101,25 @@ broken image. Unpublishing a worker in the office deletes the file from this
 bucket, which is deliberate: what is publicly readable is exactly what somebody
 chose to publish.
 
+## The CV
+
+Published the same way, in a public bucket of its own:
+
+```
+{SUPABASE_URL}/storage/v1/object/public/published-cvs/{cv_path}
+```
+
+`cv_path` is null when no CV has been uploaded, so the link belongs behind a
+check rather than on every card. It is usually a PDF: link to it and let the
+browser do the rest, opening in a new tab.
+
 ## What the page should do
 
 Match this site's existing design, language handling and routing — those
 conventions win over anything suggested here.
 
 - A card per worker: photograph, name, profession, country, age, years of
-  experience.
+  experience, and a link to the CV when there is one.
 - Use `arabic_name` when the site is in Arabic and `english_name` otherwise,
   falling back to the English name when the Arabic one is empty.
 - Filters worth having: search by name, country, profession, and Domestic vs

@@ -181,8 +181,12 @@ const columns = (await db.query(
   `select column_name from information_schema.columns where table_name = 'published_workers' order by ordinal_position`,
 )).rows.map((r) => r.column_name)
 console.log('  exposes:', columns.join(', '))
-const sensitive = ['passport_no', 'id_number', 'phone', 'telephone', 'dob', 'passport_start', 'passport_end', 'cv_path', 'passport_copy_path', 'agent_id', 'agency_id']
+// cv_path is published on purpose: the office puts a worker's CV on the site
+// for visitors to read, and 0006 gives it a public bucket of its own. The file
+// name the office uploaded is not published, and nothing below ever is.
+const sensitive = ['passport_no', 'id_number', 'phone', 'telephone', 'dob', 'passport_start', 'passport_end', 'cv_file_name', 'passport_copy_path', 'agent_id', 'agency_id']
 check(sensitive.every((c) => !columns.includes(c)), 'no identifying or commercial column is published')
+check(columns.includes('photo_path') && columns.includes('cv_path'), 'the photograph and the CV are, so the site has something to show')
 
 await db.exec(`begin; set local role anon;`)
 const published = (await db.query('select english_name, age from public.published_workers')).rows

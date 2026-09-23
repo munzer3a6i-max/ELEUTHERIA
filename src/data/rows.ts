@@ -316,9 +316,9 @@ export const applicantRows = {
     telephone: a.telephone,
     status: a.status,
     photo_path: a.photoPath,
-    // Already names rather than paths; they become paths the day CVs and
-    // passport copies are uploaded too.
-    cv_path: a.cvFileName,
+    cv_path: a.cvPath,
+    cv_file_name: a.cvFileName,
+    // Still a name rather than a path, until passport copies are uploaded too.
     passport_copy_path: a.passportCopyFileName,
     published_to_website: a.cvLinkedToWebsite,
     agency_id: a.recruitmentAgencyId,
@@ -343,7 +343,8 @@ export const applicantRows = {
     status: r.status as Applicant['status'],
     photoDataUrl: null,
     photoPath: (r.photo_path as string | null) ?? null,
-    cvFileName: (r.cv_path as string | null) ?? null,
+    cvPath: (r.cv_path as string | null) ?? null,
+    cvFileName: (r.cv_file_name as string | null) ?? null,
     passportCopyFileName: (r.passport_copy_path as string | null) ?? null,
     cvLinkedToWebsite: Boolean(r.published_to_website),
     experience: [],

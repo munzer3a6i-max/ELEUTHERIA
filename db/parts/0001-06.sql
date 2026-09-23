@@ -1,6 +1,39 @@
 -- 0001_schema.sql, piece 6 of 7.
 -- Run the pieces in order, each on its own. Running one twice is safe.
 
+-- Half an agent's fee at selection, the other half at deployment.
+create table if not exists ops.agent_commissions (
+  id                uuid primary key default gen_random_uuid(),
+  agent_id          uuid not null references ops.agents (id) on delete cascade,
+  applicant_id      uuid not null references ops.applicants (id) on delete cascade,
+  request_id        uuid not null references ops.requests (id) on delete cascade,
+  milestone         text not null check (milestone in ('Selected', 'Deployed')),
+  amount            numeric(12,2) not null check (amount >= 0),
+  earned_on         date not null,
+  status            text not null default 'Pending' check (status in ('Pending', 'Paid')),
+  paid_on           date,
+  payment_source_id uuid references ops.payment_sources (id) on delete set null,
+  created_at        timestamptz not null default now(),
+  updated_at        timestamptz not null default now(),
+  unique (request_id, milestone)
+);
+
+-- A worker who pulled out. Inside the guarantee window the company brings her
+-- home at its own expense, which is what backout_costs records.
+create table if not exists ops.backouts (
+  id            uuid primary key default gen_random_uuid(),
+  request_id    uuid not null references ops.requests (id) on delete cascade unique,
+  applicant_id  uuid not null references ops.applicants (id) on delete cascade,
+  deployed_on   date,
+  returned_on   date not null,
+  reason        text not null default '',
+  liability     text not null default 'Company'
+                  check (liability in ('Company', 'Employer', 'Agency')),
+  notes         text not null default '',
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+
 create table if not exists ops.backout_costs (
   id                uuid primary key default gen_random_uuid(),
   backout_id        uuid not null references ops.backouts (id) on delete cascade,
@@ -50,39 +83,3 @@ create index if not exists ops_applicant_documents_applicant_id_idx on ops.appli
 create index if not exists ops_applicant_notes_applicant_id_idx on ops.applicant_notes (applicant_id);
 
 create index if not exists ops_requests_applicant_id_idx on ops.requests (applicant_id);
-
-create index if not exists ops_requests_employer_id_idx on ops.requests (employer_id);
-
-create index if not exists ops_requests_agency_id_idx on ops.requests (agency_id);
-
-create index if not exists ops_request_status_history_request_id_occurred_on_idx on ops.request_status_history (request_id, occurred_on);
-
-create index if not exists ops_invoices_employer_id_idx on ops.invoices (employer_id);
-
-create index if not exists ops_invoices_agency_id_idx on ops.invoices (agency_id);
-
-create index if not exists ops_invoice_payments_invoice_id_idx on ops.invoice_payments (invoice_id);
-
-create index if not exists ops_payroll_entries_period_idx on ops.payroll_entries (period);
-
-create index if not exists ops_office_expenses_spent_on_idx on ops.office_expenses (spent_on);
-
-create index if not exists ops_agency_contracts_agency_id_idx on ops.agency_contracts (agency_id);
-
-create index if not exists ops_agency_charges_agency_id_status_idx on ops.agency_charges (agency_id, status);
-
-create index if not exists ops_agent_commissions_agent_id_status_idx on ops.agent_commissions (agent_id, status);
-
-create index if not exists ops_backout_costs_backout_id_idx on ops.backout_costs (backout_id);
-
-create index if not exists ops_notifications_staff_id_read_at_idx on ops.notifications (staff_id, read_at);
-
--- ------------------------------------------------------------- triggers ---
-
-drop trigger if exists staff_updated on ops.staff;
-
-create trigger staff_updated before update on ops.staff for each row execute function ops.set_updated_at();
-
-drop trigger if exists agencies_updated on ops.agencies;
-
-create trigger agencies_updated before update on ops.agencies for each row execute function ops.set_updated_at();

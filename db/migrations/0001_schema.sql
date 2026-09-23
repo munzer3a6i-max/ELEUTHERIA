@@ -168,6 +168,8 @@ create table if not exists ops.applicants (
                            check (status in ('Available', 'Unavailable', 'Selected', 'Deployed', 'Back Out')),
   photo_path             text,
   cv_path                text,
+  -- The name the office uploaded, beside the uuid the file is stored under.
+  cv_file_name           text,
   passport_copy_path     text,
   -- The switch that decides whether this worker appears on the public site.
   published_to_website   boolean not null default false,

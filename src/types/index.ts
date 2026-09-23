@@ -115,7 +115,10 @@ export interface Applicant {
   photoDataUrl: string | null
   /** Where her photograph is in Storage, once there is somewhere to keep it. */
   photoPath: string | null
+  /** The name of the document the office uploaded, for the office to read. */
   cvFileName: string | null
+  /** Where her CV is in Storage, once there is somewhere to keep it. */
+  cvPath: string | null
   passportCopyFileName: string | null
   cvLinkedToWebsite: boolean
   experience: ExperienceEntry[]

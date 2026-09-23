@@ -25,6 +25,8 @@ export interface Worker {
   experience_years: number
   /** Key inside the published-photos bucket, or null when she has no photo. */
   photo_path: string | null
+  /** Key inside the published-cvs bucket, or null when no CV is published. */
+  cv_path: string | null
   updated_at: string
 }
 
@@ -47,6 +49,18 @@ export interface WorkerFilter {
 export function photoUrl(worker: Pick<Worker, 'photo_path'>): string | null {
   if (!worker.photo_path) return null
   return `${SUPABASE_URL}/storage/v1/object/public/published-photos/${worker.photo_path}`
+}
+
+/**
+ * The address of a published CV, or null when there is none.
+ *
+ * Same arrangement as the photograph: the bucket is public, so this is an
+ * ordinary link a visitor can open, and unpublishing the worker deletes the
+ * file behind it.
+ */
+export function cvUrl(worker: Pick<Worker, 'cv_path'>): string | null {
+  if (!worker.cv_path) return null
+  return `${SUPABASE_URL}/storage/v1/object/public/published-cvs/${worker.cv_path}`
 }
 
 function query(filter: WorkerFilter): string {

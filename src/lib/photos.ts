@@ -15,7 +15,6 @@ import {
   removeWorkerPhoto,
   signedPhotoUrl,
   storageAvailable,
-  unpublishPhoto,
   uploadWorkerPhoto,
 } from './storage'
 import type { Applicant } from '../types'
@@ -69,16 +68,4 @@ export async function setWorkerPhoto(applicant: Applicant, file: File): Promise<
   update(applicant.id, { photoPath: path, photoDataUrl: null })
   if (applicant.cvLinkedToWebsite) await publishPhoto(path)
   if (previous && previous !== path) await removeWorkerPhoto(previous)
-}
-
-/**
- * Puts a worker on the website, or takes her off it. The row is what the site
- * reads; her photograph has to follow it into the public bucket, or she
- * appears there without a face.
- */
-export async function setPublished(applicant: Applicant, published: boolean): Promise<void> {
-  useAppStore.getState().updateApplicant(applicant.id, { cvLinkedToWebsite: published })
-  if (!storageAvailable() || !applicant.photoPath) return
-  if (published) await publishPhoto(applicant.photoPath)
-  else await unpublishPhoto(applicant.photoPath)
 }

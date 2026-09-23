@@ -282,7 +282,7 @@ export interface AppState {
   setTheme: (theme: Theme) => void
   updateSettings: (patch: Partial<Omit<AppSettings, 'language' | 'theme'>>) => void
 
-  addApplicant: (data: Omit<Applicant, 'id' | 'createdOn' | 'updatedOn' | 'updatedBy' | 'status' | 'experience' | 'education' | 'documents' | 'notes' | 'photoDataUrl' | 'photoPath' | 'cvFileName' | 'passportCopyFileName' | 'cvLinkedToWebsite'>) => string
+  addApplicant: (data: Omit<Applicant, 'id' | 'createdOn' | 'updatedOn' | 'updatedBy' | 'status' | 'experience' | 'education' | 'documents' | 'notes' | 'photoDataUrl' | 'photoPath' | 'cvFileName' | 'cvPath' | 'passportCopyFileName' | 'cvLinkedToWebsite'>) => string
   updateApplicant: (id: string, patch: Partial<Applicant>) => void
   /**
    * Moving a worker to Back Out writes the stage on her request, which is what
@@ -435,6 +435,7 @@ export const useAppStore = create<AppState>()(
           photoDataUrl: null,
           photoPath: null,
           cvFileName: null,
+          cvPath: null,
           passportCopyFileName: null,
           cvLinkedToWebsite: false,
           experience: [],
@@ -945,6 +946,7 @@ export const useAppStore = create<AppState>()(
             ...a,
             agentId: a.agentId ?? null,
             photoPath: a.photoPath ?? null,
+            cvPath: a.cvPath ?? null,
           }))
         }
       },

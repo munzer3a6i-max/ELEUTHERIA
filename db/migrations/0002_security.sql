@@ -213,6 +213,7 @@ create or replace view public.published_workers as
     a.type,
     a.experience_years,
     a.photo_path,
+    a.cv_path,
     a.updated_at
   from ops.applicants a
   where a.published_to_website

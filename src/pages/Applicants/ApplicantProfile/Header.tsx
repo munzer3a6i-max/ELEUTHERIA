@@ -3,7 +3,8 @@ import { Camera, Globe, MoreHorizontal, User } from 'lucide-react'
 import { useAppStore, currentStatus, requestCost, invoiceTotalPaid, formatMoney } from '../../../store/useAppStore'
 import { useTranslation } from '../../../i18n/useTranslation'
 import { useCurrentUser } from '../../../lib/useCurrentUser'
-import { setPublished, setWorkerPhoto, usePhotoUrl } from '../../../lib/photos'
+import { setWorkerPhoto, usePhotoUrl } from '../../../lib/photos'
+import { setPublished } from '../../../lib/publish'
 import type { Applicant, ApplicantStatus, RecruitmentRequest, Invoice } from '../../../types'
 
 function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {

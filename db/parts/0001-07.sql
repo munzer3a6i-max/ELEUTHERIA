@@ -1,6 +1,42 @@
 -- 0001_schema.sql, piece 7 of 7.
 -- Run the pieces in order, each on its own. Running one twice is safe.
 
+create index if not exists ops_requests_employer_id_idx on ops.requests (employer_id);
+
+create index if not exists ops_requests_agency_id_idx on ops.requests (agency_id);
+
+create index if not exists ops_request_status_history_request_id_occurred_on_idx on ops.request_status_history (request_id, occurred_on);
+
+create index if not exists ops_invoices_employer_id_idx on ops.invoices (employer_id);
+
+create index if not exists ops_invoices_agency_id_idx on ops.invoices (agency_id);
+
+create index if not exists ops_invoice_payments_invoice_id_idx on ops.invoice_payments (invoice_id);
+
+create index if not exists ops_payroll_entries_period_idx on ops.payroll_entries (period);
+
+create index if not exists ops_office_expenses_spent_on_idx on ops.office_expenses (spent_on);
+
+create index if not exists ops_agency_contracts_agency_id_idx on ops.agency_contracts (agency_id);
+
+create index if not exists ops_agency_charges_agency_id_status_idx on ops.agency_charges (agency_id, status);
+
+create index if not exists ops_agent_commissions_agent_id_status_idx on ops.agent_commissions (agent_id, status);
+
+create index if not exists ops_backout_costs_backout_id_idx on ops.backout_costs (backout_id);
+
+create index if not exists ops_notifications_staff_id_read_at_idx on ops.notifications (staff_id, read_at);
+
+-- ------------------------------------------------------------- triggers ---
+
+drop trigger if exists staff_updated on ops.staff;
+
+create trigger staff_updated before update on ops.staff for each row execute function ops.set_updated_at();
+
+drop trigger if exists agencies_updated on ops.agencies;
+
+create trigger agencies_updated before update on ops.agencies for each row execute function ops.set_updated_at();
+
 drop trigger if exists agents_updated on ops.agents;
 
 create trigger agents_updated before update on ops.agents for each row execute function ops.set_updated_at();
