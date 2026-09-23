@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
-import { Plus, Search, Trash2, User } from 'lucide-react'
+import { Globe, Plus, Search, Trash2, User } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
 import { useCurrentUser } from '../../lib/useCurrentUser'
 import PageHeader from '../../components/PageHeader'
 import StatusBadge from '../../components/StatusBadge'
+import WorkerPhoto from '../../components/WorkerPhoto'
 import Modal from '../../components/Modal'
 import { BilingualField, Field, TextInput, SelectInput, PrimaryButton, SecondaryButton } from '../../components/form'
 import type { ApplicantStatus, RequestType, Gender } from '../../types'
@@ -29,6 +30,7 @@ export default function ApplicantsList() {
   const [statusFilter, setStatusFilter] = useState<ApplicantStatus | 'All'>('All')
   const [typeFilter, setTypeFilter] = useState<RequestType | 'All'>('All')
   const [addOpen, setAddOpen] = useState(false)
+  const [websiteOnly, setWebsiteOnly] = useState(false)
 
   const filtered = useMemo(() => {
     return applicants.filter((a) => {
@@ -39,9 +41,10 @@ export default function ApplicantsList() {
         a.passportNo.toLowerCase().includes(query.toLowerCase())
       const matchesStatus = statusFilter === 'All' || a.status === statusFilter
       const matchesType = typeFilter === 'All' || a.type === typeFilter
-      return matchesQuery && matchesStatus && matchesType
+      const matchesSite = !websiteOnly || a.cvLinkedToWebsite
+      return matchesQuery && matchesStatus && matchesType && matchesSite
     })
-  }, [applicants, query, statusFilter, typeFilter])
+  }, [applicants, query, statusFilter, typeFilter, websiteOnly])
 
   function handleDelete(id: string, name: string) {
     if (window.confirm(`${t('action_delete')} ${name}?`)) deleteApplicant(id)
@@ -86,6 +89,16 @@ export default function ApplicantsList() {
             </button>
           ))}
         </div>
+        <button
+          type="button"
+          onClick={() => setWebsiteOnly((on) => !on)}
+          className={`flex items-center gap-1.5 rounded-control px-2.5 py-1.5 text-[11px] ${
+            websiteOnly ? 'bg-info-soft text-info' : 'text-ink-2 hover:bg-raised'
+          }`}
+        >
+          <Globe className="size-3.5" />
+          {language === 'ar' ? 'على الموقع' : 'On the website'}
+        </button>
         <div className="flex flex-wrap items-center gap-1">
           {STATUS_FILTERS.map((s) => (
             <button
@@ -122,11 +135,7 @@ export default function ApplicantsList() {
                   <td className="px-4 py-3">
                     <Link to={`/applicants/${a.id}`} className="flex items-center gap-2.5">
                       <span className="flex size-8 items-center justify-center overflow-hidden rounded-pill bg-raised">
-                        {a.photoDataUrl ? (
-                          <img src={a.photoDataUrl} alt="" className="size-full object-cover" />
-                        ) : (
-                          <User className="size-4 text-ink-3" />
-                        )}
+                        <WorkerPhoto applicant={a} fallback={<User className="size-4 text-ink-3" />} />
                       </span>
                       <span className="font-medium text-ink hover:text-accent-text">
                         {language === 'ar' ? a.arabicName || a.englishName : a.englishName}
@@ -139,7 +148,17 @@ export default function ApplicantsList() {
                   </td>
                   <td className="px-4 py-3 text-ink-2">{agency ? tb({ en: agency.englishName, ar: agency.arabicName }) : '-'}</td>
                   <td className="px-4 py-3">
-                    <StatusBadge status={a.status} />
+                    <span className="flex items-center gap-1.5">
+                      <StatusBadge status={a.status} />
+                      {a.cvLinkedToWebsite && (
+                        <span
+                          title={language === 'ar' ? 'منشورة على الموقع' : 'On the website'}
+                          className="flex size-4 items-center justify-center rounded-pill bg-info-soft text-info"
+                        >
+                          <Globe className="size-2.5" />
+                        </span>
+                      )}
+                    </span>
                   </td>
                   <td className="sticky end-0 bg-surface px-4 py-3 text-end">
                     <button

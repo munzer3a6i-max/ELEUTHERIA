@@ -315,10 +315,9 @@ export const applicantRows = {
     phone: a.phone,
     telephone: a.telephone,
     status: a.status,
-    // The photograph itself is a data URL until Storage is wired up, and a
-    // megabyte of base64 does not belong in a text column, so photo_path stays
-    // empty until there is a real file to point at. These two are already
-    // names, and become paths the same day.
+    photo_path: a.photoPath,
+    // Already names rather than paths; they become paths the day CVs and
+    // passport copies are uploaded too.
     cv_path: a.cvFileName,
     passport_copy_path: a.passportCopyFileName,
     published_to_website: a.cvLinkedToWebsite,
@@ -343,6 +342,7 @@ export const applicantRows = {
     telephone: text(r.telephone),
     status: r.status as Applicant['status'],
     photoDataUrl: null,
+    photoPath: (r.photo_path as string | null) ?? null,
     cvFileName: (r.cv_path as string | null) ?? null,
     passportCopyFileName: (r.passport_copy_path as string | null) ?? null,
     cvLinkedToWebsite: Boolean(r.published_to_website),

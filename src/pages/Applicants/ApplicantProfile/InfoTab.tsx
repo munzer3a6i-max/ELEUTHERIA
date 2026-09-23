@@ -85,15 +85,12 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
               <FileText className="size-4 text-ink-3" />
               {applicant.cvFileName ?? (language === 'ar' ? 'لم يتم رفع سيرة ذاتية' : 'No CV uploaded')}
             </span>
-            <label className="flex items-center gap-2 text-[11px] text-ink-2">
-              <input
-                type="checkbox"
-                checked={applicant.cvLinkedToWebsite}
-                onChange={(e) => updateApplicant(applicant.id, { cvLinkedToWebsite: e.target.checked })}
-              />
+            <span className="flex items-center gap-1.5 text-[11px] text-ink-3">
               <Globe className="size-3.5" />
-              {language === 'ar' ? 'نشر على الموقع الإلكتروني' : 'Published to website'}
-            </label>
+              {applicant.cvLinkedToWebsite
+                ? language === 'ar' ? 'منشورة على الموقع' : 'On the website'
+                : language === 'ar' ? 'غير منشورة على الموقع' : 'Not on the website'}
+            </span>
           </div>
         </div>
 

@@ -271,11 +271,27 @@ adding a sensitive column to `ops.applicants` later cannot silently publish it.
 
 A worker appears on the site when `published_to_website` is true **and** her
 status is `Available`, so someone who has been placed drops off the site by
-herself. In the app that switch is the `cvLinkedToWebsite` field.
+herself. In the dashboard that is the switch beside her status, marked **On the
+website**, and the applicants list can be filtered by it.
 
-Photographs are private objects in Storage, so the site should ask its own
-server for a signed URL rather than linking the bucket. A public bucket would
-publish every worker's photograph, including the ones nobody chose to publish.
+### Photographs
+
+Two buckets, and the difference between them is the point.
+`worker-photos` is private and holds every applicant's photograph, which is
+right for a file about somebody nobody has published. Publishing a worker
+copies hers into `published-photos`, which anyone may read; unpublishing
+removes it again. So what a stranger can fetch is exactly what somebody chose
+to put on the website.
+
+The object keeps the same key in both, so `photo_path` from the view is all the
+site needs:
+
+```
+https://<project>.supabase.co/storage/v1/object/public/published-photos/<photo_path>
+```
+
+`photo_path` is null for a worker whose photograph was never uploaded, so the
+site needs a placeholder for that case.
 
 ## What is still to build
 

@@ -111,7 +111,10 @@ export interface Applicant {
   phone: string
   telephone: string
   status: ApplicantStatus
+  /** Held in the browser before a database exists; replaced by photoPath after. */
   photoDataUrl: string | null
+  /** Where her photograph is in Storage, once there is somewhere to keep it. */
+  photoPath: string | null
   cvFileName: string | null
   passportCopyFileName: string | null
   cvLinkedToWebsite: boolean

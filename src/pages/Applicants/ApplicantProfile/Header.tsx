@@ -1,8 +1,9 @@
 import { useRef } from 'react'
-import { Camera, MoreHorizontal, User } from 'lucide-react'
+import { Camera, Globe, MoreHorizontal, User } from 'lucide-react'
 import { useAppStore, currentStatus, requestCost, invoiceTotalPaid, formatMoney } from '../../../store/useAppStore'
 import { useTranslation } from '../../../i18n/useTranslation'
 import { useCurrentUser } from '../../../lib/useCurrentUser'
+import { setPublished, setWorkerPhoto, usePhotoUrl } from '../../../lib/photos'
 import type { Applicant, ApplicantStatus, RecruitmentRequest, Invoice } from '../../../types'
 
 function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -67,12 +68,12 @@ export default function Header({
   activeRequest: RecruitmentRequest | null
   invoice: Invoice | null
 }) {
-  const updateApplicant = useAppStore((s) => s.updateApplicant)
   const setApplicantStatus = useAppStore((s) => s.setApplicantStatus)
   const employers = useAppStore((s) => s.employers)
   const { language } = useTranslation()
   const { canEdit } = useCurrentUser()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const photo = usePhotoUrl(applicant)
 
   const employer = activeRequest ? employers.find((e) => e.id === activeRequest.employerId) : undefined
   const age = ageFromDob(applicant.dob)
@@ -95,11 +96,14 @@ export default function Header({
 
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => updateApplicant(applicant.id, { photoDataUrl: reader.result as string })
-    reader.readAsDataURL(file)
     e.target.value = ''
+    if (!file) return
+    setWorkerPhoto(applicant, file).catch((problem: Error) => window.alert(problem.message))
+  }
+
+  function handlePublish(published: boolean) {
+    // The row is what the website reads; her photograph has to follow it.
+    setPublished(applicant, published).catch((problem: Error) => window.alert(problem.message))
   }
 
   return (
@@ -108,8 +112,8 @@ export default function Header({
         <div className="flex flex-col items-center">
           <div className="flex size-24 items-center justify-center overflow-hidden rounded-pill border-2 border-accent-line bg-raised p-1 shadow-md">
             <div className="flex size-full items-center justify-center overflow-hidden rounded-pill bg-raised">
-              {applicant.photoDataUrl ? (
-                <img src={applicant.photoDataUrl} alt={applicant.englishName} className="size-full object-cover" />
+              {photo ? (
+                <img src={photo} alt={applicant.englishName} className="size-full object-cover" />
               ) : (
                 <User className="size-10 text-ink-3" />
               )}
@@ -144,6 +148,27 @@ export default function Header({
                 </option>
               ))}
             </select>
+
+            {/* The one switch that decides whether the public sees her. */}
+            <label
+              className={`flex cursor-pointer items-center gap-1.5 rounded-control border px-2 py-0.5 text-[10px] font-bold ${
+                applicant.cvLinkedToWebsite
+                  ? 'border-info/40 bg-info-soft text-info'
+                  : 'border-line-strong bg-raised text-ink-3'
+              } ${canEdit('operations') ? '' : 'pointer-events-none opacity-60'}`}
+            >
+              <input
+                type="checkbox"
+                className="sr-only"
+                checked={applicant.cvLinkedToWebsite}
+                disabled={!canEdit('operations')}
+                onChange={(e) => handlePublish(e.target.checked)}
+              />
+              <Globe className="size-3" />
+              {applicant.cvLinkedToWebsite
+                ? language === 'ar' ? 'على الموقع' : 'On the website'
+                : language === 'ar' ? 'غير منشورة' : 'Not on the website'}
+            </label>
           </div>
           <div className="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
             <MetaRow
