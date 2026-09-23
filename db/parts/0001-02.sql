@@ -1,5 +1,5 @@
--- Eleutheria schema, part 2 of 11.
--- Run the parts in order, each one on its own. Running one twice is safe.
+-- 0001_schema.sql, piece 2 of 7.
+-- Run the pieces in order, each on its own. Running one twice is safe.
 
 -- The partner office abroad that a domestic worker comes through.
 create table if not exists ops.agencies (

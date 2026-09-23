@@ -1,5 +1,5 @@
--- Eleutheria schema, part 3 of 11.
--- Run the parts in order, each one on its own. Running one twice is safe.
+-- 0001_schema.sql, piece 3 of 7.
+-- Run the pieces in order, each on its own. Running one twice is safe.
 
 -- Passport and identity numbers live here and are never exposed publicly.
 -- See the published_workers view in 0002_security.sql.

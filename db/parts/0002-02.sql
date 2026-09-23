@@ -1,35 +1,5 @@
--- Eleutheria schema, part 8 of 11.
--- Run the parts in order, each one on its own. Running one twice is safe.
-
--- Working the caseload: data entry's job, and the administrator's. An
--- accountant reads it -- the money makes no sense without it -- but does not
--- change it.
-create or replace function ops.can_write_operations() returns boolean
-language sql stable as $$ select ops.current_role() in ('admin', 'data_entry') $$;
-
--- --------------------------------------------------------------- grants ---
-
--- PostgREST reaches the schema through these roles; RLS below decides the
--- rest. `anon` is given nothing here on purpose: the website's key can see the
--- published_workers view at the bottom of this file and not one row more.
-grant usage on schema ops to authenticated;
-
-grant select, insert, update, delete on all tables in schema ops to authenticated;
-
-alter default privileges in schema ops grant select, insert, update, delete on tables to authenticated;
-
--- --------------------------------------------------------- lock it all ----
-
-do $$
-declare t text;
-begin
-  for t in select tablename from pg_tables where schemaname = 'ops'
-  loop
-    execute format('alter table ops.%I enable row level security', t);
-    execute format('alter table ops.%I force row level security', t);
-  end loop;
-end
-$$;
+-- 0002_security.sql, piece 2 of 4.
+-- Run the pieces in order, each on its own. Running one twice is safe.
 
 -- ---------------------------------------------------------- the policies --
 
@@ -74,3 +44,36 @@ begin
   end loop;
 end
 $$;
+
+-- The money. Data entry cannot even read these, which is what the finance
+-- pages being absent from their sidebar has meant all along.
+do $$
+declare t text;
+begin
+  foreach t in array array[
+    'invoices', 'invoice_payments', 'payroll_entries', 'office_expenses',
+    'agency_contracts', 'agency_charges', 'agent_commissions',
+    'backouts', 'backout_costs'
+  ]
+  loop
+    execute format('drop policy if exists read_finance on ops.%I', t);
+    execute format('drop policy if exists write_finance on ops.%I', t);
+    execute format('drop policy if exists update_finance on ops.%I', t);
+    execute format('drop policy if exists delete_finance on ops.%I', t);
+    execute format('create policy read_finance on ops.%I for select to authenticated using (ops.can_read_finance())', t);
+    execute format('create policy write_finance on ops.%I for insert to authenticated with check (ops.can_write_finance())', t);
+    execute format('create policy update_finance on ops.%I for update to authenticated using (ops.can_write_finance()) with check (ops.can_write_finance())', t);
+    execute format('create policy delete_finance on ops.%I for delete to authenticated using (ops.can_write_finance())', t);
+  end loop;
+end
+$$;
+
+-- Payroll is what colleagues earn, so it is the administrator's alone --
+-- narrower than the rest of finance, and deliberately so.
+drop policy if exists read_finance   on ops.payroll_entries;
+
+drop policy if exists write_finance  on ops.payroll_entries;
+
+drop policy if exists update_finance on ops.payroll_entries;
+
+drop policy if exists delete_finance on ops.payroll_entries;

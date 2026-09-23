@@ -1,5 +1,5 @@
--- Eleutheria schema, part 4 of 11.
--- Run the parts in order, each one on its own. Running one twice is safe.
+-- 0001_schema.sql, piece 4 of 7.
+-- Run the pieces in order, each on its own. Running one twice is safe.
 
 -- The stage log. Reaching a stage is what creates an agent's commission, a
 -- partner office's charge and a backout, so this table is the origin of most

@@ -32,7 +32,9 @@ node scripts/apply-migrations.mjs
 ```
 
 That writes two things: `db/bundle.sql`, the whole schema in one file, and
-`db/parts/01..11.sql`, the same SQL cut into pieces of about 4 KB.
+`db/parts/`, the same SQL cut into pieces of about 4 KB. Each piece is named
+after the migration it came from — `0001-01.sql`, `0004-02.sql` — so adding a
+migration later does not renumber the ones already run.
 
 **Use the parts.** Paste them into the **SQL Editor** one at a time, in order.
 A long paste into a web editor can be cut off silently, and what you get is a
@@ -128,6 +130,31 @@ Attachments are the exception. Their bytes live in the browser as data URLs and
 Storage is not reachable over a database connection, so each one is written to
 `db/exported-files/` and its row keeps the name, type and size with no path.
 Upload those to the `bills` bucket and set `attachment_path` when you do.
+
+## Where the money rules live
+
+`0004_derived_billing.sql` puts them in the database. An agent's two halves, a
+partner office's two halves and a backout all follow from the stage log, and a
+trigger derives them there rather than in the browser.
+
+That moved for a reason that only appears once the roles are real: data entry
+may log a stage but may not read finance, so a browser that cannot see a
+commission cannot maintain one either. Deriving it in the database means it
+happens whoever logs the stage, and there is one copy of the rule instead of
+one per client.
+
+The two things it never does are the two the application never did: it does
+not change or remove a row whose money has already moved, and it does not
+invent a row for a stage that has not happened.
+`scripts/test-billing.mjs` checks both, along with the guarantee window, an
+office overriding who carries a backout, and a rebuild changing nothing that
+was already right.
+
+After an import, or any time you want the books checked against the history:
+
+```sql
+select ops.rebuild_derived_billing();
+```
 
 ## Who can read and what
 

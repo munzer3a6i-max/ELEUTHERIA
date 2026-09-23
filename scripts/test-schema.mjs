@@ -31,7 +31,7 @@ await db.exec(`
   end $$;
 `)
 
-for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql']) {
+for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql']) {
   try {
     await db.exec(readFileSync(file, 'utf8'))
     console.log(`applied  ${file}`)
@@ -55,7 +55,7 @@ const shape = async () => JSON.stringify((await db.query(`
 const before = await shape()
 let rerunError = null
 try {
-  for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql']) {
+  for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql']) {
     await db.exec(readFileSync(file, 'utf8'))
   }
 } catch (error) {

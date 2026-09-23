@@ -107,26 +107,31 @@ if (!apply || !url) {
   // is safe to run twice, so a part that half-arrived can simply be run again.
   rmSync('db/parts', { recursive: true, force: true })
   mkdirSync('db/parts', { recursive: true })
-  // Storage is kept whole and last: it is small, it is the only part that
-  // touches Supabase's own schema, and that is also the only part a plain
-  // Postgres cannot run, which keeps the test suite honest about the rest.
-  const storage = files.filter((f) => f.includes('storage'))
-  const core = files.filter((f) => !f.includes('storage'))
-  const parts = [
-    ...toParts(core.map((f) => readFileSync(`db/migrations/${f}`, 'utf8')).join('\n\n')),
-    ...storage.map((f) => readFileSync(`db/migrations/${f}`, 'utf8').trim()),
-  ]
-  parts.forEach((body, index) => {
-    const n = String(index + 1).padStart(2, '0')
-    const header = [
-      `-- Eleutheria schema, part ${index + 1} of ${parts.length}.`,
-      '-- Run the parts in order, each one on its own. Running one twice is safe.',
-      '',
-      '',
-    ].join('\n')
-    writeFileSync(`db/parts/${n}.sql`, header + body + '\n')
-  })
-  console.log(`Split into db/parts/01..${String(parts.length).padStart(2, '0')}.sql (largest ${Math.max(...parts.map((p) => p.length))} bytes).\n`)
+  // Each migration is split on its own, and the pieces are named after it.
+  // That way adding a migration later does not renumber the ones already run:
+  // "run the 0004 parts" stays a sentence somebody can act on.
+  //
+  // Storage is the exception and is kept whole: it is small, and it is the
+  // only file that touches Supabase's own schema, which is also the only part
+  // a plain Postgres cannot run.
+  let written = 0
+  for (const file of files) {
+    const stem = file.replace(/\.sql$/, '').replace(/_.*/, '')
+    const sql = readFileSync(`db/migrations/${file}`, 'utf8')
+    const pieces = file.includes('storage') ? [sql.trim()] : toParts(sql)
+    pieces.forEach((body, index) => {
+      const name = `${stem}-${String(index + 1).padStart(2, '0')}.sql`
+      const header = [
+        `-- ${file}, piece ${index + 1} of ${pieces.length}.`,
+        '-- Run the pieces in order, each on its own. Running one twice is safe.',
+        '',
+        '',
+      ].join('\n')
+      writeFileSync(`db/parts/${name}`, header + body + '\n')
+      written += 1
+    })
+  }
+  console.log(`Split into ${written} files in db/parts/, named after the migration each came from.\n`)
 
   console.log('Next: open Supabase, your project, SQL Editor, paste the file, run it.')
   console.log('Then: Project Settings, API, Exposed schemas — add `ops` beside `public`.\n')

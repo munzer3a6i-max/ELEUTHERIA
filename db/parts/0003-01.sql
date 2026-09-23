@@ -1,5 +1,5 @@
--- Eleutheria schema, part 11 of 11.
--- Run the parts in order, each one on its own. Running one twice is safe.
+-- 0003_storage.sql, piece 1 of 1.
+-- Run the pieces in order, each on its own. Running one twice is safe.
 
 -- File storage.
 --
