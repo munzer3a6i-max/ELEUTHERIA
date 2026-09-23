@@ -28,6 +28,8 @@ export type AccountOutcome =
   | 'email-taken'
   /** The project has new sign-ups switched off, so nothing can be created. */
   | 'signups-disabled'
+  /** Supabase's own mail service sends only a few messages an hour. */
+  | 'rate-limited'
   | 'invalid-email'
   | 'weak-password'
   | 'unreachable'
@@ -60,15 +62,41 @@ export async function createAccount(email: string, password: string): Promise<Ac
   })
 
   if (error) {
+    // Supabase names its refusals, and the name is what to go on: half of them
+    // mention the word "email" in passing, and reading that as "the address is
+    // wrong" sends somebody off correcting an address that was never the
+    // problem. The message is matched only where an older project sends no
+    // code, and is carried through either way so the server's own words are on
+    // the screen rather than a guess at them.
+    const code = (error as { code?: string }).code ?? ''
     const said = error.message
-    if (/already registered|already exists|user_repeated/i.test(said)) {
+
+    if (code === 'user_already_exists' || /already registered|already exists/i.test(said)) {
       return { outcome: 'email-taken', userId: null }
     }
-    if (/signup|sign-up|sign up/i.test(said) && /disabled|not allowed/i.test(said)) {
+    if (
+      code === 'signup_disabled' ||
+      code === 'email_provider_disabled' ||
+      (/sign ?-?ups?/i.test(said) && /disabled|not allowed/i.test(said))
+    ) {
       return { outcome: 'signups-disabled', userId: null, detail: said }
     }
-    if (/password/i.test(said)) return { outcome: 'weak-password', userId: null, detail: said }
-    if (/email/i.test(said)) return { outcome: 'invalid-email', userId: null, detail: said }
+    // The one that catches people out: the built-in mail service sends only a
+    // handful of messages an hour, and adding a few colleagues in one sitting
+    // reaches that before anything else goes wrong.
+    if (code === 'over_email_send_rate_limit' || /rate limit/i.test(said)) {
+      return { outcome: 'rate-limited', userId: null, detail: said }
+    }
+    if (code === 'weak_password' || /password/i.test(said)) {
+      return { outcome: 'weak-password', userId: null, detail: said }
+    }
+    if (
+      code === 'email_address_invalid' ||
+      code === 'validation_failed' ||
+      /invalid[^.]*email|email[^.]*invalid/i.test(said)
+    ) {
+      return { outcome: 'invalid-email', userId: null, detail: said }
+    }
     return { outcome: 'unreachable', userId: null, detail: said }
   }
 

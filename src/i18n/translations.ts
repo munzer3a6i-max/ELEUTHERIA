@@ -337,7 +337,14 @@ export const translations = {
   },
   users_email_required: { en: 'An email address is needed: it is what they sign in with.', ar: 'البريد الإلكتروني مطلوب لأنه وسيلة الدخول.' },
   users_email_taken: { en: 'That email address already has an account.', ar: 'هذا البريد الإلكتروني له حساب بالفعل.' },
-  users_email_invalid: { en: 'That does not look like an email address Supabase will accept.', ar: 'لا يبدو هذا بريدًا إلكترونيًا مقبولًا.' },
+  users_email_invalid: {
+    en: 'Supabase would not accept that address. It checks the domain is a real one, so made-up addresses like name@example.com are refused.',
+    ar: 'لم تقبل Supabase هذا العنوان. فهي تتحقق من أن النطاق حقيقي، لذا تُرفض العناوين الوهمية مثل name@example.com.',
+  },
+  users_rate_limited: {
+    en: 'Supabase sent too many emails in the past hour — its built-in mail service allows only a few. Wait an hour, or turn off Confirm email under Authentication, Providers, Email, or set up your own SMTP. The account was not created.',
+    ar: 'أرسلت Supabase رسائل كثيرة خلال الساعة الماضية — خدمة البريد المدمجة تسمح بعدد قليل فقط. انتظر ساعة، أو أوقف «Confirm email» من Authentication ثم Providers ثم Email، أو اضبط خادم SMTP خاصًا بك. لم يُنشأ الحساب.',
+  },
   users_password_weak: { en: 'Supabase refused that password as too weak. Try a longer one.', ar: 'رفضت Supabase كلمة المرور لضعفها. جرّب كلمة أطول.' },
   users_unreachable: { en: 'The account could not be created — the database could not be reached.', ar: 'تعذر إنشاء الحساب — لم يمكن الوصول إلى قاعدة البيانات.' },
   users_needs_confirmation: {

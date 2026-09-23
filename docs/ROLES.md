@@ -86,6 +86,14 @@ Two consequences worth knowing:
   cannot sign in until they open the link they are sent. The dashboard says so
   when it happens. For an office where the administrator sets passwords
   anyway, turning that setting off is reasonable.
+- **Supabase checks the address is a real one.** A made-up domain —
+  `name@example.com`, `someone@test.com` — is refused outright, however
+  well-formed it looks.
+- **Its built-in mail service sends only a handful of messages an hour**, so
+  adding several colleagues in one sitting hits that limit and nothing can be
+  created until it clears. Turning off Confirm email removes the emails from
+  the picture altogether; the alternative is configuring your own SMTP under
+  Authentication, Emails.
 - **Where that link lands** is a Supabase setting, not ours. The dashboard asks
   for it to come back to whatever address it is being used from, but Supabase
   checks that against Authentication, URL Configuration, and falls back to the

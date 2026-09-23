@@ -342,13 +342,15 @@ function UserModal({
 
     if (connected) {
       const account = await createAccount(email, password)
+      // Anything Supabase refused is shown with its own words after ours: the
+      // explanation is worth more when the thing it explains is next to it.
+      const said = account.detail ? ` (${account.detail})` : ''
       if (account.outcome === 'email-taken') return refuse(t('users_email_taken'))
-      if (account.outcome === 'signups-disabled') return refuse(t('users_signups_disabled'))
-      if (account.outcome === 'invalid-email') return refuse(t('users_email_invalid'))
-      if (account.outcome === 'weak-password') return refuse(t('users_password_weak'))
-      if (account.outcome === 'unreachable') {
-        return refuse(`${t('users_unreachable')}${account.detail ? ` (${account.detail})` : ''}`)
-      }
+      if (account.outcome === 'signups-disabled') return refuse(t('users_signups_disabled') + said)
+      if (account.outcome === 'rate-limited') return refuse(t('users_rate_limited') + said)
+      if (account.outcome === 'invalid-email') return refuse(t('users_email_invalid') + said)
+      if (account.outcome === 'weak-password') return refuse(t('users_password_weak') + said)
+      if (account.outcome === 'unreachable') return refuse(t('users_unreachable') + said)
       if (account.outcome === 'needs-confirmation') note = t('users_needs_confirmation')
       userId = account.userId
     }

@@ -72,6 +72,13 @@ const server = createServer((request, response) => {
     // Confirmations on and the address already taken: no error, no identities.
     if (mode === 'taken-quiet') return send(200, { user: { ...user, identities: [] }, session: null })
     if (mode === 'taken-loud') return send(400, { code: 422, error_code: 'user_already_exists', msg: 'User already registered', message: 'User already registered' })
+    // The built-in mail service allows a few messages an hour, and says so in a
+    // sentence with the word email in it -- which is not a bad address.
+    if (mode === 'rate-limited') return send(429, { code: 429, error_code: 'over_email_send_rate_limit', msg: 'For security purposes, you can only request this after 47 seconds.', message: 'Email rate limit exceeded' })
+    // Refusing a made-up domain. This one really is the address.
+    if (mode === 'address-invalid') return send(400, { code: 400, error_code: 'email_address_invalid', msg: 'Email address "someone@example.com" is invalid', message: 'Email address "someone@example.com" is invalid' })
+    // The Email provider switched off entirely, whose message also says email.
+    if (mode === 'provider-off') return send(422, { code: 422, error_code: 'email_provider_disabled', msg: 'Email signups are disabled', message: 'Email signups are disabled' })
     if (mode === 'signups-off') return send(422, { code: 422, error_code: 'signup_disabled', msg: 'Signups not allowed for this instance', message: 'Signups not allowed for this instance' })
     if (mode === 'weak') return send(422, { code: 422, error_code: 'weak_password', msg: 'Password should be at least 6 characters', message: 'Password should be at least 6 characters' })
     if (mode === 'bad-email') return send(400, { code: 400, msg: 'Unable to validate email address: invalid format', message: 'Unable to validate email address: invalid format' })
@@ -98,6 +105,9 @@ const expected = {
   'taken-quiet': 'email-taken',
   'taken-loud': 'email-taken',
   'signups-off': 'signups-disabled',
+  'provider-off': 'signups-disabled',
+  'rate-limited': 'rate-limited',
+  'address-invalid': 'invalid-email',
   weak: 'weak-password',
   'bad-email': 'invalid-email',
   boom: 'unreachable',
