@@ -58,9 +58,22 @@ never into a file in this repository.
 
 ## Step 2 — expose the schema
 
-**Project Settings → API → Exposed schemas**: add `ops` beside `public`.
-Without this the API answers "schema must be one of the following", and the
-Database tab in Settings will tell you so.
+The API serves `public` and nothing else until it is told otherwise, so `ops`
+has to be added to its list. Without this the API answers "schema must be one
+of the following", and the Database tab in Settings says so.
+
+In the dashboard the setting is called **Exposed schemas**, and it has moved
+more than once — look under **Project Settings → API**, or **Project Settings →
+Data API**, or search the settings for "exposed".
+
+If it is not where you expect, run `db/expose-ops-schema.sql` instead. It reads
+whatever is exposed now, adds `ops` if it is missing, leaves the rest alone and
+tells PostgREST to reload. Running it twice is safe. It prints the result:
+
+```
+exposed_schemas
+public, graphql_public, ops
+```
 
 ## Step 3 — make the first account
 

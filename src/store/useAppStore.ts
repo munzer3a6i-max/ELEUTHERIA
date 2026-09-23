@@ -238,7 +238,7 @@ interface AppSettings {
   theme: Theme
 }
 
-interface AppState {
+export interface AppState {
   applicants: Applicant[]
   employers: Employer[]
   agencies: RecruitmentAgency[]
