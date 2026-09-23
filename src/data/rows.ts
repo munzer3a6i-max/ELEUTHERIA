@@ -147,6 +147,7 @@ export const staffRows = {
   table: 'staff',
   out: (m: StaffMember): Row => ({
     id: m.id,
+    user_id: m.userId,
     username: m.username.toLowerCase(),
     name_en: m.name.en,
     name_ar: m.name.ar,
@@ -157,6 +158,7 @@ export const staffRows = {
   }),
   in: (r: Row): StaffMember => ({
     id: text(r.id),
+    userId: (r.user_id as string | null) ?? null,
     username: text(r.username),
     name: { en: text(r.name_en), ar: text(r.name_ar) },
     phone: text(r.phone),

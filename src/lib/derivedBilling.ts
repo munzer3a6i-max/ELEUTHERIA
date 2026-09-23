@@ -128,9 +128,12 @@ export function syncDerivedBilling(input: BillingInput): BillingOutput {
     }
 
     // --- the partner office's two halves -----------------------------------
-    const contract = request.recruitmentAgencyId
-      ? contractForAgency(input.agencyContracts, request.recruitmentAgencyId)
-      : null
+    // A contract prices a domestic worker. A tradesman placed through the same
+    // office is not covered by it, and must not be billed at that price.
+    const contract =
+      request.type === 'Domestic' && request.recruitmentAgencyId
+        ? contractForAgency(input.agencyContracts, request.recruitmentAgencyId)
+        : null
     if (contract) {
       const half = contract.pricePerWorker / 2
       const milestones = [

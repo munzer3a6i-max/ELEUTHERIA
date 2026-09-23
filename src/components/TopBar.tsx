@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
 import { useTranslation } from '../i18n/useTranslation'
 import { useCurrentUser } from '../lib/useCurrentUser'
+import SyncStatus from './SyncStatus'
+import { signOut as endSession } from '../data/session'
 import { ROLE_LABEL } from '../lib/permissions'
 
 export default function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
@@ -14,7 +16,6 @@ export default function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
   const setLanguage = useAppStore((s) => s.setLanguage)
   const setTheme = useAppStore((s) => s.setTheme)
   const theme = useAppStore((s) => s.settings.theme)
-  const signOut = useAppStore((s) => s.signOut)
   const { t, tb, language } = useTranslation()
   const { member: signedIn, role, canView } = useCurrentUser()
 
@@ -49,6 +50,7 @@ export default function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
       </form>
 
       <div className="flex shrink-0 items-center gap-0.5 sm:gap-1.5">
+        <SyncStatus />
         <button
           type="button"
           onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
@@ -141,8 +143,7 @@ export default function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
                   onClick={() => {
                     setProfileOpen(false)
                     if (window.confirm(language === 'ar' ? 'تسجيل الخروج من النظام؟' : 'Log out?')) {
-                      signOut()
-                      navigate('/login')
+                      void endSession().then(() => navigate('/login'))
                     }
                   }}
                   className="flex w-full items-center gap-2 px-3 py-2 text-start text-[12px] text-neg hover:bg-neg-soft"

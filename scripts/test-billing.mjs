@@ -130,6 +130,18 @@ check((await commissions()).every((c) => c.status === 'Paid'),
   'detaching the agent clears what is unpaid and keeps what is not',
   JSON.stringify(await commissions()))
 
+// --- a tradesman through the same office ------------------------------------
+const [{ id: tradesman }] = await q(
+  `insert into ops.applicants (english_name, gender, type, agency_id) values ('Miguel', 'Male', 'Profession', $1) returning id`, [agency])
+const [{ id: trade }] = await q(
+  `insert into ops.requests (type, applicant_id, employer_id, agency_id) values ('Profession', $1, $2, $3) returning id`,
+  [tradesman, employer, agency])
+await q(`insert into ops.request_status_history (request_id, status, occurred_on) values ($1, 'Selected', '2026-05-01')`, [trade])
+const tradeCharges = await q(`select 1 from ops.agency_charges where request_id = $1`, [trade])
+check(tradeCharges.length === 0,
+  'a contract prices domestic workers, so a tradesman is not billed against it',
+  JSON.stringify(tradeCharges))
+
 // --- running it again changes nothing ---------------------------------------
 const before = JSON.stringify([await commissions(), await charges(), await backouts()])
 await q(`select ops.rebuild_derived_billing()`)

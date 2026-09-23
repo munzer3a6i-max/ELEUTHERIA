@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { KeyRound, TriangleAlert, User } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
+import { signIn } from '../data/session'
+import { isSupabaseConfigured } from '../lib/supabase'
 import { useTranslation } from '../i18n/useTranslation'
 import { DEFAULT_PASSWORD } from '../lib/passwords'
 import { Field, TextInput, PrimaryButton } from '../components/form'
@@ -10,7 +12,6 @@ import brandLogo from '../assets/eleutheria-logo.png'
 export default function Login() {
   const navigate = useNavigate()
   const settings = useAppStore((s) => s.settings)
-  const signIn = useAppStore((s) => s.signIn)
   const anyChanged = useAppStore((s) => s.staff.some((m) => m.credentials && !m.credentials.temporary))
   const { t, language } = useTranslation()
 
@@ -27,13 +28,11 @@ export default function Login() {
     // tells a stranger which half they got right.
     const outcome = await signIn(username, password)
     setBusy(false)
-    if (outcome === 'ok') {
-      navigate('/')
-    } else if (outcome === 'inactive') {
-      setError(t('auth_inactive'))
-    } else {
-      setError(t('auth_wrong'))
-    }
+    if (outcome === 'ok') navigate('/')
+    else if (outcome === 'inactive') setError(t('auth_inactive'))
+    else if (outcome === 'unlinked') setError(t('auth_unlinked'))
+    else if (outcome === 'unreachable') setError(t('auth_unreachable'))
+    else setError(t('auth_wrong'))
   }
 
   return (
@@ -50,10 +49,11 @@ export default function Login() {
           className="mx-auto mb-5 h-12 w-auto"
         />
 
-        <Field label={t('auth_username')}>
+        <Field label={isSupabaseConfigured ? t('auth_email') : t('auth_username')}>
           <span className="relative block">
             <User className="pointer-events-none absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-ink-3" />
             <TextInput
+              type={isSupabaseConfigured ? 'email' : 'text'}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
@@ -88,7 +88,7 @@ export default function Login() {
           {t('auth_sign_in')}
         </PrimaryButton>
 
-        {!anyChanged && (
+        {!anyChanged && !isSupabaseConfigured && (
           <p className="mt-4 rounded-control border border-line bg-sunken p-2.5 text-[10.5px] leading-relaxed text-ink-3">
             {language === 'ar'
               ? `لم يُغيّر أحد كلمة المرور بعد. ابدأ باسم المستخدم kylie وكلمة المرور ${DEFAULT_PASSWORD}، ثم غيّرها من صفحة حسابي.`

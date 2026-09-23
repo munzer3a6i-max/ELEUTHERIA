@@ -34,6 +34,11 @@ export interface StaffMember {
   status: StaffStatus
   /** What they type to sign in. Unique, compared without case. */
   username: string
+  /**
+   * The Supabase auth account this person signs in with, once the app is
+   * connected to a database. Null while passwords are kept in the browser.
+   */
+  userId: string | null
   credentials: StaffCredentials | null
 }
 

@@ -62,12 +62,15 @@ begin
   end if;
 
   -- ------------------------------------------- the partner office's halves --
-  -- The office's active contract, or the most recently signed if none is.
-  select * into the_contract
-    from ops.agency_contracts
-   where agency_id = the_request.agency_id
-   order by (status = 'Active') desc, signed_on desc nulls last
-   limit 1;
+  -- A contract prices a domestic worker. A tradesman placed through the same
+  -- office is not covered by it, and must not be billed at that price.
+  if the_request.type = 'Domestic' then
+    select * into the_contract
+      from ops.agency_contracts
+     where agency_id = the_request.agency_id
+     order by (status = 'Active') desc, signed_on desc nulls last
+     limit 1;
+  end if;
   half := round(coalesce(the_contract.price_per_worker, 0) / 2, 2);
 
   if the_contract.id is not null and on_selected is not null then

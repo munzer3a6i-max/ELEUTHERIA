@@ -244,6 +244,17 @@ export const translations = {
   contract_expected: { en: 'Expected', ar: 'المتوقع' },
   contract_received: { en: 'Received', ar: 'المستلم' },
   contract_awaiting: { en: 'Awaiting', ar: 'قيد الاستلام' },
+  // Saving
+  sync_loading: { en: 'Loading…', ar: 'جارٍ التحميل…' },
+  sync_saving: { en: 'Saving…', ar: 'جارٍ الحفظ…' },
+  sync_saved: { en: 'Saved at', ar: 'حُفظ في' },
+  sync_failed: { en: 'Not saved', ar: 'لم يُحفظ' },
+  sync_connected: { en: 'Connected to the database', ar: 'متصل بقاعدة البيانات' },
+  sync_connecting: { en: 'Connecting to the database…', ar: 'جارٍ الاتصال بقاعدة البيانات…' },
+  auth_unlinked: { en: 'That account exists, but no staff record points at it yet. An administrator links it in the database.', ar: 'الحساب موجود لكن لا يوجد سجل موظف مرتبط به بعد. يربطه المسؤول في قاعدة البيانات.' },
+  auth_unreachable: { en: 'The database could not be reached. Check your connection and try again.', ar: 'تعذر الوصول إلى قاعدة البيانات. تحقق من الاتصال وحاول مجددًا.' },
+  auth_email: { en: 'Email', ar: 'البريد الإلكتروني' },
+
   // The database
   db_title: { en: 'Database', ar: 'قاعدة البيانات' },
   db_subtitle: { en: 'Where this dashboard keeps its records', ar: 'أين يحفظ هذا النظام سجلاته' },

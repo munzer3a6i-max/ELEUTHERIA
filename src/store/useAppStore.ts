@@ -52,6 +52,7 @@ import {
 } from '../data/seed'
 import { syncDerivedBilling } from '../lib/derivedBilling'
 import { BACKOUT_STAGE } from '../data/businessRules'
+import { serverOwnsBilling } from '../data/ownership'
 import { canEdit, type Area } from '../lib/permissions'
 import { DEFAULT_PASSWORD, makeCredentials, normaliseUsername, verifyPassword } from '../lib/passwords'
 
@@ -185,6 +186,10 @@ function newId(): string {
  * price goes through here, so the books cannot drift from the history.
  */
 function withBilling<T extends Partial<AppState>>(state: AppState, changes: T) {
+  // Connected, the database derives this from the stage log by trigger, and
+  // the client reads the result back. Two of us working it out would mean two
+  // sets of rows for the same milestone.
+  if (serverOwnsBilling()) return changes
   return { ...changes, ...syncDerivedBilling({ ...state, ...changes }) }
 }
 
@@ -684,6 +689,7 @@ export const useAppStore = create<AppState>()(
         if (usernameTaken(get().staff, username)) return 'username-taken'
         const member: StaffMember = {
           ...rest,
+          userId: null,
           username: normaliseUsername(username),
           credentials: await makeCredentials(password, true),
           id: newId(),
@@ -896,6 +902,7 @@ export const useAppStore = create<AppState>()(
           // 'user' was the only non-admin role before the accountant existed.
           staff: (state.staff ?? seedStaff).map((member) => ({
             ...member,
+            userId: member.userId ?? null,
             role: (member.role as string) === 'user' ? 'data_entry' : member.role,
           })),
           // Passwords are new, so an older session has to sign in again.
