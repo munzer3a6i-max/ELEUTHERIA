@@ -34,9 +34,19 @@ function asUuid(value) {
   const hex = bytes.toString('hex')
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
 }
+const backToAppId = new Map()
 const withUuids = (row) =>
+  Object.fromEntries(Object.entries(row).map(([key, value]) => {
+    if (key !== 'id' && !key.endsWith('_id')) return [key, value]
+    const uuid = asUuid(value)
+    if (uuid !== value) backToAppId.set(uuid, value)
+    return [key, uuid]
+  }))
+
+/** Undoes the id substitution, so what comes back can be compared with what went in. */
+const withAppIds = (row) =>
   Object.fromEntries(Object.entries(row).map(([key, value]) =>
-    [key, key === 'id' || key.endsWith('_id') ? asUuid(value) : value]))
+    [key, typeof value === 'string' && backToAppId.has(value) ? backToAppId.get(value) : value]))
 
 const BASE = process.env.APP_URL ?? 'http://localhost:5180'
 
@@ -187,6 +197,102 @@ check(unsupplied.length === 0, 'every required column is supplied by a mapper', 
 console.log()
 check(mapped.trips.length === 0, 'every record survives the round trip unchanged',
   mapped.trips.slice(0, 6).join(' | '))
+
+// --- and the whole way back -------------------------------------------------
+// Everything the app holds, written to Postgres, read out of Postgres, and
+// folded back into the app's own shapes. What comes out should be what went
+// in, apart from the things the database deliberately does not keep.
+const readBack = {}
+for (const table of new Set(mapped.out.map((entry) => entry.table))) {
+  const { rows: got } = await db.query(`select * from ops.${table}`)
+  readBack[table] = got.map(withAppIds)
+}
+
+const browser2 = await chromium.launch({ executablePath: process.env.CHROME ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' })
+const page2 = await browser2.newPage()
+await page2.goto(`${BASE}/login`, { waitUntil: 'networkidle' })
+const differences = await page2.evaluate(async (tables) => {
+  const { assemble } = await import('/src/data/assemble.ts')
+  const { useAppStore } = await import('/src/store/useAppStore.ts')
+  const state = useAppStore.getState()
+  const back = assemble(tables)
+
+  // A file's bytes live in Storage, not in a row, and the database stamps its
+  // own timestamps. Neither is expected to survive the trip.
+  // Keys are sorted as well as filtered: two records can hold the same thing
+  // and still stringify differently, and that is not a difference worth
+  // failing over.
+  // Rows in a table have no order of their own, so a list of records is
+  // compared as a set. Where order carries meaning -- the stage log is a
+  // sequence, not a bag -- it is checked on its own, below.
+  const normalise = (value) => {
+    if (Array.isArray(value)) {
+      const items = value.map(normalise)
+      return items.every((item) => item && typeof item === 'object' && 'id' in item)
+        ? items.sort((a, b) => String(a.id).localeCompare(String(b.id)))
+        : items
+    }
+    if (value && typeof value === 'object') {
+      const copy = {}
+      for (const [key, inner] of Object.entries(value).sort(([a], [b]) => a.localeCompare(b))) {
+        if (['dataUrl', 'uploadedOn', 'createdOn', 'updatedOn', 'updatedBy', 'credentials',
+             'photoDataUrl', 'profileImageDataUrl', 'author', 'path'].includes(key)) continue
+        copy[key] = normalise(inner)
+      }
+      return copy
+    }
+    return value
+  }
+
+  const problems = []
+  const compare = (name, before, after) => {
+    const sortById = (list) => [...list].sort((a, b) => String(a.id).localeCompare(String(b.id)))
+    const a = JSON.stringify(normalise(sortById(before)))
+    const b = JSON.stringify(normalise(sortById(after)))
+    if (a !== b) {
+      const at = [...a].findIndex((ch, i) => ch !== b[i])
+      problems.push(`${name}: differs near "${a.slice(Math.max(0, at - 40), at + 40)}" vs "${b.slice(Math.max(0, at - 40), at + 40)}"`)
+    }
+  }
+
+  compare('countries', state.countries, back.countries)
+  compare('cities', state.cities, back.cities)
+  compare('professions', state.professions, back.professions)
+  compare('paymentSources', state.paymentSources, back.paymentSources)
+  compare('staff', state.staff, back.staff)
+  compare('agencies', state.agencies, back.agencies)
+  compare('agents', state.agents, back.agents)
+  compare('employers', state.employers, back.employers)
+  compare('applicants', state.applicants, back.applicants)
+  compare('requests', state.requests, back.requests)
+  compare('invoices', state.invoices, back.invoices)
+  compare('payroll', state.payroll, back.payroll)
+  compare('officeExpenses', state.officeExpenses, back.officeExpenses)
+  compare('agencyContracts', state.agencyContracts, back.agencyContracts)
+  compare('agencyCharges', state.agencyCharges, back.agencyCharges)
+  compare('agentCommissions', state.agentCommissions, back.agentCommissions)
+  compare('backouts', state.backouts, back.backouts)
+
+  // The one ordering the app depends on: a worker's stages, oldest first.
+  const outOfOrder = back.requests.filter((request) =>
+    request.statusHistory.some((entry, i, all) => i > 0 && all[i - 1].date > entry.date))
+  if (outOfOrder.length > 0) problems.push(`stage log out of order for ${outOfOrder.length} request(s)`)
+
+  const stages = back.requests.reduce((sum, r) => sum + r.statusHistory.length, 0)
+  return {
+    problems,
+    stages,
+    counts: Object.fromEntries(Object.entries(back).map(([k, v]) => [k, v.length])),
+  }
+}, readBack)
+await browser2.close()
+
+console.log()
+check(differences.problems.length === 0,
+  'the whole dataset survives the trip through Postgres and back',
+  differences.problems.slice(0, 3).join('  |  '))
+console.log('  read back:', Object.entries(differences.counts).map(([k, n]) => `${k} ${n}`).join(', '))
+console.log(`  ${differences.stages} stage entries, each request's in date order`)
 
 console.log(`\n${failures === 0 ? 'all checks passed' : `${failures} CHECK(S) FAILED`}`)
 await db.close()

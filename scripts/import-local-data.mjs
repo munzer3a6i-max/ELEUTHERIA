@@ -189,13 +189,18 @@ try {
     id: idFor('education', e.id), applicant_id: idFor('applicant', a.id), degree: e.degree, institution: e.institution, year: e.year,
   }))), ['id', 'applicant_id', 'degree', 'institution', 'year'])
 
+  // Dates are written explicitly rather than left to the column defaults:
+  // importing two years of notes must not stamp every one of them with today.
+  const at = (date) => (date ? `${date}T00:00:00Z` : new Date().toISOString())
+
   await upsert('applicant_documents', applicants.flatMap((a) => a.documents.map((d) => ({
-    id: idFor('document', d.id), applicant_id: idFor('applicant', a.id), name: d.name, category: d.category,
-  }))), ['id', 'applicant_id', 'name', 'category'])
+    id: idFor('document', d.id), applicant_id: idFor('applicant', a.id), name: d.name,
+    category: d.category, uploaded_at: at(d.uploadedOn),
+  }))), ['id', 'applicant_id', 'name', 'category', 'uploaded_at'])
 
   await upsert('applicant_notes', applicants.flatMap((a) => a.notes.map((n) => ({
-    id: idFor('note', n.id), applicant_id: idFor('applicant', a.id), body: n.text,
-  }))), ['id', 'applicant_id', 'body'])
+    id: idFor('note', n.id), applicant_id: idFor('applicant', a.id), body: n.text, created_at: at(n.date),
+  }))), ['id', 'applicant_id', 'body', 'created_at'])
 
   const requests = state.requests ?? []
   await upsert('requests', requests.map((r) => ({
@@ -297,8 +302,8 @@ try {
 
   await upsert('notifications', (state.notifications ?? []).map((n) => ({
     id: idFor('notification', n.id) ?? randomUUID(), title: n.title, detail: n.detail,
-    read_at: n.read ? new Date().toISOString() : null,
-  })), ['id', 'title', 'detail', 'read_at'])
+    read_at: n.read ? at(n.date) : null, created_at: at(n.date),
+  })), ['id', 'title', 'detail', 'read_at', 'created_at'])
 
   await query('commit')
 } catch (error) {

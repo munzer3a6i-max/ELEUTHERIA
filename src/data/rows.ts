@@ -68,6 +68,13 @@ const text = (value: unknown): string => (value === null || value === undefined 
 const monthOut = (month: string): string | null => (month ? `${month}-01` : null)
 const monthIn = (value: unknown): string => dateIn(value).slice(0, 7)
 
+/**
+ * When a record's own date is the moment it was created, it is written
+ * explicitly rather than left to the column's default -- otherwise importing
+ * two years of notes stamps every one of them with today.
+ */
+const createdOut = (date: string): Row => (date ? { created_at: `${date}T00:00:00Z` } : {})
+
 // ----------------------------------------------------------- attachments --
 
 /**
@@ -274,6 +281,12 @@ export const applicantRows = {
     phone: a.phone,
     telephone: a.telephone,
     status: a.status,
+    // The photograph itself is a data URL until Storage is wired up, and a
+    // megabyte of base64 does not belong in a text column, so photo_path stays
+    // empty until there is a real file to point at. These two are already
+    // names, and become paths the same day.
+    cv_path: a.cvFileName,
+    passport_copy_path: a.passportCopyFileName,
     published_to_website: a.cvLinkedToWebsite,
     agency_id: a.recruitmentAgencyId,
     agent_id: a.agentId,
@@ -352,6 +365,7 @@ export const documentRows = {
     applicant_id: applicantId,
     name: d.name,
     category: d.category,
+    ...(d.uploadedOn ? { uploaded_at: `${d.uploadedOn}T00:00:00Z` } : {}),
   }),
   in: (r: Row): ApplicantDocument => ({
     id: text(r.id),
@@ -367,6 +381,7 @@ export const noteRows = {
     id: n.id,
     applicant_id: applicantId,
     body: n.text,
+    ...createdOut(n.date),
   }),
   in: (r: Row): ApplicantNote => ({
     id: text(r.id),
@@ -665,6 +680,7 @@ export const notificationRows = {
     title: n.title,
     detail: n.detail,
     read_at: n.read ? `${n.date}T00:00:00Z` : null,
+    ...createdOut(n.date),
   }),
   in: (r: Row): AppNotification => ({
     id: text(r.id),
