@@ -59,6 +59,23 @@ the same two environment variables. Each needs the single-page rule that
 - Netlify — a `_redirects` file in `public/` containing `/*  /index.html  200`.
 - Cloudflare Pages — a `_redirects` file with the same line, or the SPA setting.
 
+## When the deployed page comes up blank
+
+Open the browser's console. `Invalid supabaseUrl: Must be a valid HTTP or HTTPS
+URL` means `VITE_SUPABASE_URL` reached the build as something that is not an
+address — almost always the host pasted without `https://`, or the whole
+`VITE_SUPABASE_URL=…` line pasted into the value box.
+
+The app now tidies those up by itself: a missing scheme, surrounding quotes, a
+stray space, a trailing slash or a copied endpoint path are all read as the
+project they obviously mean. What it cannot repair — a value that is not an
+address at all, or a key that was never set — is said plainly on the sign-in
+screen instead of a blank page, and it falls back to this browser's own storage
+so somebody can still get in and see what is wrong.
+
+Either way the fix is the same: correct the value in the hosting panel and
+deploy again, because the value is baked in at build time.
+
 ## After the first deploy
 
 1. Open the address and sign in with the administrator email that

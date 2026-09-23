@@ -254,6 +254,14 @@ export const translations = {
   auth_unlinked: { en: 'That account exists, but no staff record points at it yet. An administrator links it in the database.', ar: 'الحساب موجود لكن لا يوجد سجل موظف مرتبط به بعد. يربطه المسؤول في قاعدة البيانات.' },
   auth_unreachable: { en: 'The database could not be reached. Check your connection and try again.', ar: 'تعذر الوصول إلى قاعدة البيانات. تحقق من الاتصال وحاول مجددًا.' },
   auth_email: { en: 'Email', ar: 'البريد الإلكتروني' },
+  auth_bad_url: {
+    en: 'The database address this site was built with is not a valid address, so it is running on this browser\u2019s own storage. Check VITE_SUPABASE_URL in the hosting panel and deploy again.',
+    ar: 'عنوان قاعدة البيانات الذي بُني به الموقع غير صالح، لذا يعمل النظام على تخزين هذا المتصفح فقط. راجع VITE_SUPABASE_URL في لوحة الاستضافة ثم أعد النشر.',
+  },
+  auth_missing_key: {
+    en: 'The database address is set but the key is missing, so this site is running on this browser\u2019s own storage. Add VITE_SUPABASE_ANON_KEY in the hosting panel and deploy again.',
+    ar: 'عنوان قاعدة البيانات موجود لكن المفتاح مفقود، لذا يعمل الموقع على تخزين هذا المتصفح فقط. أضف VITE_SUPABASE_ANON_KEY في لوحة الاستضافة ثم أعد النشر.',
+  },
 
   // The database
   db_title: { en: 'Database', ar: 'قاعدة البيانات' },

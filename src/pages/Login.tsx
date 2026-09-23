@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Download, KeyRound, TriangleAlert, User } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import { signIn } from '../data/session'
-import { isSupabaseConfigured } from '../lib/supabase'
+import { configurationProblem, isSupabaseConfigured } from '../lib/supabase'
 import { useTranslation } from '../i18n/useTranslation'
 import { DEFAULT_PASSWORD } from '../lib/passwords'
 import { exportLocalData } from '../lib/connection'
@@ -110,6 +110,13 @@ export default function Login() {
             <Download className="size-3.5" />
             {t('db_export')} ({localData} {t('nav_applicants').toLowerCase()})
           </button>
+        )}
+
+        {configurationProblem && (
+          <p className="mt-4 flex items-start gap-1.5 rounded-control border border-line bg-sunken p-2.5 text-[10.5px] leading-relaxed text-ink-3">
+            <TriangleAlert className="mt-px size-3.5 shrink-0 text-neg" />
+            {t(configurationProblem === 'bad-url' ? 'auth_bad_url' : 'auth_missing_key')}
+          </p>
         )}
 
         {!anyChanged && !isSupabaseConfigured && (
