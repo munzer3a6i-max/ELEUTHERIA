@@ -8,8 +8,10 @@ import PageHeader from '../../components/PageHeader'
 import StatusBadge from '../../components/StatusBadge'
 import WorkerPhoto from '../../components/WorkerPhoto'
 import Modal from '../../components/Modal'
+import Confirm from '../../components/Confirm'
+import { removeApplicant, whyNotDelete } from '../../lib/applicants'
 import { BilingualField, Field, TextInput, SelectInput, PrimaryButton, SecondaryButton } from '../../components/form'
-import type { ApplicantStatus, RequestType, Gender } from '../../types'
+import type { Applicant, ApplicantStatus, RequestType, Gender } from '../../types'
 
 const STATUS_FILTERS: (ApplicantStatus | 'All')[] = ['All', 'Available', 'Unavailable', 'Selected', 'Deployed', 'Back Out']
 const TYPE_FILTERS: (RequestType | 'All')[] = ['All', 'Domestic', 'Profession']
@@ -20,7 +22,6 @@ export default function ApplicantsList() {
   const countries = useAppStore((s) => s.countries)
   const agencies = useAppStore((s) => s.agencies)
   const addApplicant = useAppStore((s) => s.addApplicant)
-  const deleteApplicant = useAppStore((s) => s.deleteApplicant)
   const { t, tb, language } = useTranslation()
   const { canEdit } = useCurrentUser()
   const navigate = useNavigate()
@@ -31,6 +32,8 @@ export default function ApplicantsList() {
   const [typeFilter, setTypeFilter] = useState<RequestType | 'All'>('All')
   const [addOpen, setAddOpen] = useState(false)
   const [websiteOnly, setWebsiteOnly] = useState(false)
+  const [removing, setRemoving] = useState<Applicant | null>(null)
+  const [refused, setRefused] = useState<number | null>(null)
 
   const filtered = useMemo(() => {
     return applicants.filter((a) => {
@@ -46,8 +49,21 @@ export default function ApplicantsList() {
     })
   }, [applicants, query, statusFilter, typeFilter, websiteOnly])
 
-  function handleDelete(id: string, name: string) {
-    if (window.confirm(`${t('action_delete')} ${name}?`)) deleteApplicant(id)
+  function askToDelete(applicant: Applicant) {
+    // The database refuses a worker who is on a request, so find that out
+    // before she vanishes from the screen and comes back on the next load.
+    const blocked = whyNotDelete(applicant.id)
+    if (blocked.kind === 'has-requests') setRefused(blocked.count)
+    else setRemoving(applicant)
+  }
+
+  function handleDelete() {
+    if (!removing) return
+    const applicant = removing
+    setRemoving(null)
+    void removeApplicant(applicant).then((outcome) => {
+      if (outcome.kind === 'has-requests') setRefused(outcome.count)
+    })
   }
 
   return (
@@ -164,7 +180,7 @@ export default function ApplicantsList() {
                     <button
                       type="button"
                       hidden={!canEdit('operations')}
-                      onClick={() => handleDelete(a.id, a.englishName)}
+                      onClick={() => askToDelete(a)}
                       className="text-ink-3 hover:text-neg"
                     >
                       <Trash2 className="size-3.5" />
@@ -194,6 +210,31 @@ export default function ApplicantsList() {
             setAddOpen(false)
             navigate(`/applicants/${id}`)
           }}
+        />
+      )}
+
+      {removing && (
+        <Confirm
+          title={t('applicant_delete_title')}
+          message={t('applicant_delete_confirm')}
+          detail={`${tb({ en: removing.englishName, ar: removing.arabicName || removing.englishName })} — ${removing.passportNo || removing.profession}`}
+          confirmLabel={t('action_delete')}
+          tone="danger"
+          onConfirm={handleDelete}
+          onClose={() => setRemoving(null)}
+        />
+      )}
+
+      {refused !== null && (
+        <Confirm
+          title={t('applicant_has_requests_title')}
+          message={t('applicant_has_requests')}
+          detail={`${t('applicant_requests_count')} ${refused}`}
+          confirmLabel={t('action_ok')}
+          tone="danger"
+          withoutCancel
+          onConfirm={() => setRefused(null)}
+          onClose={() => setRefused(null)}
         />
       )}
     </div>

@@ -338,6 +338,25 @@ https://<project>.supabase.co/storage/v1/object/public/published-photos/<photo_p
 `photo_path` is null for a worker whose photograph was never uploaded, so the
 site needs a placeholder for that case.
 
+### Deleting a worker
+
+`ops.requests.applicant_id` is `on delete restrict`, on purpose: a request
+carries a stage log, invoices and money, and none of that should disappear
+because somebody tidied up a name. Everything else about her —
+experience, education, documents, notes, her photograph and CV rows — is
+`on delete cascade` and goes with her.
+
+The dashboard works that rule out before it deletes anything rather than after.
+A silent refusal is the worst version of it: she vanishes from the screen,
+comes back on the next load, and stays on the website the whole time. So
+Applicants checks for requests first and says what is in the way, and offers
+the alternative — setting her status to Unavailable, which takes her off both
+the list and the website while keeping the history.
+
+Deleting her also removes her photograph and CV from Storage, public copies
+included. A published file outlives the record otherwise, at an address that
+still works.
+
 ### The CV
 
 The same arrangement, one bucket along. The office's upload goes into the

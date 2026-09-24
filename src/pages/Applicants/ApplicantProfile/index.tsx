@@ -4,6 +4,8 @@ import { Printer, Send } from 'lucide-react'
 import { useAppStore, requestCost, invoiceTotalPaid, formatMoney } from '../../../store/useAppStore'
 import { useTranslation } from '../../../i18n/useTranslation'
 import { useCurrentUser } from '../../../lib/useCurrentUser'
+import Confirm from '../../../components/Confirm'
+import { removeApplicant, whyNotDelete } from '../../../lib/applicants'
 import Header from './Header'
 import ProfileTabs, { type ProfileTabKey } from './ProfileTabs'
 import StageStepper from './StageStepper'
@@ -37,10 +39,11 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
   const applicant = useAppStore((s) => s.applicants.find((a) => a.id === applicantId))
   const allRequests = useAppStore((s) => s.requests)
   const invoices = useAppStore((s) => s.invoices)
-  const deleteApplicant = useAppStore((s) => s.deleteApplicant)
   const { t, language } = useTranslation()
   const { canEdit } = useCurrentUser()
   const [activeTab, setActiveTab] = useState<ProfileTabKey>('financial')
+  const [removing, setRemoving] = useState(false)
+  const [refused, setRefused] = useState<number | null>(null)
 
   if (!applicant) {
     onDeleted()
@@ -68,10 +71,20 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
     window.location.href = `mailto:?subject=${subject}&body=${body}`
   }
 
+  function askToDelete() {
+    // The database refuses a worker who is on a request, and a refusal after
+    // the fact reads as the delete simply not working.
+    const blocked = whyNotDelete(applicantId)
+    if (blocked.kind === 'has-requests') setRefused(blocked.count)
+    else setRemoving(true)
+  }
+
   function handleDeleteApplicant() {
-    if (window.confirm(`${t('action_delete')} ${applicant!.englishName}? This cannot be undone.`)) {
-      deleteApplicant(applicant!.id)
-    }
+    const doomed = applicant!
+    setRemoving(false)
+    void removeApplicant(doomed).then((outcome) => {
+      if (outcome.kind === 'has-requests') setRefused(outcome.count)
+    })
   }
 
   return (
@@ -102,7 +115,7 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
           {canEdit('operations') && (
             <button
               type="button"
-              onClick={handleDeleteApplicant}
+              onClick={askToDelete}
               className="btn btn-danger"
             >
               {t('action_delete')}
@@ -110,6 +123,31 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
           )}
         </div>
       </div>
+
+      {removing && (
+        <Confirm
+          title={t('applicant_delete_title')}
+          message={t('applicant_delete_confirm')}
+          detail={`${applicant.englishName} — ${applicant.passportNo || applicant.profession}`}
+          confirmLabel={t('action_delete')}
+          tone="danger"
+          onConfirm={handleDeleteApplicant}
+          onClose={() => setRemoving(false)}
+        />
+      )}
+
+      {refused !== null && (
+        <Confirm
+          title={t('applicant_has_requests_title')}
+          message={t('applicant_has_requests')}
+          detail={`${t('applicant_requests_count')} ${refused}`}
+          confirmLabel={t('action_ok')}
+          tone="danger"
+          withoutCancel
+          onConfirm={() => setRefused(null)}
+          onClose={() => setRefused(null)}
+        />
+      )}
 
       <Header applicant={applicant} activeRequest={activeRequest} invoice={invoice} />
       <ProfileTabs active={activeTab} onChange={setActiveTab} />

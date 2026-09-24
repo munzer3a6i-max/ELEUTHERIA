@@ -320,6 +320,18 @@ export const translations = {
   users_password_hint: { en: 'They can change it themselves from My Account.', ar: 'يمكنه تغييرها بنفسه من صفحة حسابي.' },
   users_tab_company: { en: 'Company', ar: 'الشركة' },
   users_tab_users: { en: 'Users', ar: 'المستخدمون' },
+  applicant_delete_title: { en: 'Remove this applicant?', ar: 'حذف هذا المتقدم؟' },
+  applicant_delete_confirm: {
+    en: 'Her whole record goes with her — photograph, CV, documents, notes and experience — and she comes off the website. This cannot be undone.',
+    ar: 'يُحذف سجلها بالكامل — الصورة والسيرة الذاتية والمستندات والملاحظات والخبرات — وتُزال من الموقع. لا يمكن التراجع عن ذلك.',
+  },
+  applicant_has_requests_title: { en: 'She cannot be removed yet', ar: 'لا يمكن حذفها بعد' },
+  applicant_has_requests: {
+    en: 'She is on recruitment requests, and the stages, invoices and money recorded against them would go with her. Delete those from Recruitments first, or set her status to Unavailable to take her off the list and the website without losing the history.',
+    ar: 'لديها طلبات استقدام، وستُحذف معها المراحل والفواتير والمبالغ المسجلة عليها. احذف تلك الطلبات من صفحة الاستقدام أولًا، أو اجعل حالتها «غير متاحة» لإزالتها من القائمة والموقع مع الاحتفاظ بالسجل.',
+  },
+  applicant_requests_count: { en: 'Recruitment requests on file:', ar: 'عدد طلبات الاستقدام المسجلة:' },
+  action_ok: { en: 'OK', ar: 'حسنًا' },
   users_manage_here: { en: 'Accounts and roles are managed in Settings.', ar: 'تُدار الحسابات والأدوار من الإعدادات.' },
   users_add_confirm_title: { en: 'Add this user?', ar: 'إضافة هذا المستخدم؟' },
   users_add_confirm: {

@@ -18,6 +18,7 @@ export default function Confirm({
   confirmLabel,
   tone = 'normal',
   busy = false,
+  withoutCancel = false,
   onConfirm,
   onClose,
 }: {
@@ -27,6 +28,8 @@ export default function Confirm({
   confirmLabel: string
   tone?: 'normal' | 'danger'
   busy?: boolean
+  /** For telling somebody something rather than asking them. */
+  withoutCancel?: boolean
   onConfirm: () => void
   onClose: () => void
 }) {
@@ -47,7 +50,7 @@ export default function Confirm({
       </div>
 
       <div className="mt-4 flex justify-end gap-2">
-        <SecondaryButton onClick={onClose}>{t('action_cancel')}</SecondaryButton>
+        {!withoutCancel && <SecondaryButton onClick={onClose}>{t('action_cancel')}</SecondaryButton>}
         <PrimaryButton
           type="button"
           onClick={onConfirm}
