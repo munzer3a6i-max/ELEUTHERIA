@@ -111,6 +111,29 @@
   font-weight: 550;
 }
 
+.worker-jobs {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  padding: 8px 0 0;
+  border-top: 1px solid var(--workers-line);
+  list-style: none;
+  font-size: 0.8125rem;
+}
+
+.worker-jobs li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.worker-jobs-years {
+  color: var(--workers-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .worker-cv {
   margin-top: auto;
   padding: 7px 10px;
@@ -148,7 +171,30 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .worker-cv {
+  .worker-jobs {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  padding: 8px 0 0;
+  border-top: 1px solid var(--workers-line);
+  list-style: none;
+  font-size: 0.8125rem;
+}
+
+.worker-jobs li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.worker-jobs-years {
+  color: var(--workers-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.worker-cv {
   margin-top: auto;
   padding: 7px 10px;
   color: inherit;

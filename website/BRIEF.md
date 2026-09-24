@@ -52,7 +52,8 @@ A view, `public.published_workers`. These are all of its columns:
 | `country` | text | Free text, e.g. `Ethiopia`. |
 | `profession` | text | Free text, e.g. `Housemaid`, `Driver`. |
 | `type` | text | `Domestic` or `Profession` (i.e. a skilled worker). |
-| `experience_years` | int | |
+| `experience_years` | int | Her total, from the jobs below or the office's own figure. |
+| `experience` | json | `[{ "title": "Housemaid", "years": 5 }, …]`, longest first, `[]` when none. |
 | `photo_path` | text \| null | A key inside the `published-photos` bucket. |
 | `cv_path` | text \| null | A key inside the `published-cvs` bucket. |
 | `updated_at` | timestamptz | |
@@ -101,6 +102,25 @@ broken image. Unpublishing a worker in the office deletes the file from this
 bucket, which is deliberate: what is publicly readable is exactly what somebody
 chose to publish.
 
+## The jobs she has done
+
+`experience` is a JSON array the database builds, already ordered longest
+first, and `[]` for somebody with nothing listed yet. Each entry is a title and
+a number of years:
+
+```json
+[{ "title": "Housemaid", "years": 5 }, { "title": "Barista", "years": 2 }]
+```
+
+Who she worked for is deliberately not published: for a domestic worker that is
+usually a household, and naming somebody else's family on a public page is not
+this page's business.
+
+`experience_years` is the total. It is whichever is larger of the office's own
+figure and the sum of those entries, so it is never less than what they
+recorded, and a worker whose jobs were listed but whose total was never typed
+in still reads correctly.
+
 ## The CV
 
 Published the same way, in a public bucket of its own:
@@ -119,7 +139,8 @@ Match this site's existing design, language handling and routing — those
 conventions win over anything suggested here.
 
 - A card per worker: photograph, name, profession, country, age, years of
-  experience, and a link to the CV when there is one.
+  experience, the jobs from `experience` when there are any, and a link to the
+  CV when there is one.
 - Use `arabic_name` when the site is in Arabic and `english_name` otherwise,
   falling back to the English name when the Arabic one is empty.
 - Filters worth having: search by name, country, profession, and Domestic vs

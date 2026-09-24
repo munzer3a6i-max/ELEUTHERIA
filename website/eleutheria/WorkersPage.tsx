@@ -27,7 +27,9 @@ const TEXT = {
   none: { en: 'No workers are listed just now.', ar: 'لا توجد عاملات مدرجات حالياً.' },
   failed: { en: 'The list could not be loaded.', ar: 'تعذّر تحميل القائمة.' },
   retry: { en: 'Try again', ar: 'إعادة المحاولة' },
-  years: { en: 'years of experience', ar: 'سنوات خبرة' },
+  ofExperience: { en: 'of experience', ar: 'خبرة' },
+  oneYear: { en: 'year', ar: 'سنة' },
+  someYears: { en: 'years', ar: 'سنوات' },
   age: { en: 'years old', ar: 'سنة' },
   count: { en: 'workers', ar: 'عاملة' },
   noPhoto: { en: 'No photograph', ar: 'بدون صورة' },
@@ -185,10 +187,25 @@ export function WorkerCard({ worker, language }: { worker: Worker; language: Lan
         )}
         {worker.experience_years > 0 && (
           <dd>
-            {worker.experience_years} {say('years', language)}
+            {worker.experience_years}{' '}
+            {say(worker.experience_years === 1 ? 'oneYear' : 'someYears', language)}{' '}
+            {say('ofExperience', language)}
           </dd>
         )}
       </dl>
+
+      {worker.experience.length > 0 && (
+        <ul className="worker-jobs">
+          {worker.experience.map((job) => (
+            <li key={`${job.title}-${job.years}`}>
+              <span>{job.title}</span>
+              <span className="worker-jobs-years">
+                {job.years} {say(job.years === 1 ? 'oneYear' : 'someYears', language)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {cv && (
         <a className="worker-cv" href={cv} target="_blank" rel="noreferrer">

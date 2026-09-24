@@ -227,9 +227,30 @@ const sensitive = ['passport_no', 'id_number', 'phone', 'telephone', 'dob', 'pas
 check(sensitive.every((c) => !columns.includes(c)), 'no identifying or commercial column is published')
 check(columns.includes('photo_path') && columns.includes('cv_path'), 'the photograph and the CV are, so the site has something to show')
 
+// Two jobs on the published worker, and one on somebody who is not published.
+await db.exec(`
+  insert into ops.applicant_experience (applicant_id, title, employer, years) values
+    ('bbbbbbbb-0000-0000-0000-000000000001', 'Barista', 'Al-Mutairi household', 2),
+    ('bbbbbbbb-0000-0000-0000-000000000001', 'Housemaid', 'A family in Doha', 5),
+    ('bbbbbbbb-0000-0000-0000-000000000002', 'Cook', 'Somewhere', 4);
+`)
+
 await db.exec(`begin; set local role anon;`)
-const published = (await db.query('select english_name, age from public.published_workers')).rows
+const published = (await db.query('select * from public.published_workers')).rows
 await db.exec('rollback')
+
+check(published[0]?.experience_years === 7, 'the years come from the jobs the office listed', `${published[0]?.experience_years}`)
+const jobs = published[0]?.experience ?? []
+check(
+  jobs.length === 2 && jobs[0].title === 'Housemaid' && jobs[0].years === 5,
+  'the jobs themselves are published, longest first',
+  JSON.stringify(jobs),
+)
+check(
+  jobs.every((job) => !('employer' in job)),
+  'and not who she worked for, which is somebody else\'s household',
+  JSON.stringify(jobs),
+)
 check(published.length === 1 && published[0].english_name === 'Maricel S. Dela Cruz', 'anon sees only published, available workers', `[${published.map((r) => r.english_name)}]`)
 const expectedAge = Math.floor((Date.now() - Date.parse('1994-03-02')) / 31_557_600_000)
 check(published[0]?.age === expectedAge, 'the date of birth is reduced to an age', `age ${published[0]?.age}`)
@@ -265,9 +286,16 @@ await db.exec(`
   grant usage on schema ops to definer_stand_in;
   grant select on ops.applicants to definer_stand_in;
 `)
+await db.exec(`grant select on ops.applicant_experience to definer_stand_in;`)
 await db.exec('begin; set local role definer_stand_in;')
 const throughPolicy = (await db.query('select english_name from ops.applicants')).rows
+const jobsThroughPolicy = (await db.query('select title from ops.applicant_experience')).rows
 await db.exec('rollback')
+check(
+  jobsThroughPolicy.length === 2,
+  'and the published worker\'s jobs, but not an unpublished one\'s',
+  `[${jobsThroughPolicy.map((r) => r.title)}]`,
+)
 check(
   throughPolicy.length === 1 && throughPolicy[0].english_name === 'Maricel S. Dela Cruz',
   'the policy alone is enough to read the published row, and only that row',

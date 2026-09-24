@@ -11,6 +11,12 @@
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config'
 
+/** A job she has done. The employer is deliberately not published. */
+export interface WorkerJob {
+  title: string
+  years: number
+}
+
 /** One row of public.published_workers. This is everything the site can see. */
 export interface Worker {
   id: string
@@ -22,7 +28,10 @@ export interface Worker {
   country: string
   profession: string
   type: 'Domestic' | 'Profession'
+  /** Her total, taken from the jobs below or from the office's own figure. */
   experience_years: number
+  /** The jobs the office listed, longest first. Empty when none were. */
+  experience: WorkerJob[]
   /** Key inside the published-photos bucket, or null when she has no photo. */
   photo_path: string | null
   /** Key inside the published-cvs bucket, or null when no CV is published. */

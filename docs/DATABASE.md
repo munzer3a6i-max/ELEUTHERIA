@@ -260,8 +260,16 @@ The view exposes exactly this and nothing more:
 
 ```
 id, english_name, arabic_name, gender, age, country, profession,
-type, experience_years, photo_path, cv_path, updated_at
+type, experience_years, experience, photo_path, cv_path, updated_at
 ```
+
+`experience` is the jobs the office listed for her, as
+`[{"title": "Housemaid", "years": 5}, …]`, longest first. The employer is left
+out on purpose: for a domestic worker that is usually a household, and naming
+somebody else's family on a public page is not that page's business.
+`experience_years` is whichever is larger of the office's own figure and the
+sum of those jobs — the office records it both ways, and the site should not
+under-report her because only one of them was filled in.
 
 Date of birth is reduced to an age; passport number, identity number, phone,
 telephone and passport copy are absent, and so is every commercial column —

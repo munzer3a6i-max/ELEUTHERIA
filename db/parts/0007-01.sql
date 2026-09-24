@@ -31,8 +31,8 @@
 --     the function, which decides for itself what comes back.
 --
 -- The upshot is that `anon` is granted nothing on ops.applicants, here or
--- anywhere, and the twelve columns below are the whole of what the internet
--- can reach.
+-- anywhere, and the columns below are the whole of what the internet can
+-- reach.
 
 do $$
 begin
@@ -78,3 +78,7 @@ create policy website_published_read on ops.applicants
     and status = 'Available'
     and current_user not in ('anon', 'authenticated')
   );
+
+-- Her jobs are read the same way and on the same terms: they follow whether
+-- she is published, and they are reachable only from the function below.
+drop policy if exists website_published_read on ops.applicant_experience;
