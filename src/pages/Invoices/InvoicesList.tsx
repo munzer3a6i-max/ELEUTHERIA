@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Trash2 } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { useAppStore, invoiceTotalPaid, invoiceBalance, formatMoney } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
 import PageHeader from '../../components/PageHeader'
@@ -8,6 +8,9 @@ import StatusBadge from '../../components/StatusBadge'
 import Modal from '../../components/Modal'
 import { Field, SelectInput, TextInput, PrimaryButton, SecondaryButton } from '../../components/form'
 import AttachmentField from '../../components/AttachmentField'
+import Confirm from '../../components/Confirm'
+import NewInvoiceModal from './NewInvoiceModal'
+import { useCurrentUser } from '../../lib/useCurrentUser'
 import type { Attachment, InvoiceStatus } from '../../types'
 
 const STATUS_FILTERS: (InvoiceStatus | 'All')[] = ['All', 'Issued', 'Partial Payment', 'Completed']
@@ -20,21 +23,41 @@ export default function InvoicesList() {
   const agencies = useAppStore((s) => s.agencies)
   const deleteInvoice = useAppStore((s) => s.deleteInvoice)
   const { t, tb, language } = useTranslation()
+  const { canEdit } = useCurrentUser()
 
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | 'All'>('All')
+  const [agencyFilter, setAgencyFilter] = useState('all')
   const [paymentModal, setPaymentModal] = useState<string | null>(null)
+  const [newOpen, setNewOpen] = useState(false)
+  const [removing, setRemoving] = useState<{ id: string; number: string } | null>(null)
 
-  const filtered = statusFilter === 'All' ? invoices : invoices.filter((i) => i.status === statusFilter)
+  const filtered = invoices.filter(
+    (i) =>
+      (statusFilter === 'All' || i.status === statusFilter) &&
+      (agencyFilter === 'all' || i.recruitmentAgencyId === agencyFilter),
+  )
   const totalBilled = filtered.reduce((sum, i) => sum + i.servicePrice, 0)
   const totalPaid = filtered.reduce((sum, i) => sum + invoiceTotalPaid(i), 0)
 
-  function handleDelete(id: string, number: string) {
-    if (window.confirm(`${t('action_delete')} ${number}?`)) deleteInvoice(id)
+  function handleDelete() {
+    if (!removing) return
+    deleteInvoice(removing.id)
+    setRemoving(null)
   }
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <PageHeader title={t('nav_invoices')} subtitle={t('page_invoices_subtitle')} />
+      <PageHeader
+        title={t('nav_invoices')}
+        subtitle={t('page_invoices_subtitle')}
+        actions={
+          canEdit('finance') && (
+            <PrimaryButton onClick={() => setNewOpen(true)} className="flex items-center gap-1.5">
+              <Plus className="size-3.5" /> {language === 'ar' ? 'فاتورة جديدة' : 'New Invoice'}
+            </PrimaryButton>
+          )
+        }
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard label={language === 'ar' ? 'عدد الفواتير' : 'Total Invoices'} value={String(filtered.length)} />
@@ -43,6 +66,19 @@ export default function InvoicesList() {
       </div>
 
       <div className="flex flex-wrap items-center gap-1">
+        <select
+          value={agencyFilter}
+          onChange={(e) => setAgencyFilter(e.target.value)}
+          aria-label={language === 'ar' ? 'مكتب الاستقدام' : 'Agency'}
+          className="me-2 rounded-control border border-line bg-sunken px-2 py-1.5 text-[11px] text-ink focus:outline-none"
+        >
+          <option value="all">{language === 'ar' ? 'كل المكاتب' : 'All agencies'}</option>
+          {agencies.map((agency) => (
+            <option key={agency.id} value={agency.id}>
+              {tb({ en: agency.englishName, ar: agency.arabicName })}
+            </option>
+          ))}
+        </select>
         {STATUS_FILTERS.map((s) => (
           <button
             key={s}
@@ -104,7 +140,11 @@ export default function InvoicesList() {
                         {language === 'ar' ? 'تسجيل دفعة' : 'Log Payment'}
                       </button>
                     )}
-                    <button type="button" onClick={() => handleDelete(inv.id, inv.invoiceNumber)} className="text-ink-3 hover:text-neg">
+                    <button
+                      type="button"
+                      onClick={() => setRemoving({ id: inv.id, number: inv.invoiceNumber })}
+                      className="text-ink-3 hover:text-neg"
+                    >
                       <Trash2 className="size-3.5" />
                     </button>
                   </td>
@@ -122,7 +162,23 @@ export default function InvoicesList() {
         </table>
       </div>
 
+      {newOpen && <NewInvoiceModal onClose={() => setNewOpen(false)} agencyId={agencyFilter === 'all' ? null : agencyFilter} />}
       {paymentModal && <LogPaymentModal invoiceId={paymentModal} onClose={() => setPaymentModal(null)} />}
+      {removing && (
+        <Confirm
+          title={language === 'ar' ? 'حذف هذه الفاتورة؟' : 'Delete this invoice?'}
+          message={
+            language === 'ar'
+              ? 'تُحذف الفاتورة وكل الدفعات المسجلة عليها. لا يمكن التراجع عن ذلك.'
+              : 'The invoice goes, and every payment recorded against it. This cannot be undone.'
+          }
+          detail={removing.number}
+          confirmLabel={t('action_delete')}
+          tone="danger"
+          onConfirm={handleDelete}
+          onClose={() => setRemoving(null)}
+        />
+      )}
     </div>
   )
 }

@@ -23,7 +23,9 @@ import type {
   City,
   Country,
   Employer,
+  ExpenseCategory,
   Invoice,
+  Manager,
   OfficeExpense,
   PaymentSource,
   PayrollEntry,
@@ -41,6 +43,8 @@ export interface Assembled {
   countries: Country[]
   cities: City[]
   professions: Profession[]
+  managers: Manager[]
+  expenseCategories: ExpenseCategory[]
   paymentSources: PaymentSource[]
   staff: StaffMember[]
   agencies: RecruitmentAgency[]
@@ -87,6 +91,8 @@ export function assemble(tables: Tables): Assembled {
     countries: (tables.countries ?? []).map(rows.countryRows.in),
     cities: (tables.cities ?? []).map(rows.cityRows.in),
     professions: (tables.professions ?? []).map(rows.professionRows.in),
+    managers: (tables.managers ?? []).map(rows.managerRows.in),
+    expenseCategories: (tables.expense_categories ?? []).map(rows.expenseCategoryRows.in),
     paymentSources: (tables.payment_sources ?? []).map(rows.paymentSourceRows.in),
     staff: (tables.staff ?? []).map(rows.staffRows.in),
     agencies: (tables.agencies ?? []).map(rows.agencyRows.in),

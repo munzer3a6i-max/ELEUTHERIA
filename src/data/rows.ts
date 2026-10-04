@@ -22,6 +22,8 @@
 
 
 import type {
+  Manager,
+  ExpenseCategory,
   AgencyCharge,
   AgencyContract,
   Agent,
@@ -124,6 +126,18 @@ export const professionRows = {
   table: 'professions',
   out: (p: Profession): Row => ({ id: p.id, name_en: p.name.en, name_ar: p.name.ar }),
   in: (r: Row): Profession => ({ id: text(r.id), name: { en: text(r.name_en), ar: text(r.name_ar) } }),
+}
+
+export const managerRows = {
+  table: 'managers',
+  out: (m: Manager): Row => ({ id: m.id, name_en: m.name.en, name_ar: m.name.ar }),
+  in: (r: Row): Manager => ({ id: text(r.id), name: { en: text(r.name_en), ar: text(r.name_ar) } }),
+}
+
+export const expenseCategoryRows = {
+  table: 'expense_categories',
+  out: (c: ExpenseCategory): Row => ({ id: c.id, name_en: c.name.en, name_ar: c.name.ar }),
+  in: (r: Row): ExpenseCategory => ({ id: text(r.id), name: { en: text(r.name_en), ar: text(r.name_ar) } }),
 }
 
 export const paymentSourceRows = {
@@ -323,6 +337,7 @@ export const applicantRows = {
     published_to_website: a.cvLinkedToWebsite,
     agency_id: a.recruitmentAgencyId,
     agent_id: a.agentId,
+    manager_id: a.managerId,
   }),
   in: (r: Row): Applicant => ({
     id: text(r.id),
@@ -353,6 +368,7 @@ export const applicantRows = {
     notes: [],
     recruitmentAgencyId: (r.agency_id as string | null) ?? null,
     agentId: (r.agent_id as string | null) ?? null,
+    managerId: (r.manager_id as string | null) ?? null,
     createdOn: dateIn(r.created_at),
     updatedOn: dateIn(r.updated_at),
     updatedBy: '',

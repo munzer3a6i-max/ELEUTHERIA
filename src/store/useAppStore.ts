@@ -11,6 +11,8 @@ import type {
   Country,
   City,
   Profession,
+  Manager,
+  ExpenseCategory,
   PaymentSource,
   AppNotification,
   StatusHistoryEntry,
@@ -40,6 +42,8 @@ import {
   seedCountries,
   seedCities,
   seedProfessions,
+  seedManagers,
+  seedExpenseCategories,
   seedPaymentSources,
   seedNotifications,
   seedPayroll,
@@ -137,6 +141,10 @@ const ACTION_AREA: Record<string, Area> = {
   deleteCity: 'system',
   addProfession: 'system',
   deleteProfession: 'system',
+  addManager: 'system',
+  deleteManager: 'system',
+  addExpenseCategory: 'system',
+  deleteExpenseCategory: 'system',
   addPaymentSource: 'system',
   updatePaymentSource: 'system',
   deletePaymentSource: 'system',
@@ -255,6 +263,8 @@ export interface AppState {
   countries: Country[]
   cities: City[]
   professions: Profession[]
+  managers: Manager[]
+  expenseCategories: ExpenseCategory[]
   paymentSources: PaymentSource[]
   payroll: PayrollEntry[]
   officeExpenses: OfficeExpense[]
@@ -316,7 +326,10 @@ export interface AppState {
   updateStatusUpdate: (requestId: string, entryId: string, patch: Omit<StatusHistoryEntry, 'id'>) => void
   deleteStatusUpdate: (requestId: string, entryId: string) => void
 
-  addInvoice: (data: Pick<Invoice, 'recruitmentRequestId' | 'employerId' | 'recruitmentAgencyId' | 'servicePrice'>) => string
+  addInvoice: (
+    data: Pick<Invoice, 'recruitmentRequestId' | 'employerId' | 'recruitmentAgencyId' | 'servicePrice'> &
+      Partial<Pick<Invoice, 'issuedOn'>>,
+  ) => string
   updateInvoiceStatus: (id: string, status: Invoice['status']) => void
   addInvoicePayment: (invoiceId: string, payment: Omit<InvoicePayment, 'id'>) => void
   deleteInvoice: (id: string) => void
@@ -334,6 +347,10 @@ export interface AppState {
   deleteCity: (id: string) => void
   addProfession: (name: Profession['name']) => void
   deleteProfession: (id: string) => void
+  addManager: (name: Manager['name']) => void
+  deleteManager: (id: string) => void
+  addExpenseCategory: (name: ExpenseCategory['name']) => void
+  deleteExpenseCategory: (id: string) => void
   addPaymentSource: (data: Omit<PaymentSource, 'id'>) => void
   updatePaymentSource: (id: string, patch: Partial<PaymentSource>) => void
   deletePaymentSource: (id: string) => void
@@ -384,6 +401,8 @@ export const useAppStore = create<AppState>()(
       countries: seedCountries,
       cities: seedCities,
       professions: seedProfessions,
+      managers: seedManagers,
+      expenseCategories: seedExpenseCategories,
       paymentSources: seedPaymentSources,
       payroll: seedPayroll,
       officeExpenses: seedOfficeExpenses,
@@ -666,11 +685,18 @@ export const useAppStore = create<AppState>()(
           }),
         ),
 
-      addInvoice: (data) => {
+      addInvoice: ({ issuedOn, ...data }) => {
         const id = newId()
         const seq = get().invoiceSequence
         const invoiceNumber = `INV-${new Date().getFullYear()}-${String(seq).padStart(4, '0')}`
-        const invoice: Invoice = { ...data, id, invoiceNumber, payments: [], status: 'Issued', issuedOn: todayIso() }
+        const invoice: Invoice = {
+          ...data,
+          id,
+          invoiceNumber,
+          payments: [],
+          status: 'Issued',
+          issuedOn: issuedOn || todayIso(),
+        }
         set((s) => ({ invoices: [invoice, ...s.invoices], invoiceSequence: s.invoiceSequence + 1 }))
         return id
       },
@@ -751,6 +777,19 @@ export const useAppStore = create<AppState>()(
       deleteCity: (id) => set((s) => ({ cities: s.cities.filter((c) => c.id !== id) })),
       addProfession: (name) => set((s) => ({ professions: [...s.professions, { id: newId(), name }] })),
       deleteProfession: (id) => set((s) => ({ professions: s.professions.filter((p) => p.id !== id) })),
+      addManager: (name) => set((s) => ({ managers: [...s.managers, { id: newId(), name }] })),
+      // Her record keeps pointing at a manager who has been removed only until
+      // the next edit; the column is nulled here so nothing reads a ghost.
+      deleteManager: (id) =>
+        set((s) => ({
+          managers: s.managers.filter((m) => m.id !== id),
+          applicants: s.applicants.map((a) => (a.managerId === id ? { ...a, managerId: null } : a)),
+        })),
+      addExpenseCategory: (name) =>
+        set((s) => ({ expenseCategories: [...s.expenseCategories, { id: newId(), name }] })),
+      deleteExpenseCategory: (id) =>
+        set((s) => ({ expenseCategories: s.expenseCategories.filter((c) => c.id !== id) })),
+
       addPaymentSource: (data) =>
         set((s) => ({ paymentSources: [...s.paymentSources, { ...data, id: newId() }] })),
       updatePaymentSource: (id, patch) =>
@@ -914,6 +953,8 @@ export const useAppStore = create<AppState>()(
           // Passwords are new, so an older session has to sign in again.
           currentStaffId: '',
           agents: state.agents ?? seedAgents,
+          managers: state.managers ?? seedManagers,
+          expenseCategories: state.expenseCategories ?? seedExpenseCategories,
           agentCommissions: state.agentCommissions ?? [],
           agencyContracts: state.agencyContracts ?? seedAgencyContracts,
           agencyCharges: state.agencyCharges ?? [],
@@ -951,6 +992,7 @@ export const useAppStore = create<AppState>()(
             agentId: a.agentId ?? null,
             photoPath: a.photoPath ?? null,
             cvPath: a.cvPath ?? null,
+            managerId: a.managerId ?? null,
           }))
         }
       },

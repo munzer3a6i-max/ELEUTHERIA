@@ -26,6 +26,8 @@ export const TABLE_ORDER: TableName[] = [
   'countries',
   'cities',
   'professions',
+  'managers',
+  'expense_categories',
   'payment_sources',
   'staff',
   'agencies',
@@ -53,7 +55,8 @@ export const TABLE_ORDER: TableName[] = [
 type Slice = Pick<
   AppState,
   | 'settings'
-  | 'countries' | 'cities' | 'professions' | 'paymentSources' | 'staff' | 'agencies' | 'agents'
+  | 'countries' | 'cities' | 'professions' | 'managers' | 'expenseCategories'
+  | 'paymentSources' | 'staff' | 'agencies' | 'agents'
   | 'employers' | 'applicants' | 'requests' | 'invoices' | 'payroll' | 'officeExpenses'
   | 'agencyContracts' | 'agencyCharges' | 'agentCommissions' | 'backouts' | 'notifications'
 >
@@ -66,6 +69,8 @@ export function project(state: Slice): Projection {
   for (const c of state.countries) put('countries', rows.countryRows.out(c))
   for (const c of state.cities) put('cities', rows.cityRows.out(c))
   for (const p of state.professions) put('professions', rows.professionRows.out(p))
+  for (const m of state.managers) put('managers', rows.managerRows.out(m))
+  for (const c of state.expenseCategories) put('expense_categories', rows.expenseCategoryRows.out(c))
   for (const p of state.paymentSources) put('payment_sources', rows.paymentSourceRows.out(p))
   for (const m of state.staff) put('staff', rows.staffRows.out(m))
   for (const a of state.agencies) put('agencies', rows.agencyRows.out(a))

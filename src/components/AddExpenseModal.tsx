@@ -6,8 +6,6 @@ import { BilingualField, Field, PrimaryButton, SecondaryButton, SelectInput, Tex
 import AttachmentField from './AttachmentField'
 import type { Attachment, LedgerStatus, OfficeExpense } from '../types'
 
-const CATEGORIES = ['Rent', 'Utilities', 'Supplies', 'Accommodation', 'Logistics', 'Other']
-
 export default function AddExpenseModal({
   onClose,
   expense = null,
@@ -18,11 +16,17 @@ export default function AddExpenseModal({
 }) {
   const addOfficeExpense = useAppStore((s) => s.addOfficeExpense)
   const updateOfficeExpense = useAppStore((s) => s.updateOfficeExpense)
-  const { t, language } = useTranslation()
+  const categories = useAppStore((s) => s.expenseCategories)
+  const { t, tb, language } = useTranslation()
+  // What the office has filed under before, whether or not the list still
+  // holds it: an expense should not quietly change category because somebody
+  // tidied the list afterwards.
+  const named = categories.map((c) => tb(c.name))
+  const choices = [...new Set([...named, ...(expense ? [expense.category] : [])])]
   const [form, setForm] = useState({
     en: expense?.item.en ?? '',
     ar: expense?.item.ar ?? '',
-    category: expense?.category ?? CATEGORIES[0],
+    category: expense?.category ?? '',
     amount: expense ? String(expense.amount) : '',
     date: expense?.date ?? new Date().toISOString().slice(0, 10),
     status: expense?.status ?? ('Paid' as LedgerStatus),
@@ -32,7 +36,7 @@ export default function AddExpenseModal({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const amount = Number(form.amount)
-    if (!form.en.trim() || !Number.isFinite(amount) || amount <= 0) return
+    if (!form.en.trim() || !form.category || !Number.isFinite(amount) || amount <= 0) return
     const payload = {
       item: { en: form.en.trim(), ar: form.ar.trim() || form.en.trim() },
       category: form.category,
@@ -59,8 +63,15 @@ export default function AddExpenseModal({
         />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={t('fin_category')}>
-            <SelectInput value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}>
-              {[...new Set([...CATEGORIES, form.category])].map((category) => (
+            <SelectInput
+              value={form.category}
+              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+              required
+            >
+              <option value="" disabled>
+                {language === 'ar' ? 'اختر بندًا' : 'Choose a category'}
+              </option>
+              {choices.map((category) => (
                 <option key={category} value={category}>
                   {category}
                 </option>

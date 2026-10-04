@@ -1,8 +1,6 @@
 -- 0001_schema.sql, piece 3 of 7.
 -- Run the pieces in order, each on its own. Running one twice is safe.
 
--- Passport and identity numbers live here and are never exposed publicly.
--- See the published_workers view in 0002_security.sql.
 create table if not exists ops.applicants (
   id                     uuid primary key default gen_random_uuid(),
   english_name           text not null,
@@ -30,6 +28,9 @@ create table if not exists ops.applicants (
   published_to_website   boolean not null default false,
   agency_id              uuid references ops.agencies (id) on delete set null,
   agent_id               uuid references ops.agents (id) on delete set null,
+  -- Whose worker she is. Null for a worker nobody has claimed, and for the
+  -- tradesmen, who do not come through a manager at all.
+  manager_id             uuid references ops.managers (id) on delete set null,
   created_at             timestamptz not null default now(),
   updated_at             timestamptz not null default now(),
   updated_by             uuid references ops.staff (id) on delete set null

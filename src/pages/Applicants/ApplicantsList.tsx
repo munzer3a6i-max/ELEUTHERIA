@@ -21,6 +21,7 @@ export default function ApplicantsList() {
   const professions = useAppStore((s) => s.professions)
   const countries = useAppStore((s) => s.countries)
   const agencies = useAppStore((s) => s.agencies)
+  const managers = useAppStore((s) => s.managers)
   const addApplicant = useAppStore((s) => s.addApplicant)
   const { t, tb, language } = useTranslation()
   const { canEdit } = useCurrentUser()
@@ -32,6 +33,7 @@ export default function ApplicantsList() {
   const [typeFilter, setTypeFilter] = useState<RequestType | 'All'>('All')
   const [addOpen, setAddOpen] = useState(false)
   const [websiteOnly, setWebsiteOnly] = useState(false)
+  const [managerFilter, setManagerFilter] = useState<string>('all')
   const [removing, setRemoving] = useState<Applicant | null>(null)
   const [refused, setRefused] = useState<number | null>(null)
 
@@ -45,9 +47,12 @@ export default function ApplicantsList() {
       const matchesStatus = statusFilter === 'All' || a.status === statusFilter
       const matchesType = typeFilter === 'All' || a.type === typeFilter
       const matchesSite = !websiteOnly || a.cvLinkedToWebsite
-      return matchesQuery && matchesStatus && matchesType && matchesSite
+      const matchesManager =
+        managerFilter === 'all' ||
+        (managerFilter === 'none' ? a.managerId === null : a.managerId === managerFilter)
+      return matchesQuery && matchesStatus && matchesType && matchesSite && matchesManager
     })
-  }, [applicants, query, statusFilter, typeFilter, websiteOnly])
+  }, [applicants, query, statusFilter, typeFilter, websiteOnly, managerFilter])
 
   function askToDelete(applicant: Applicant) {
     // The database refuses a worker who is on a request, so find that out
@@ -115,6 +120,22 @@ export default function ApplicantsList() {
           <Globe className="size-3.5" />
           {language === 'ar' ? 'على الموقع' : 'On the website'}
         </button>
+        {managers.length > 0 && (
+          <select
+            value={managerFilter}
+            onChange={(e) => setManagerFilter(e.target.value)}
+            aria-label={t('label_manager')}
+            className="rounded-control border border-line bg-sunken px-2 py-1.5 text-[11px] text-ink focus:outline-none"
+          >
+            <option value="all">{t('label_manager_all')}</option>
+            {managers.map((m) => (
+              <option key={m.id} value={m.id}>
+                {tb(m.name)}
+              </option>
+            ))}
+            <option value="none">{t('label_manager_none')}</option>
+          </select>
+        )}
         <div className="flex flex-wrap items-center gap-1">
           {STATUS_FILTERS.map((s) => (
             <button
@@ -139,6 +160,7 @@ export default function ApplicantsList() {
               <th className="px-4 py-3">{language === 'ar' ? 'المهنة' : 'Profession'}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'النوع' : 'Type'}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'مكتب الاستقدام' : 'Agency'}</th>
+              <th className="px-4 py-3">{t('label_manager')}</th>
               <th className="px-4 py-3">{t('label_status')}</th>
               <th className="sticky end-0 bg-surface px-4 py-3 text-end">{t('label_action')}</th>
             </tr>
@@ -146,6 +168,7 @@ export default function ApplicantsList() {
           <tbody>
             {filtered.map((a) => {
               const agency = agencies.find((ag) => ag.id === a.recruitmentAgencyId)
+              const manager = managers.find((m) => m.id === a.managerId)
               return (
                 <tr key={a.id} className="text-xs">
                   <td className="px-4 py-3">
@@ -163,6 +186,7 @@ export default function ApplicantsList() {
                     {a.type === 'Domestic' ? t('type_domestic') : t('type_profession')}
                   </td>
                   <td className="px-4 py-3 text-ink-2">{agency ? tb({ en: agency.englishName, ar: agency.arabicName }) : '-'}</td>
+                  <td className="px-4 py-3 text-ink-2">{manager ? tb(manager.name) : '-'}</td>
                   <td className="px-4 py-3">
                     <span className="flex items-center gap-1.5">
                       <StatusBadge status={a.status} />
@@ -191,7 +215,7 @@ export default function ApplicantsList() {
             })}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-xs text-ink-3">
+                <td colSpan={7} className="px-4 py-8 text-center text-xs text-ink-3">
                   {language === 'ar' ? 'لا يوجد متقدمون مطابقون' : 'No applicants match your search.'}
                 </td>
               </tr>
@@ -267,10 +291,12 @@ function AddApplicantModal({
     telephone: string
     recruitmentAgencyId: string | null
     agentId: string | null
+    managerId: string | null
   }) => void
 }) {
   const agencies = useAppStore((s) => s.agencies)
   const agents = useAppStore((s) => s.agents)
+  const managers = useAppStore((s) => s.managers)
   const { t, tb, language } = useTranslation()
   const [englishName, setEnglishName] = useState('')
   const [arabicName, setArabicName] = useState('')
@@ -286,6 +312,7 @@ function AddApplicantModal({
   const [phone, setPhone] = useState('')
   const [agencyId, setAgencyId] = useState('')
   const [agentId, setAgentId] = useState('')
+  const [managerId, setManagerId] = useState('')
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -307,6 +334,7 @@ function AddApplicantModal({
       telephone: '',
       recruitmentAgencyId: agencyId || null,
       agentId: agentId || null,
+      managerId: managerId || null,
     })
   }
 
@@ -400,6 +428,17 @@ function AddApplicantModal({
               ? 'يستحق الوكيل نصف أتعابه عند الاختيار والنصف الآخر عند المغادرة.'
               : 'An agent earns half their fee at selection and the other half at deployment.'}
           </p>
+        </Field>
+        <Field label={t('label_manager')}>
+          <SelectInput value={managerId} onChange={(e) => setManagerId(e.target.value)}>
+            <option value="">{t('label_manager_none')}</option>
+            {managers.map((m) => (
+              <option key={m.id} value={m.id}>
+                {tb(m.name)}
+              </option>
+            ))}
+          </SelectInput>
+          <p className="mt-1 text-[10.5px] text-ink-3">{t('label_manager_hint')}</p>
         </Field>
         <div className="mt-4 flex justify-end gap-2">
           <SecondaryButton onClick={onClose}>{t('action_cancel')}</SecondaryButton>

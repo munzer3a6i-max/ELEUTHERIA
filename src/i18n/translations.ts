@@ -332,6 +332,22 @@ export const translations = {
   },
   applicant_requests_count: { en: 'Recruitment requests on file:', ar: 'عدد طلبات الاستقدام المسجلة:' },
   action_ok: { en: 'OK', ar: 'حسنًا' },
+  label_manager: { en: 'Manager', ar: 'المسؤول' },
+  label_manager_all: { en: 'All managers', ar: 'كل المسؤولين' },
+  label_manager_none: { en: 'No manager', ar: 'بدون مسؤول' },
+  label_manager_hint: {
+    en: 'Whose worker she is. The month is split along this line.',
+    ar: 'لمن تتبع هذه العاملة. تُقسَّم حسابات الشهر على هذا الأساس.',
+  },
+  addons_managers: { en: 'Managers', ar: 'المسؤولون' },
+  addons_expense_categories: { en: 'Expense Categories', ar: 'بنود المصروفات' },
+  addons_add_manager: { en: 'Add Manager', ar: 'إضافة مسؤول' },
+  addons_add_category: { en: 'Add Category', ar: 'إضافة بند' },
+  reports_by_manager: { en: 'By manager', ar: 'حسب المسؤول' },
+  reports_by_manager_sub: {
+    en: 'What each manager\u2019s workers brought in and cost over the period',
+    ar: 'ما حققته عاملات كل مسؤول وما كلّفته خلال الفترة',
+  },
   users_manage_here: { en: 'Accounts and roles are managed in Settings.', ar: 'تُدار الحسابات والأدوار من الإعدادات.' },
   users_add_confirm_title: { en: 'Add this user?', ar: 'إضافة هذا المستخدم؟' },
   users_add_confirm: {
@@ -398,6 +414,7 @@ export const translations = {
 
   // Attachments
   attach_label: { en: 'Bill or receipt', ar: 'الفاتورة أو الإيصال' },
+  attach_invoice: { en: 'Invoice or receipt image', ar: 'صورة الفاتورة أو الإيصال' },
   attach_upload: { en: 'Attach a file', ar: 'إرفاق ملف' },
   attach_view: { en: 'Open attachment', ar: 'فتح المرفق' },
   attach_none: { en: 'No file attached', ar: 'لا يوجد ملف مرفق' },

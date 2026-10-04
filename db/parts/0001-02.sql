@@ -53,3 +53,21 @@ create table if not exists ops.employers (
   created_at                  timestamptz not null default now(),
   updated_at                  timestamptz not null default now()
 );
+
+-- Passport and identity numbers live here and are never exposed publicly.
+-- See the published_workers view in 0002_security.sql.
+-- The managers whose domestic workers are counted separately at month end.
+create table if not exists ops.managers (
+  id         uuid primary key default gen_random_uuid(),
+  name_en    text not null,
+  name_ar    text not null default '',
+  created_at timestamptz not null default now()
+);
+
+-- What an office expense is filed under.
+create table if not exists ops.expense_categories (
+  id         uuid primary key default gen_random_uuid(),
+  name_en    text not null,
+  name_ar    text not null default '',
+  created_at timestamptz not null default now()
+);

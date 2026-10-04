@@ -9,7 +9,7 @@ import Modal from '../../components/Modal'
 import { BilingualField, Field, SelectInput, TextInput, PrimaryButton, SecondaryButton } from '../../components/form'
 import type { PaymentSourceScope } from '../../types'
 
-const TABS = ['countries', 'cities', 'professions', 'payment-sources', 'statuses'] as const
+const TABS = ['countries', 'cities', 'professions', 'managers', 'expense-categories', 'payment-sources', 'statuses'] as const
 type Tab = (typeof TABS)[number]
 
 export default function AddonsPage() {
@@ -22,6 +22,8 @@ export default function AddonsPage() {
     countries: language === 'ar' ? 'الدول' : 'Countries',
     cities: language === 'ar' ? 'المدن' : 'Cities',
     professions: language === 'ar' ? 'المهن' : 'Professions',
+    managers: t('addons_managers'),
+    'expense-categories': t('addons_expense_categories'),
     'payment-sources': language === 'ar' ? 'مصادر الدفع' : 'Payment Sources',
     statuses: language === 'ar' ? 'الحالات' : 'Statuses',
   }
@@ -48,6 +50,8 @@ export default function AddonsPage() {
       {activeTab === 'countries' && <CountriesTab />}
       {activeTab === 'cities' && <CitiesTab />}
       {activeTab === 'professions' && <ProfessionsTab />}
+      {activeTab === 'managers' && <ManagersTab />}
+      {activeTab === 'expense-categories' && <ExpenseCategoriesTab />}
       {activeTab === 'payment-sources' && <PaymentSourcesTab />}
       {activeTab === 'statuses' && <StatusesTab />}
     </div>
@@ -216,6 +220,89 @@ function ProfessionsTab() {
         </Modal>
       )}
     </>
+  )
+}
+
+/**
+ * A list of names in two languages, added and removed. Managers and expense
+ * categories are the same shape, and the only difference worth writing twice
+ * is what removing one means -- so that is a sentence, not a second component.
+ */
+function NameListTab({
+  items,
+  onAdd,
+  onDelete,
+  addLabel,
+  note,
+}: {
+  items: { id: string; label: string }[]
+  onAdd: (name: { en: string; ar: string }) => void
+  onDelete: (id: string) => void
+  addLabel: string
+  note?: string
+}) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const [en, setEn] = useState('')
+  const [ar, setAr] = useState('')
+
+  return (
+    <>
+      {note && <p className="text-[11px] text-ink-3">{note}</p>}
+      <ConfigList items={items} onDelete={onDelete} onAdd={() => setOpen(true)} addLabel={addLabel} />
+      {open && (
+        <Modal title={addLabel} onClose={() => setOpen(false)}>
+          <BilingualField labelEn="English" labelAr="Arabic" valueEn={en} valueAr={ar} onChangeEn={setEn} onChangeAr={setAr} />
+          <div className="mt-4 flex justify-end gap-2">
+            <SecondaryButton onClick={() => setOpen(false)}>{t('action_cancel')}</SecondaryButton>
+            <PrimaryButton
+              onClick={() => {
+                if (!en.trim()) return
+                onAdd({ en: en.trim(), ar: ar.trim() })
+                setOpen(false)
+                setEn('')
+                setAr('')
+              }}
+            >
+              {t('action_add')}
+            </PrimaryButton>
+          </div>
+        </Modal>
+      )}
+    </>
+  )
+}
+
+function ManagersTab() {
+  const managers = useAppStore((s) => s.managers)
+  const addManager = useAppStore((s) => s.addManager)
+  const deleteManager = useAppStore((s) => s.deleteManager)
+  const { t, tb } = useTranslation()
+
+  return (
+    <NameListTab
+      items={managers.map((m) => ({ id: m.id, label: tb(m.name) }))}
+      onAdd={addManager}
+      onDelete={deleteManager}
+      addLabel={t('addons_add_manager')}
+      note={t('label_manager_hint')}
+    />
+  )
+}
+
+function ExpenseCategoriesTab() {
+  const categories = useAppStore((s) => s.expenseCategories)
+  const addExpenseCategory = useAppStore((s) => s.addExpenseCategory)
+  const deleteExpenseCategory = useAppStore((s) => s.deleteExpenseCategory)
+  const { t, tb } = useTranslation()
+
+  return (
+    <NameListTab
+      items={categories.map((c) => ({ id: c.id, label: tb(c.name) }))}
+      onAdd={addExpenseCategory}
+      onDelete={deleteExpenseCategory}
+      addLabel={t('addons_add_category')}
+    />
   )
 }
 

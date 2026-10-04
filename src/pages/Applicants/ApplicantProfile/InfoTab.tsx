@@ -15,6 +15,7 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
   const addEducation = useAppStore((s) => s.addEducation)
   const deleteEducation = useAppStore((s) => s.deleteEducation)
   const agencies = useAppStore((s) => s.agencies)
+  const managers = useAppStore((s) => s.managers)
   const employers = useAppStore((s) => s.employers)
   const staff = useAppStore((s) => s.staff)
   const allRequests = useAppStore((s) => s.requests)
@@ -77,6 +78,15 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
             <MetaField label={language === 'ar' ? 'رقم الهوية' : 'ID Number'} value={applicant.idNumber} onSave={(v) => updateApplicant(applicant.id, { idNumber: v })} />
             <MetaField label={t('label_phone')} value={applicant.phone} onSave={(v) => updateApplicant(applicant.id, { phone: v })} />
             <MetaField label={language === 'ar' ? 'الهاتف الأرضي' : 'Telephone'} value={applicant.telephone} onSave={(v) => updateApplicant(applicant.id, { telephone: v })} />
+            <SelectField
+              label={t('label_manager')}
+              value={applicant.managerId ?? ''}
+              onSave={(v) => updateApplicant(applicant.id, { managerId: v || null })}
+              options={[
+                { value: '', label: t('label_manager_none') },
+                ...managers.map((m) => ({ value: m.id, label: tb(m.name) })),
+              ]}
+            />
           </div>
         </div>
 
@@ -281,6 +291,41 @@ function CvRow({ applicant, onRemove }: { applicant: Applicant; onRemove: () => 
           ? language === 'ar' ? 'منشورة على الموقع' : 'On the website'
           : language === 'ar' ? 'غير منشورة على الموقع' : 'Not on the website'}
       </span>
+    </div>
+  )
+}
+
+/**
+ * The same quiet row as MetaField, for a value that has to be one of a list.
+ * It saves on change rather than on blur: picking from a list is the decision,
+ * and asking somebody to confirm it twice reads as the thing not working.
+ */
+function SelectField({
+  label,
+  value,
+  options,
+  onSave,
+}: {
+  label: string
+  value: string
+  options: { value: string; label: string }[]
+  onSave: (value: string) => void
+}) {
+  return (
+    <div>
+      <p className="text-ink-3">{label}</p>
+      <select
+        value={value}
+        onChange={(event) => onSave(event.target.value)}
+        aria-label={label}
+        className="mt-0.5 w-full rounded-control border border-line bg-sunken px-1.5 py-0.5 text-[11px] text-ink focus:outline-none"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
     </div>
   )
 }

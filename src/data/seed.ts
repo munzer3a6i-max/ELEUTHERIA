@@ -8,6 +8,8 @@ import type {
   Country,
   City,
   Profession,
+  Manager,
+  ExpenseCategory,
   PaymentSource,
   AppNotification,
   PayrollEntry,
@@ -32,6 +34,20 @@ export const seedCities: City[] = [
   { id: 'ci-3', name: { en: 'Riyadh', ar: 'الرياض' }, countryId: 'co-2' },
   { id: 'ci-4', name: { en: 'Jeddah', ar: 'جدة' }, countryId: 'co-2' },
   { id: 'ci-5', name: { en: 'Dammam', ar: 'الدمام' }, countryId: 'co-2' },
+]
+
+export const seedManagers: Manager[] = [
+  { id: 'mg-1', name: { en: 'Maan', ar: 'معن' } },
+  { id: 'mg-2', name: { en: 'Farid', ar: 'فريد' } },
+]
+
+export const seedExpenseCategories: ExpenseCategory[] = [
+  { id: 'ec-1', name: { en: 'Rent', ar: 'إيجار' } },
+  { id: 'ec-2', name: { en: 'Utilities', ar: 'خدمات' } },
+  { id: 'ec-3', name: { en: 'Supplies', ar: 'لوازم' } },
+  { id: 'ec-4', name: { en: 'Accommodation', ar: 'سكن' } },
+  { id: 'ec-5', name: { en: 'Logistics', ar: 'نقل' } },
+  { id: 'ec-6', name: { en: 'Other', ar: 'أخرى' } },
 ]
 
 export const seedProfessions: Profession[] = [
@@ -219,6 +235,7 @@ export const seedApplicants: Applicant[] = [
     ],
     recruitmentAgencyId: 'fra-1',
     agentId: 'agent-1',
+    managerId: null,
     createdOn: '2024-05-18',
     updatedOn: '2024-05-27',
     updatedBy: 'Roz',
@@ -255,6 +272,7 @@ export const seedApplicants: Applicant[] = [
     notes: [{ id: 'n-3', author: 'Eman', date: '2024-05-05', text: 'Deployed successfully. Client confirmed arrival.' }],
     recruitmentAgencyId: 'fra-2',
     agentId: 'agent-1',
+    managerId: null,
     createdOn: '2024-03-30',
     updatedOn: '2024-05-05',
     updatedBy: 'Eman',
@@ -288,6 +306,7 @@ export const seedApplicants: Applicant[] = [
     notes: [{ id: 'n-4', author: 'Roz', date: '2024-06-03', text: 'On hold pending updated medical documents from client.' }],
     recruitmentAgencyId: 'fra-1',
     agentId: null,
+    managerId: null,
     createdOn: '2024-06-01',
     updatedOn: '2024-06-03',
     updatedBy: 'Roz',
@@ -321,6 +340,7 @@ export const seedApplicants: Applicant[] = [
     notes: [],
     recruitmentAgencyId: 'fra-3',
     agentId: 'agent-2',
+    managerId: null,
     createdOn: '2024-05-15',
     updatedOn: '2024-05-23',
     updatedBy: 'Eman',
@@ -354,6 +374,7 @@ export const seedApplicants: Applicant[] = [
     notes: [],
     recruitmentAgencyId: 'fra-2',
     agentId: null,
+    managerId: null,
     createdOn: '2024-04-22',
     updatedOn: '2024-04-22',
     updatedBy: 'Roz',
@@ -387,6 +408,7 @@ export const seedApplicants: Applicant[] = [
     notes: [],
     recruitmentAgencyId: 'fra-1',
     agentId: null,
+    managerId: null,
     createdOn: '2024-02-08',
     updatedOn: '2024-03-10',
     updatedBy: 'Tess',

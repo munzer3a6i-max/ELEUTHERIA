@@ -338,6 +338,23 @@ https://<project>.supabase.co/storage/v1/object/public/published-photos/<photo_p
 `photo_path` is null for a worker whose photograph was never uploaded, so the
 site needs a placeholder for that case.
 
+### Managers, and the lists the office keeps
+
+`ops.managers` holds the people whose domestic workers are counted separately,
+and `ops.applicants.manager_id` says whose each worker is. It is null for a
+worker nobody has claimed and for the tradesmen, who do not come through a
+manager. Reports totals collected, cost and net along that line, which is what
+the month is split on.
+
+`ops.expense_categories` is what an office expense is filed under. Both lists
+are managed from Addons, both are reference data with the same rules as
+countries and professions -- everybody reads them, an administrator changes
+them -- and removing a manager leaves her workers with no manager rather than
+pointing at a row that is gone.
+
+An expense keeps the category it was filed under as text, so tidying the list
+later never rewrites what was already recorded.
+
 ### Deleting a worker
 
 `ops.requests.applicant_id` is `on delete restrict`, on purpose: a request

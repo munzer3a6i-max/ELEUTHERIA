@@ -1,6 +1,8 @@
 -- 0002_security.sql, piece 3 of 3.
 -- Run the pieces in order, each on its own. Running one twice is safe.
 
+drop policy if exists delete_finance on ops.payroll_entries;
+
 drop policy if exists read_admin     on ops.payroll_entries;
 
 drop policy if exists write_admin    on ops.payroll_entries;

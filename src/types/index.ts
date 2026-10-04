@@ -128,6 +128,8 @@ export interface Applicant {
   recruitmentAgencyId: string | null
   /** The agent who introduced this candidate, when one did. */
   agentId: string | null
+  /** Whose worker she is, for splitting the month's takings. */
+  managerId: string | null
   createdOn: string
   updatedOn: string
   updatedBy: string
@@ -246,6 +248,18 @@ export interface City {
   id: string
   name: Bilingual
   countryId: string
+}
+
+/** One of the people whose domestic workers are counted separately. */
+export interface Manager {
+  id: string
+  name: Bilingual
+}
+
+/** What an office expense is filed under. */
+export interface ExpenseCategory {
+  id: string
+  name: Bilingual
 }
 
 export interface Profession {

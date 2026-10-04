@@ -17,6 +17,8 @@ function withinRange(dateStr: string, range: RangeOption): boolean {
 
 export default function Reports() {
   const requests = useAppStore((s) => s.requests)
+  const applicants = useAppStore((s) => s.applicants)
+  const managers = useAppStore((s) => s.managers)
   const employers = useAppStore((s) => s.employers)
   const agencies = useAppStore((s) => s.agencies)
   const invoices = useAppStore((s) => s.invoices)
@@ -51,6 +53,40 @@ export default function Reports() {
     }
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
   }, [scopedRequests, agencies, tb])
+
+  // What each manager's workers brought in and cost, which is the number the
+  // month is split on. A request's cost and an invoice's payments are counted
+  // against whoever the worker on it belongs to; a worker nobody has claimed
+  // is its own row rather than being quietly dropped.
+  const byManager = useMemo(() => {
+    const blank = () => ({ workers: new Set<string>(), requests: 0, cost: 0, collected: 0 })
+    const map = new Map<string, ReturnType<typeof blank>>()
+    const nameFor = (applicantId: string | undefined) => {
+      const applicant = applicants.find((a) => a.id === applicantId)
+      const manager = managers.find((m) => m.id === applicant?.managerId)
+      return manager ? tb(manager.name) : t('label_manager_none')
+    }
+
+    for (const request of scopedRequests) {
+      const key = nameFor(request.applicantId)
+      const entry = map.get(key) ?? blank()
+      entry.requests += 1
+      entry.cost += requestCost(request)
+      entry.workers.add(request.applicantId)
+      map.set(key, entry)
+    }
+    for (const invoice of scopedInvoices) {
+      const request = requests.find((r) => r.id === invoice.recruitmentRequestId)
+      const key = nameFor(request?.applicantId)
+      const entry = map.get(key) ?? blank()
+      entry.collected += invoiceTotalPaid(invoice)
+      map.set(key, entry)
+    }
+
+    return Array.from(map.entries())
+      .map(([name, entry]) => ({ name, ...entry, workers: entry.workers.size, net: entry.collected - entry.cost }))
+      .sort((a, b) => b.net - a.net)
+  }, [scopedRequests, scopedInvoices, requests, applicants, managers, tb, t])
 
   const totalCost = scopedRequests.reduce((sum, r) => sum + requestCost(r), 0)
   const totalPaid = scopedInvoices.reduce((sum, i) => sum + invoiceTotalPaid(i), 0)
@@ -104,6 +140,45 @@ export default function Reports() {
           <p className="text-2xl font-bold text-pos">{formatMoney(totalPaid)}</p>
           <p className="text-[11px] text-ink-3">{language === 'ar' ? 'إجمالي المدفوع' : 'Total Paid'}</p>
         </div>
+      </div>
+
+      <div className="rounded-panel border border-line bg-surface p-4">
+        <h2 className="panel-title">{t('reports_by_manager')}</h2>
+        <p className="mb-3 mt-0.5 text-[11px] text-ink-3">{t('reports_by_manager_sub')}</p>
+        {byManager.length === 0 ? (
+          <p className="py-6 text-center text-[11px] text-ink-3">
+            {language === 'ar' ? 'لا توجد بيانات لهذه الفترة.' : 'No data in this range.'}
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th className="py-2">{t('label_manager')}</th>
+                  <th className="py-2 text-end">{language === 'ar' ? 'العاملات' : 'Workers'}</th>
+                  <th className="py-2 text-end">{language === 'ar' ? 'الطلبات' : 'Requests'}</th>
+                  <th className="py-2 text-end">{language === 'ar' ? 'المحصّل' : 'Collected'}</th>
+                  <th className="py-2 text-end">{language === 'ar' ? 'التكلفة' : 'Cost'}</th>
+                  <th className="py-2 text-end">{language === 'ar' ? 'الصافي' : 'Net'}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {byManager.map((row) => (
+                  <tr key={row.name} className="text-xs">
+                    <td className="py-2 text-ink">{row.name}</td>
+                    <td className="py-2 text-end text-ink-2">{row.workers}</td>
+                    <td className="py-2 text-end text-ink-2">{row.requests}</td>
+                    <td className="py-2 text-end text-pos">{formatMoney(row.collected)}</td>
+                    <td className="py-2 text-end text-neg">{formatMoney(row.cost)}</td>
+                    <td className={`py-2 text-end font-semibold ${row.net >= 0 ? 'text-pos' : 'text-neg'}`}>
+                      {formatMoney(row.net)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

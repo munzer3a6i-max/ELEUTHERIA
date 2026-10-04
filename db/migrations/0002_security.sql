@@ -71,7 +71,8 @@ $$;
 do $$
 declare t text;
 begin
-  foreach t in array array['countries', 'cities', 'professions', 'payment_sources', 'staff', 'settings']
+  foreach t in array array['countries', 'cities', 'professions', 'managers', 'expense_categories',
+                           'payment_sources', 'staff', 'settings']
   loop
     execute format('drop policy if exists read_all_staff on ops.%I', t);
     execute format('drop policy if exists write_admin on ops.%I', t);
