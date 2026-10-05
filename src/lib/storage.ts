@@ -53,6 +53,33 @@ function extensionOf(file: File, fallback: string): string {
   return (fromName || file.type.split('/')[1] || fallback).toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
+/*
+  What the file is, decided by its name rather than by whatever the browser
+  happened to say when somebody chose it.
+
+  This matters most for the CV. A browser asked to open a document served as
+  text/plain prints the markup on the screen instead of the page, and -- worse
+  -- reads its bytes as Western European rather than Unicode, so every Arabic
+  word turns to rubbish. Saying text/html and saying utf-8 are what stop both.
+*/
+const CONTENT_TYPES: Record<string, string> = {
+  html: 'text/html; charset=utf-8',
+  htm: 'text/html; charset=utf-8',
+  pdf: 'application/pdf',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  gif: 'image/gif',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+}
+
+function typeForPath(path: string, fallback: string): string {
+  const extension = path.includes('.') ? (path.split('.').pop() ?? '').toLowerCase() : ''
+  return CONTENT_TYPES[extension] ?? fallback
+}
+
 /**
  * Storage answers four quite different refusals with the same "400 Bad
  * Request", which reads in a browser console as though the file were at
@@ -91,7 +118,7 @@ async function upload(kind: Kind, applicantId: string, file: File): Promise<stri
   // that still holds the old one.
   const path = `${applicantId}/${crypto.randomUUID()}.${extensionOf(file, kind.fallbackType.split('/')[1])}`
   const { error } = await client.storage.from(kind.private).upload(path, file, {
-    contentType: file.type || kind.fallbackType,
+    contentType: typeForPath(path, file.type || kind.fallbackType),
     upsert: false,
   })
   if (error) throw new Error(`The ${kind.noun} could not be saved. ${explain(kind, asProblem(error))}`)
@@ -114,8 +141,12 @@ async function publish(kind: Kind, path: string): Promise<void> {
       `The ${kind.noun} could not be published. ${explain(kind, error ? asProblem(error) : { message: 'not found' })}`,
     )
   }
+  // Not data.type: what comes back from a download is only as good as what was
+  // stored, and the whole point of the public copy is that a stranger's browser
+  // reads it correctly.
   const { error: upload } = await client.storage.from(kind.public).upload(path, data, {
-    contentType: data.type || kind.fallbackType,
+    contentType: typeForPath(path, data.type || kind.fallbackType),
+    cacheControl: '300',
     upsert: true,
   })
   if (upload) throw new Error(`The ${kind.noun} could not be published. ${explain(kind, asProblem(upload))}`)

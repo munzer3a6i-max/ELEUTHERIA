@@ -419,6 +419,16 @@ https://<project>.supabase.co/storage/v1/object/public/published-cvs/<cv_path>
 holds the name the office uploaded and stays inside `ops`, because a visitor
 has no use for it.
 
+What is stored matters as much as where. A file is served back with the type
+it was given when it was uploaded, and a browser sent a document labelled
+`text/plain` prints the markup on the screen rather than the page -- and reads
+its bytes as Western European rather than Unicode, so every Arabic word turns
+to rubbish. So the type is decided by the key's extension rather than by
+whatever the browser said when somebody chose the file: `.html` is stored as
+`text/html; charset=utf-8`, `.pdf` as `application/pdf`. A CV published before
+that was true keeps its old type until it is published again, which the CV tab's
+Publish does.
+
 This is the one place where the dashboard hands a document to strangers, so it
 is worth being plain about what it means: while a worker is on the website, her
 CV can be read by anyone who has the link, with no key and no sign-in. Nothing

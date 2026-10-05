@@ -157,8 +157,20 @@ const head = (title: string) => `<!doctype html>
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
     font-size: 7pt; color: ${MUTED};
   }
+  /* The one thing on the page that is not the document: a way to save it.
+     A CV reaches people as a PDF, and the browser's own print makes a better
+     one than anything this file could draw. It prints itself out of the way. */
+  [data-controls] { display: flex; gap: 6px; margin-top: 6px; }
+  [data-controls] button {
+    font-family: 'Public Sans', system-ui, sans-serif;
+    font-size: 7pt; letter-spacing: 0.1em; text-transform: uppercase;
+    color: #1c1710; background: #f2ede1; border: 1px solid #d9cdaf;
+    border-radius: 2px; padding: 5px 11px; cursor: pointer; white-space: nowrap;
+  }
+  [data-controls] button:hover { background: #e9e1cd; }
   @media print {
     html { background: #fff; }
+    [data-controls] { display: none !important; }
     .page { margin: 0; box-shadow: none; page-break-after: always; }
     .page:last-child { page-break-after: auto; }
   }
@@ -245,7 +257,7 @@ function professionalCv({ applicant, company, photo, logo }: CvInput): string {
       <div class="brand-left">
         ${logo ? `<img src="${logo}" alt="${escape(company.name)}" style="width:238px;height:auto">` : `<b style="font-size:13pt">${escape(company.name)}</b>`}
       </div>
-      ${letterheadContact(company, '3px')}
+      ${letterheadContact(company, '3px', true)}
     </div>
 
     <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 0 16px">
@@ -368,7 +380,7 @@ function domesticBioData({ applicant, company, photo, fullBody, passportCopy, lo
   <section class="page" style="padding:0.45in 0.5in;line-height:1.4">
     <div class="brand brand-rule" style="padding-bottom:9px">
       ${brandLeft}
-      ${letterheadContact(company, '2px')}
+      ${letterheadContact(company, '2px', true)}
     </div>
 
     <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:12px 0">
@@ -519,11 +531,16 @@ ${tail}`
  * holding the document rings. Both templates print the same thing, and an
  * empty field simply does not take a line.
  */
-function letterheadContact(company: CvInput['company'], padding: string): string {
+function letterheadContact(company: CvInput['company'], padding: string, controls = false): string {
   const reach = [company.website, company.phones].filter(Boolean).join(' · ')
   const lines = [company.licenceNumber, reach, company.address].filter(Boolean)
   return `<div class="contact" style="padding-bottom:${padding}">
-        ${lines.map((line) => `<span>${escape(line)}</span>`).join('\n        ')}
+        ${lines.map((line) => `<span>${escape(line)}</span>`).join('\n        ')}${
+          controls
+            ? `
+        <div data-controls="1"><button type="button" onclick="window.print()">Save as PDF · حفظ PDF</button></div>`
+            : ''
+        }
       </div>`
 }
 

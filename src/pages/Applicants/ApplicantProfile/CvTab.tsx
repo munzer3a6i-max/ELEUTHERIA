@@ -191,7 +191,7 @@ export default function CvTab({ applicant }: { applicant: Applicant }) {
   }
 
   function download() {
-    const blob = new Blob([html], { type: 'text/html' })
+    const blob = new Blob([html], { type: 'text/html; charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
@@ -210,7 +210,7 @@ export default function CvTab({ applicant }: { applicant: Applicant }) {
     setBusy(true)
     setNotice(null)
     try {
-      const file = new File([html], cvFileNameFor(applicant), { type: 'text/html' })
+      const file = new File([html], cvFileNameFor(applicant), { type: 'text/html; charset=utf-8' })
       await setWorkerCv(applicant, file)
       setNotice(t('cv_published'))
     } catch (problem) {
