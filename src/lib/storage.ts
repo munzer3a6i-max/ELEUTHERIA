@@ -54,18 +54,34 @@ function extensionOf(file: File, fallback: string): string {
 }
 
 /**
- * Storage answers a missing bucket with a plain bad request, which reads in a
- * browser console as though the file were at fault. It is not: it means the
- * project has no such bucket, and one migration creates all three.
+ * Storage answers four quite different refusals with the same "400 Bad
+ * Request", which reads in a browser console as though the file were at
+ * fault. It usually is not. These are the four, in the words of the thing to
+ * do about each, with whatever Storage actually said kept on the end.
  */
-function explain(kind: Kind, message: string): string {
+function explain(kind: Kind, error: { message: string; status?: number }): string {
+  const message = error.message
+  const said = error.status ? `(Storage said ${error.status}: ${message})` : `(Storage said: ${message})`
+
   if (/bucket not found|not found/i.test(message)) {
-    return `The ${kind.private} bucket does not exist in this Supabase project. Run db/migrations/0003_storage.sql, which creates the three private buckets, and try again.`
+    return `This project has no bucket called ${kind.private}. Run db/fix-storage.sql in the SQL editor, which creates all five buckets and their rules. ${said}`
   }
-  if (/row-level security|policy/i.test(message)) {
-    return `Storage refused the upload: this account is not staff as far as the database is concerned. (${message})`
+  if (/mime type|content type|too large|maximum allowed size|payload/i.test(message)) {
+    return `The ${kind.private} bucket refuses the file itself: something set a type or size limit on it. Open Storage, ${kind.private}, and clear "Allowed MIME types" and the file size limit. ${said}`
   }
-  return message
+  if (/row-level security|policy|unauthorized|permission denied|new row violates/i.test(message) || error.status === 403) {
+    return `Storage refused the upload: the rules on ${kind.private} do not let this account write to it, usually because the database does not recognise it as active staff. Settings, Database, Check file storage says which. ${said}`
+  }
+  if (/invalid key|invalid_key/i.test(message)) {
+    return `Storage would not accept the name this file was given. ${said}`
+  }
+  return `Settings, Database, Check file storage will say why. ${said}`
+}
+
+/** Storage puts the HTTP status on the error; the message is its body. */
+function asProblem(error: { message: string }): { message: string; status?: number } {
+  const status = (error as { status?: unknown }).status
+  return { message: error.message, status: typeof status === 'number' ? status : undefined }
 }
 
 async function upload(kind: Kind, applicantId: string, file: File): Promise<string> {
@@ -78,7 +94,7 @@ async function upload(kind: Kind, applicantId: string, file: File): Promise<stri
     contentType: file.type || kind.fallbackType,
     upsert: false,
   })
-  if (error) throw new Error(`The ${kind.noun} could not be saved. ${explain(kind, error.message)}`)
+  if (error) throw new Error(`The ${kind.noun} could not be saved. ${explain(kind, asProblem(error))}`)
   return path
 }
 
@@ -94,13 +110,15 @@ async function publish(kind: Kind, path: string): Promise<void> {
   if (!client || !path) return
   const { data, error } = await client.storage.from(kind.private).download(path)
   if (error || !data) {
-    throw new Error(`The ${kind.noun} could not be published. ${explain(kind, error?.message ?? 'not found')}`)
+    throw new Error(
+      `The ${kind.noun} could not be published. ${explain(kind, error ? asProblem(error) : { message: 'not found' })}`,
+    )
   }
   const { error: upload } = await client.storage.from(kind.public).upload(path, data, {
     contentType: data.type || kind.fallbackType,
     upsert: true,
   })
-  if (upload) throw new Error(`The ${kind.noun} could not be published. ${explain(kind, upload.message)}`)
+  if (upload) throw new Error(`The ${kind.noun} could not be published. ${explain(kind, asProblem(upload))}`)
 }
 
 async function unpublish(kind: Kind, path: string): Promise<void> {

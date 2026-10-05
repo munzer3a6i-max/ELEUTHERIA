@@ -284,6 +284,14 @@ export const translations = {
   db_step_5: { en: 'Export this browser’s data and import it with the script.', ar: 'صدّر بيانات هذا المتصفح واستوردها بالبرنامج النصي.' },
   db_docs_note: { en: 'docs/DATABASE.md has the exact commands, including what the website reads.', ar: 'يحتوي docs/DATABASE.md على الأوامر الدقيقة، بما في ذلك ما يقرأه الموقع.' },
 
+  // File storage, and why an upload is refused
+  storage_title: { en: 'File storage', ar: 'تخزين الملفات' },
+  storage_subtitle: { en: 'Photographs, CVs and receipts', ar: 'الصور والسير الذاتية والفواتير' },
+  storage_check: { en: 'Check file storage', ar: 'فحص تخزين الملفات' },
+  storage_checking: { en: 'Trying every bucket…', ar: 'جاري فحص كل مخزن…' },
+  storage_all_ok: { en: 'Every bucket accepts uploads.', ar: 'كل المخازن تقبل الرفع.' },
+  storage_hint: { en: 'This puts a one-pixel picture into each bucket and deletes it again, so a refusal is named rather than left as a bad request in the console.', ar: 'يرفع هذا الفحص صورة بحجم نقطة واحدة إلى كل مخزن ثم يحذفها، ليظهر سبب الرفض بوضوح بدل رسالة خطأ غامضة.' },
+
   // Signing in and accounts
   auth_sign_in: { en: 'Sign in', ar: 'تسجيل الدخول' },
   auth_username: { en: 'Username', ar: 'اسم المستخدم' },

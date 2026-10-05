@@ -426,6 +426,32 @@ narrows that to people the office knows. Keep passport scans and identity
 papers out of the CV -- they belong in `worker-documents`, which is private --
 and unpublishing the worker deletes the public copy.
 
+### When an upload is refused
+
+Storage answers four quite different refusals with the same `400 Bad Request`,
+which in a browser console reads as though the file were at fault. It usually
+is not. The four are: the bucket does not exist; the rules on it do not let
+this account write; the bucket has a type or size limit somebody set in the
+dashboard; or the key is malformed.
+
+Two things tell them apart.
+
+**Settings, Database, Check file storage** puts a one-pixel picture into each
+of the five buckets and deletes it again, using the session the real upload
+would use, and names what came back for each. It also asks the database
+whether it recognises the signed-in account as active staff, which is what
+every write rule turns on.
+
+**`db/fix-storage.sql`**, pasted into the SQL editor, repairs all four causes:
+it creates any missing bucket, puts each one back to public or private as it
+should be, clears any file size limit and allowed MIME types, and rewrites the
+four rules on each. It is safe to run twice and touches no file already
+uploaded. If the role running it cannot write Storage's own tables, it says so
+under Notices and names what to do by hand instead.
+
+`db/check-storage.sql` is the read-only version of the same question, for when
+it is easier to look than to try.
+
 ## What is still to build
 
 The schema is the storage half. The application still needs:
