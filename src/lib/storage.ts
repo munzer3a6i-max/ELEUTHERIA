@@ -53,6 +53,21 @@ function extensionOf(file: File, fallback: string): string {
   return (fromName || file.type.split('/')[1] || fallback).toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
+/**
+ * Storage answers a missing bucket with a plain bad request, which reads in a
+ * browser console as though the file were at fault. It is not: it means the
+ * project has no such bucket, and one migration creates all three.
+ */
+function explain(kind: Kind, message: string): string {
+  if (/bucket not found|not found/i.test(message)) {
+    return `The ${kind.private} bucket does not exist in this Supabase project. Run db/migrations/0003_storage.sql, which creates the three private buckets, and try again.`
+  }
+  if (/row-level security|policy/i.test(message)) {
+    return `Storage refused the upload: this account is not staff as far as the database is concerned. (${message})`
+  }
+  return message
+}
+
 async function upload(kind: Kind, applicantId: string, file: File): Promise<string> {
   const client = supabase
   if (!client) throw new Error('No project is configured.')
@@ -63,7 +78,7 @@ async function upload(kind: Kind, applicantId: string, file: File): Promise<stri
     contentType: file.type || kind.fallbackType,
     upsert: false,
   })
-  if (error) throw new Error(`The ${kind.noun} could not be saved: ${error.message}`)
+  if (error) throw new Error(`The ${kind.noun} could not be saved. ${explain(kind, error.message)}`)
   return path
 }
 
@@ -79,13 +94,13 @@ async function publish(kind: Kind, path: string): Promise<void> {
   if (!client || !path) return
   const { data, error } = await client.storage.from(kind.private).download(path)
   if (error || !data) {
-    throw new Error(`The ${kind.noun} could not be published: ${error?.message ?? 'not found'}`)
+    throw new Error(`The ${kind.noun} could not be published. ${explain(kind, error?.message ?? 'not found')}`)
   }
   const { error: upload } = await client.storage.from(kind.public).upload(path, data, {
     contentType: data.type || kind.fallbackType,
     upsert: true,
   })
-  if (upload) throw new Error(`The ${kind.noun} could not be published: ${upload.message}`)
+  if (upload) throw new Error(`The ${kind.noun} could not be published. ${explain(kind, upload.message)}`)
 }
 
 async function unpublish(kind: Kind, path: string): Promise<void> {
