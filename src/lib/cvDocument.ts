@@ -19,7 +19,16 @@ export type CvTemplate = 'professional' | 'domestic'
 
 export interface CvInput {
   applicant: Applicant
-  company: { name: string; tagline: string; licenceNumber: string; address: string }
+  company: {
+    name: string
+    tagline: string
+    licenceNumber: string
+    address: string
+    /** The letterhead's second line: how to reach the office. */
+    website: string
+    phones: string
+    email: string
+  }
   /** Data URLs, so the finished file depends on nothing it cannot carry. */
   photo: string | null
   fullBody: string | null
@@ -236,10 +245,7 @@ function professionalCv({ applicant, company, photo, logo }: CvInput): string {
       <div class="brand-left">
         ${logo ? `<img src="${logo}" alt="${escape(company.name)}" style="width:238px;height:auto">` : `<b style="font-size:13pt">${escape(company.name)}</b>`}
       </div>
-      <div class="contact">
-        <span>${escape(company.licenceNumber)}</span>
-        <span>${escape(company.address)}</span>
-      </div>
+      ${letterheadContact(company, '3px')}
     </div>
 
     <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 0 16px">
@@ -320,7 +326,7 @@ function professionalCv({ applicant, company, photo, logo }: CvInput): string {
 
     <div class="foot">
       <span>Screened, background-checked and document-verified by ${escape(company.name)}.</span>
-      <span>info@eleutheria.agency</span>
+      <span>${escape(company.email)}</span>
     </div>
   </section>
 ${tail}`
@@ -362,10 +368,7 @@ function domesticBioData({ applicant, company, photo, fullBody, passportCopy, lo
   <section class="page" style="padding:0.45in 0.5in;line-height:1.4">
     <div class="brand brand-rule" style="padding-bottom:9px">
       ${brandLeft}
-      <div class="contact" style="padding-bottom:2px">
-        <span>${escape(company.licenceNumber)}</span>
-        <span>${escape(company.address)}</span>
-      </div>
+      ${letterheadContact(company, '2px')}
     </div>
 
     <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:12px 0">
@@ -482,7 +485,7 @@ function domesticBioData({ applicant, company, photo, fullBody, passportCopy, lo
     </div>
 
     <div class="foot" style="margin-top:12px">
-      <span>Screened and document-verified by ${escape(company.name)} · info@eleutheria.agency</span>
+      <span>Screened and document-verified by ${escape(company.name)}${company.email ? ` · ${escape(company.email)}` : ''}</span>
       <span>Page 1 of 2</span>
     </div>
   </section>
@@ -509,6 +512,19 @@ function domesticBioData({ applicant, company, photo, fullBody, passportCopy, lo
     </div>
   </section>
 ${tail}`
+}
+
+/**
+ * The letterhead's right-hand side: the licence number, then the line somebody
+ * holding the document rings. Both templates print the same thing, and an
+ * empty field simply does not take a line.
+ */
+function letterheadContact(company: CvInput['company'], padding: string): string {
+  const reach = [company.website, company.phones].filter(Boolean).join(' · ')
+  const lines = [company.licenceNumber, reach, company.address].filter(Boolean)
+  return `<div class="contact" style="padding-bottom:${padding}">
+        ${lines.map((line) => `<span>${escape(line)}</span>`).join('\n        ')}
+      </div>`
 }
 
 /* --------------------------------------------------------------- the door -- */

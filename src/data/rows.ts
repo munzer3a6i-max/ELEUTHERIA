@@ -165,6 +165,9 @@ export const settingsRows = {
     company_tagline: s.companyTagline,
     license_number: s.licenseNumber,
     address: s.address,
+    website: s.website,
+    phones: s.phones,
+    email: s.email,
     currency: s.currency,
   }),
   in: (r: Row): CompanySettings => ({
@@ -172,6 +175,9 @@ export const settingsRows = {
     companyTagline: text(r.company_tagline),
     licenseNumber: text(r.license_number),
     address: text(r.address),
+    website: text(r.website),
+    phones: text(r.phones),
+    email: text(r.email),
     currency: text(r.currency) || 'USD',
   }),
 }
@@ -181,6 +187,9 @@ export interface CompanySettings {
   companyTagline: string
   licenseNumber: string
   address: string
+  website: string
+  phones: string
+  email: string
   currency: string
 }
 

@@ -203,11 +203,14 @@ try {
   // --- reference and people ------------------------------------------------
   const s = state.settings ?? {}
   await query(
-    `insert into ops.settings (id, company_name, company_tagline, license_number, address, currency)
-     values (true, $1, $2, $3, $4, $5)
+    `insert into ops.settings (id, company_name, company_tagline, license_number, address, website, phones, email, currency)
+     values (true, $1, $2, $3, $4, $5, $6, $7, $8)
      on conflict (id) do update set company_name = excluded.company_name, company_tagline = excluded.company_tagline,
-       license_number = excluded.license_number, address = excluded.address, currency = excluded.currency`,
-    [s.companyName ?? 'Eleutheria', s.companyTagline ?? '', s.licenseNumber ?? '', s.address ?? '', s.currency ?? 'USD'],
+       license_number = excluded.license_number, address = excluded.address, website = excluded.website,
+       phones = excluded.phones, email = excluded.email, currency = excluded.currency`,
+    [s.companyName ?? 'Eleutheria', s.companyTagline ?? '', s.licenseNumber ?? '', s.address ?? '',
+     s.website ?? 'eleutheria.agency', s.phones ?? 'PH +63 961 278 0038 · PH +63 960 401 4714',
+     s.email ?? 'info@eleutheria.agency', s.currency ?? 'USD'],
   )
 
   await upsert('countries', (state.countries ?? []).map((c) => ({

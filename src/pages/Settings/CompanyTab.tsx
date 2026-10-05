@@ -15,6 +15,9 @@ export default function CompanyTab() {
     companyTagline: settings.companyTagline,
     licenseNumber: settings.licenseNumber,
     address: settings.address,
+    website: settings.website,
+    phones: settings.phones,
+    email: settings.email,
   })
   const [saved, setSaved] = useState(false)
 
@@ -94,6 +97,38 @@ export default function CompanyTab() {
               }}
             />
           </Field>
+          <Field label={language === 'ar' ? 'الموقع الإلكتروني' : 'Website'}>
+            <TextInput
+              value={form.website}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, website: e.target.value }))
+                setSaved(false)
+              }}
+            />
+          </Field>
+          <Field label={language === 'ar' ? 'أرقام التواصل' : 'Contact Numbers'}>
+            <TextInput
+              value={form.phones}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, phones: e.target.value }))
+                setSaved(false)
+              }}
+            />
+          </Field>
+          <Field label={language === 'ar' ? 'البريد الإلكتروني' : 'Email'}>
+            <TextInput
+              value={form.email}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, email: e.target.value }))
+                setSaved(false)
+              }}
+            />
+          </Field>
+          <p className="text-[10.5px] leading-relaxed text-ink-3">
+            {language === 'ar'
+              ? 'تظهر هذه الثلاثة في أعلى السيرة الذاتية وفي أسفلها، بالصيغة نفسها التي تكتبها هنا.'
+              : 'These three are what the CV prints at the top of the page and in its footer, exactly as they are written here.'}
+          </p>
           <Field label={language === 'ar' ? 'العملة' : 'Currency'}>
             <TextInput value="USD" disabled className="opacity-60" />
           </Field>

@@ -72,6 +72,9 @@ create table if not exists ops.settings (
   company_tagline text not null default 'International Placement Services',
   license_number  text not null default '',
   address         text not null default '',
+  website         text not null default 'eleutheria.agency',
+  phones          text not null default 'PH +63 961 278 0038 · PH +63 960 401 4714',
+  email           text not null default 'info@eleutheria.agency',
   currency        text not null default 'USD',
   updated_at      timestamptz not null default now()
 );
@@ -1565,3 +1568,21 @@ create or replace function ops.current_role() returns text
 language sql stable security definer set search_path = ops, pg_temp as $$
   select role from ops.staff where user_id = ops.caller_uid() and status = 'Active';
 $$;
+
+
+-- ======================================================== 0013_company_contact.sql --
+
+-- How to reach the office, on the document itself.
+--
+-- The CV's letterhead prints the licence number and, under it, the line
+-- somebody holding the document rings: the website and the agency's numbers.
+-- They were part of the template from the start and had no home in the
+-- database, so they are three columns on the one settings row rather than
+-- something typed into the page by hand each time.
+
+alter table ops.settings add column if not exists website text not null default 'eleutheria.agency';
+alter table ops.settings add column if not exists phones  text not null default 'PH +63 961 278 0038 · PH +63 960 401 4714';
+alter table ops.settings add column if not exists email   text not null default 'info@eleutheria.agency';
+
+comment on column ops.settings.phones is
+  'Printed on the CV letterhead as written, so the separators and country prefixes are the office''s choice.';

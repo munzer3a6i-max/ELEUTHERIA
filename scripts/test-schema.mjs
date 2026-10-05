@@ -32,7 +32,7 @@ await db.exec(`
   end $$;
 `)
 
-for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql', 'db/migrations/0009_managers_and_categories.sql', 'db/migrations/0010_cv_and_bonus.sql', 'db/migrations/0011_cv_images.sql', 'db/migrations/0012_caller_identity.sql']) {
+for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql', 'db/migrations/0009_managers_and_categories.sql', 'db/migrations/0010_cv_and_bonus.sql', 'db/migrations/0011_cv_images.sql', 'db/migrations/0012_caller_identity.sql', 'db/migrations/0013_company_contact.sql']) {
   try {
     await db.exec(readFileSync(file, 'utf8'))
     console.log(`applied  ${file}`)
@@ -56,7 +56,7 @@ const shape = async () => JSON.stringify((await db.query(`
 const before = await shape()
 let rerunError = null
 try {
-  for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql', 'db/migrations/0009_managers_and_categories.sql', 'db/migrations/0010_cv_and_bonus.sql', 'db/migrations/0011_cv_images.sql', 'db/migrations/0012_caller_identity.sql']) {
+  for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql', 'db/migrations/0009_managers_and_categories.sql', 'db/migrations/0010_cv_and_bonus.sql', 'db/migrations/0011_cv_images.sql', 'db/migrations/0012_caller_identity.sql', 'db/migrations/0013_company_contact.sql']) {
     await db.exec(readFileSync(file, 'utf8'))
   }
 } catch (error) {
