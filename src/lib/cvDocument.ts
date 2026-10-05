@@ -22,6 +22,8 @@ export interface CvInput {
   company: { name: string; tagline: string; licenceNumber: string; address: string }
   /** Data URLs, so the finished file depends on nothing it cannot carry. */
   photo: string | null
+  fullBody: string | null
+  passportCopy: string | null
   logo: string | null
   partnerLogo: string | null
   template?: CvTemplate
@@ -326,7 +328,7 @@ ${tail}`
 
 /* ----------------------------------------------- the domestic bio data ----- */
 
-function domesticBioData({ applicant, company, photo, logo, partnerLogo }: CvInput): string {
+function domesticBioData({ applicant, company, photo, fullBody, passportCopy, logo, partnerLogo }: CvInput): string {
   const cv = applicant.cvDetails
   const fullName = (applicant.englishName || applicant.arabicName).toUpperCase()
 
@@ -449,7 +451,7 @@ function domesticBioData({ applicant, company, photo, logo, partnerLogo }: CvInp
       <div style="display:flex;flex-direction:column;gap:13px">
         <div style="display:flex;flex-direction:column;gap:8px">
           ${photoSlot(photo, '120px', 'Photo · صورة شخصية', fullName)}
-          ${photoSlot(null, '240px', 'Full body · صورة كاملة', fullName)}
+          ${photoSlot(fullBody, '240px', 'Full body · صورة كاملة', fullName)}
         </div>
         <div>
           ${sectionHead('Skills & Experience', 'خبرة العمل', true)}
@@ -497,8 +499,8 @@ function domesticBioData({ applicant, company, photo, logo, partnerLogo }: CvInp
       </div>
     </div>
 
-    <div style="flex:1;display:flex;align-items:center;justify-content:center;margin:18px 0;border:1px dashed ${LINE_MID};border-radius:3px;background:${PANEL};color:${MUTED};font-size:8pt">
-      Paste the passport copy here · ألصق صورة جواز السفر هنا
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;margin:18px 0;border:1px ${passportCopy ? 'solid' : 'dashed'} ${LINE_MID};border-radius:3px;background:${PANEL};color:${MUTED};font-size:8pt;overflow:hidden">
+      ${passportCopy ? `<img src="${passportCopy}" alt="Passport copy" style="max-width:100%;max-height:100%;object-fit:contain">` : 'Paste the passport copy here · ألصق صورة جواز السفر هنا'}
     </div>
 
     <div class="foot">

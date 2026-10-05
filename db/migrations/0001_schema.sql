@@ -183,6 +183,8 @@ create table if not exists ops.applicants (
   status                 text not null default 'Available'
                            check (status in ('Available', 'Unavailable', 'Selected', 'Deployed', 'Back Out')),
   photo_path             text,
+  -- The standing photograph the bio data prints beside her details.
+  full_body_path         text,
   cv_path                text,
   -- The name the office uploaded, beside the uuid the file is stored under.
   cv_file_name           text,
@@ -190,6 +192,7 @@ create table if not exists ops.applicants (
   -- languages, what she is asking for. Optional, and read by name.
   cv_details             jsonb not null default '{}'::jsonb,
   passport_copy_path     text,
+  passport_copy_file_name text,
   -- The switch that decides whether this worker appears on the public site.
   published_to_website   boolean not null default false,
   agency_id              uuid references ops.agencies (id) on delete set null,

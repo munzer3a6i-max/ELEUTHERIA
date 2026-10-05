@@ -29,6 +29,16 @@ const PHOTO: Kind = {
   noun: 'photograph',
 }
 
+// Her passport copy and anything else that belongs to the office alone. It
+// has no public bucket at all: the only way it reaches the outside world is
+// inside a CV somebody chose to send.
+const DOCUMENT: Kind = {
+  private: 'worker-documents',
+  public: '',
+  fallbackType: 'image/jpeg',
+  noun: 'document',
+}
+
 const CV: Kind = {
   private: 'worker-documents',
   public: 'published-cvs',
@@ -61,7 +71,7 @@ async function remove(kind: Kind, path: string): Promise<void> {
   const client = supabase
   if (!client || !path) return
   await client.storage.from(kind.private).remove([path])
-  await client.storage.from(kind.public).remove([path])
+  if (kind.public) await client.storage.from(kind.public).remove([path])
 }
 
 async function publish(kind: Kind, path: string): Promise<void> {
@@ -121,3 +131,15 @@ export const removeWorkerCv = (path: string) => remove(CV, path)
 export const publishCv = (path: string) => publish(CV, path)
 export const unpublishCv = (path: string) => unpublish(CV, path)
 export const signedCvUrl = (path: string) => signedUrl(CV, path)
+
+/* ------------------------------------------- the rest of her pictures -- */
+
+/** The standing photograph the bio data prints. Private, like the headshot. */
+export const uploadFullBody = (applicantId: string, file: File) => upload(PHOTO, applicantId, file)
+export const removeFullBody = (path: string) => remove(PHOTO, path)
+export const signedFullBodyUrl = (path: string) => signedUrl(PHOTO, path)
+
+/** The passport copy, which is never published anywhere. */
+export const uploadPassportCopy = (applicantId: string, file: File) => upload(DOCUMENT, applicantId, file)
+export const removePassportCopy = (path: string) => remove(DOCUMENT, path)
+export const signedPassportCopyUrl = (path: string) => signedUrl(DOCUMENT, path)

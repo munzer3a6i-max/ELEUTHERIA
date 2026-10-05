@@ -6,14 +6,19 @@
   rather than as a link to a bucket that may want a signature by then.
 */
 
-import { signedPhotoUrl } from './storage'
+import { signedFullBodyUrl, signedPassportCopyUrl, signedPhotoUrl } from './storage'
 import type { Applicant } from '../types'
 
-export async function photoAsDataUrl(applicant: Applicant): Promise<string | null> {
-  if (applicant.photoDataUrl) return applicant.photoDataUrl
-  if (!applicant.photoPath) return null
+/** Whatever is held for one picture, as something a single file can carry. */
+async function asDataUrl(
+  held: string | null,
+  path: string | null,
+  sign: (path: string) => Promise<string | null>,
+): Promise<string | null> {
+  if (held) return held
+  if (!path) return null
 
-  const url = await signedPhotoUrl(applicant.photoPath)
+  const url = await sign(path)
   if (!url) return null
 
   try {
@@ -31,3 +36,12 @@ export async function photoAsDataUrl(applicant: Applicant): Promise<string | nul
     return null
   }
 }
+
+export const photoAsDataUrl = (applicant: Applicant) =>
+  asDataUrl(applicant.photoDataUrl, applicant.photoPath, signedPhotoUrl)
+
+export const fullBodyAsDataUrl = (applicant: Applicant) =>
+  asDataUrl(applicant.fullBodyDataUrl, applicant.fullBodyPath, signedFullBodyUrl)
+
+export const passportCopyAsDataUrl = (applicant: Applicant) =>
+  asDataUrl(applicant.passportCopyDataUrl, applicant.passportCopyPath, signedPassportCopyUrl)

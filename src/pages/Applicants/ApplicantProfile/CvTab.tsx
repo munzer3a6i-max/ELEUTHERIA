@@ -13,9 +13,10 @@ import { Download, FileText, Globe, Printer } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
 import { useTranslation } from '../../../i18n/useTranslation'
 import { buildCvHtml, cvFileNameFor, templateFor } from '../../../lib/cvDocument'
-import { photoAsDataUrl } from '../../../lib/cvPhoto'
+import { fullBodyAsDataUrl, passportCopyAsDataUrl, photoAsDataUrl } from '../../../lib/cvPhoto'
 import { setWorkerCv } from '../../../lib/cvs'
 import CvImport from './CvImport'
+import CvPictures from './CvPictures'
 import { Field, TextInput, PrimaryButton, SecondaryButton } from '../../../components/form'
 import type { Applicant, CvDetails } from '../../../types'
 
@@ -127,6 +128,8 @@ export default function CvTab({ applicant }: { applicant: Applicant }) {
   const ar = language === 'ar'
 
   const [photo, setPhoto] = useState<string | null>(null)
+  const [fullBody, setFullBody] = useState<string | null>(null)
+  const [passportCopy, setPassportCopy] = useState<string | null>(null)
   // The letterheads are data URLs of their own weight, and most of the
   // dashboard never needs them: fetched when this tab opens rather than
   // carried everywhere.
@@ -143,6 +146,12 @@ export default function CvTab({ applicant }: { applicant: Applicant }) {
     let live = true
     void photoAsDataUrl(applicant).then((data) => {
       if (live) setPhoto(data)
+    })
+    void fullBodyAsDataUrl(applicant).then((data) => {
+      if (live) setFullBody(data)
+    })
+    void passportCopyAsDataUrl(applicant).then((data) => {
+      if (live) setPassportCopy(data)
     })
     void import('../../../lib/cvAsset').then((asset) => {
       if (live) setLetterhead({ logo: asset.LOGO_DATA_URL, partner: asset.PARTNER_LOGO_DATA_URL })
@@ -165,11 +174,13 @@ export default function CvTab({ applicant }: { applicant: Applicant }) {
           address: settings.address,
         },
         photo,
+        fullBody,
+        passportCopy,
         logo: letterhead?.logo ?? null,
         partnerLogo: letterhead?.partner ?? null,
         template,
       }),
-    [applicant, settings, photo, letterhead, template],
+    [applicant, settings, photo, fullBody, passportCopy, letterhead, template],
   )
 
   function set(key: keyof CvDetails, value: string) {
@@ -260,6 +271,8 @@ export default function CvTab({ applicant }: { applicant: Applicant }) {
             {t('cv_publish_hint')}
           </p>
         </div>
+
+        <CvPictures applicant={applicant} />
 
         <CvImport applicant={applicant} />
 

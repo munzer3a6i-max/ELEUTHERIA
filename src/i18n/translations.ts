@@ -372,6 +372,11 @@ export const translations = {
   cv_template: { en: 'Document', ar: 'المستند' },
   cv_template_domestic: { en: 'Domestic bio data', ar: 'بيانات عاملة منزلية' },
   cv_template_professional: { en: 'Professional CV', ar: 'سيرة ذاتية مهنية' },
+  cv_pictures: { en: 'Photographs & passport copy', ar: 'الصور وصورة الجواز' },
+  cv_pictures_hint: {
+    en: 'The standing photograph and the passport copy the bio data prints. Neither is published; they travel only inside a CV you send.',
+    ar: 'الصورة الكاملة وصورة الجواز التي تطبعها البيانات. لا يُنشر أي منهما، بل يُرسلان داخل السيرة الذاتية فقط.',
+  },
   cv_title: { en: 'Curriculum vitae', ar: 'السيرة الذاتية' },
   cv_subtitle: {
     en: 'The agency template, filled in from her record. What is left blank is left blank on the page.',

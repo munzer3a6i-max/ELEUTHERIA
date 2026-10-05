@@ -190,6 +190,8 @@ create table if not exists ops.applicants (
   status                 text not null default 'Available'
                            check (status in ('Available', 'Unavailable', 'Selected', 'Deployed', 'Back Out')),
   photo_path             text,
+  -- The standing photograph the bio data prints beside her details.
+  full_body_path         text,
   cv_path                text,
   -- The name the office uploaded, beside the uuid the file is stored under.
   cv_file_name           text,
@@ -197,6 +199,7 @@ create table if not exists ops.applicants (
   -- languages, what she is asking for. Optional, and read by name.
   cv_details             jsonb not null default '{}'::jsonb,
   passport_copy_path     text,
+  passport_copy_file_name text,
   -- The switch that decides whether this worker appears on the public site.
   published_to_website   boolean not null default false,
   agency_id              uuid references ops.agencies (id) on delete set null,
@@ -1483,3 +1486,22 @@ exception when undefined_object then
   null;
 end
 $$;
+
+
+-- ======================================================== 0011_cv_images.sql --
+
+-- The two pictures the bio data asks for beyond her headshot.
+--
+-- A household wants to see the worker standing, and the sheet carries a copy
+-- of her passport on its second page. Both are files like the photograph is:
+-- private, kept in the buckets that already exist, and embedded in the CV when
+-- it is built rather than linked, so the finished document carries them.
+--
+-- The passport copy is never published. It goes into worker-documents, which
+-- no anonymous reader can touch, and reaches the outside world only inside a
+-- CV the office chose to send.
+
+alter table ops.applicants add column if not exists full_body_path text;
+
+-- The name the office uploaded, beside the uuid the file is stored under.
+alter table ops.applicants add column if not exists passport_copy_file_name text;

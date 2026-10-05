@@ -371,6 +371,12 @@ and the CV tab shows only the half that the chosen template prints.
 `ops.applicant_experience.duties` and `.country` exist because the two
 experience tables ask what she did and where.
 
+The bio data prints two more pictures than the website ever sees:
+`full_body_path` is the standing photograph beside her details, and
+`passport_copy_path` is the copy on its second page. Both live in the private
+buckets and neither is ever published -- they reach anybody outside the office
+only embedded in a CV somebody chose to send.
+
 Either document is built in the browser from the record, as one self-contained
 HTML page -- the same string the office previews, prints to PDF, and publishes
 as her CV.

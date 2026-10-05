@@ -12,9 +12,13 @@ import { useEffect, useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import {
   publishPhoto,
+  removeFullBody,
+  removePassportCopy,
   removeWorkerPhoto,
   signedPhotoUrl,
   storageAvailable,
+  uploadFullBody,
+  uploadPassportCopy,
   uploadWorkerPhoto,
 } from './storage'
 import type { Applicant } from '../types'
@@ -49,17 +53,21 @@ export function usePhotoUrl(applicant: Photographed): string | null {
  * the website gets her new photograph published straight away, and the one it
  * replaced is deleted rather than left behind.
  */
+/** A chosen file as something the record can hold without a database. */
+function readAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(new Error('That file could not be read.'))
+    reader.readAsDataURL(file)
+  })
+}
+
 export async function setWorkerPhoto(applicant: Applicant, file: File): Promise<void> {
   const update = useAppStore.getState().updateApplicant
 
   if (!storageAvailable()) {
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = () => reject(new Error('That file could not be read.'))
-      reader.readAsDataURL(file)
-    })
-    update(applicant.id, { photoDataUrl: dataUrl, photoPath: null })
+    update(applicant.id, { photoDataUrl: await readAsDataUrl(file), photoPath: null })
     return
   }
 
@@ -68,4 +76,59 @@ export async function setWorkerPhoto(applicant: Applicant, file: File): Promise<
   update(applicant.id, { photoPath: path, photoDataUrl: null })
   if (applicant.cvLinkedToWebsite) await publishPhoto(path)
   if (previous && previous !== path) await removeWorkerPhoto(previous)
+}
+
+/**
+ * The standing photograph and the passport copy: the two pictures the bio data
+ * asks for beyond her headshot.
+ *
+ * Both behave the way the headshot does -- a file in a private bucket when
+ * there is a database, a data URL in this browser when there is not -- and
+ * neither is ever published. They reach anybody outside the office only
+ * embedded in a CV somebody chose to send.
+ */
+export async function setFullBodyPhoto(applicant: Applicant, file: File): Promise<void> {
+  const update = useAppStore.getState().updateApplicant
+
+  if (!storageAvailable()) {
+    update(applicant.id, { fullBodyDataUrl: await readAsDataUrl(file), fullBodyPath: null })
+    return
+  }
+
+  const previous = applicant.fullBodyPath
+  const path = await uploadFullBody(applicant.id, file)
+  update(applicant.id, { fullBodyPath: path, fullBodyDataUrl: null })
+  if (previous && previous !== path) await removeFullBody(previous)
+}
+
+export async function clearFullBodyPhoto(applicant: Applicant): Promise<void> {
+  useAppStore.getState().updateApplicant(applicant.id, { fullBodyPath: null, fullBodyDataUrl: null })
+  if (applicant.fullBodyPath) await removeFullBody(applicant.fullBodyPath)
+}
+
+export async function setPassportCopy(applicant: Applicant, file: File): Promise<void> {
+  const update = useAppStore.getState().updateApplicant
+
+  if (!storageAvailable()) {
+    update(applicant.id, {
+      passportCopyDataUrl: await readAsDataUrl(file),
+      passportCopyPath: null,
+      passportCopyFileName: file.name,
+    })
+    return
+  }
+
+  const previous = applicant.passportCopyPath
+  const path = await uploadPassportCopy(applicant.id, file)
+  update(applicant.id, { passportCopyPath: path, passportCopyDataUrl: null, passportCopyFileName: file.name })
+  if (previous && previous !== path) await removePassportCopy(previous)
+}
+
+export async function clearPassportCopy(applicant: Applicant): Promise<void> {
+  useAppStore.getState().updateApplicant(applicant.id, {
+    passportCopyPath: null,
+    passportCopyDataUrl: null,
+    passportCopyFileName: null,
+  })
+  if (applicant.passportCopyPath) await removePassportCopy(applicant.passportCopyPath)
 }

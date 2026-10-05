@@ -119,11 +119,18 @@ export interface Applicant {
   photoDataUrl: string | null
   /** Where her photograph is in Storage, once there is somewhere to keep it. */
   photoPath: string | null
+  /** The standing photograph the bio data prints beside her details. */
+  fullBodyPath: string | null
+  /** Held in the browser before a database exists, like photoDataUrl. */
+  fullBodyDataUrl: string | null
   /** The name of the document the office uploaded, for the office to read. */
   cvFileName: string | null
   /** Where her CV is in Storage, once there is somewhere to keep it. */
   cvPath: string | null
   passportCopyFileName: string | null
+  /** Where the passport copy is in Storage. Never published. */
+  passportCopyPath: string | null
+  passportCopyDataUrl: string | null
   cvLinkedToWebsite: boolean
   experience: ExperienceEntry[]
   education: EducationEntry[]
