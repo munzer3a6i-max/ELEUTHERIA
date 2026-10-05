@@ -400,17 +400,18 @@ function ExperienceModal({
   onSubmit,
 }: {
   onClose: () => void
-  onSubmit: (entry: { title: string; employer: string; years: number }) => void
+  onSubmit: (entry: { title: string; employer: string; years: number; duties: string }) => void
 }) {
   const { t, language } = useTranslation()
   const [title, setTitle] = useState('')
   const [employer, setEmployer] = useState('')
   const [years, setYears] = useState('')
+  const [duties, setDuties] = useState('')
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!title.trim()) return
-    onSubmit({ title: title.trim(), employer: employer.trim(), years: Number(years) || 0 })
+    onSubmit({ title: title.trim(), employer: employer.trim(), years: Number(years) || 0, duties: duties.trim() })
   }
 
   return (
@@ -424,6 +425,12 @@ function ExperienceModal({
         </Field>
         <Field label={language === 'ar' ? 'عدد السنوات' : 'Years'}>
           <TextInput type="number" min={0} value={years} onChange={(e) => setYears(e.target.value)} />
+        </Field>
+        <Field
+          label={language === 'ar' ? 'أهم المهام' : 'Key duties'}
+          hint={language === 'ar' ? 'تظهر في السيرة الذاتية' : 'This is what the CV prints under Key duties.'}
+        >
+          <TextInput value={duties} onChange={(e) => setDuties(e.target.value)} />
         </Field>
         <div className="mt-4 flex justify-end gap-2">
           <SecondaryButton onClick={onClose}>{t('action_cancel')}</SecondaryButton>

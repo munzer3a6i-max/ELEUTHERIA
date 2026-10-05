@@ -7,7 +7,7 @@ create table if not exists ops.payroll_entries (
   -- First day of the month the entry covers.
   period          date not null,
   basic_salary    numeric(12,2) not null default 0 check (basic_salary >= 0),
-  overtime        numeric(12,2) not null default 0 check (overtime >= 0),
+  bonus           numeric(12,2) not null default 0 check (bonus >= 0),
   allowances      numeric(12,2) not null default 0 check (allowances >= 0),
   status          text not null default 'Pending' check (status in ('Paid', 'Pending')),
   attachment_path text,

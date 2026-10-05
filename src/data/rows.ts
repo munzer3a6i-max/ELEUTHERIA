@@ -21,7 +21,9 @@
 */
 
 
+import { EMPTY_CV_DETAILS } from '../types'
 import type {
+  CvDetails,
   Manager,
   ExpenseCategory,
   AgencyCharge,
@@ -338,6 +340,7 @@ export const applicantRows = {
     agency_id: a.recruitmentAgencyId,
     agent_id: a.agentId,
     manager_id: a.managerId,
+    cv_details: a.cvDetails,
   }),
   in: (r: Row): Applicant => ({
     id: text(r.id),
@@ -369,6 +372,9 @@ export const applicantRows = {
     recruitmentAgencyId: (r.agency_id as string | null) ?? null,
     agentId: (r.agent_id as string | null) ?? null,
     managerId: (r.manager_id as string | null) ?? null,
+    // Anything the stored document is missing takes its empty default, so a
+    // field added to the template never arrives as undefined.
+    cvDetails: { ...EMPTY_CV_DETAILS, ...((r.cv_details as Partial<CvDetails> | null) ?? {}) },
     createdOn: dateIn(r.created_at),
     updatedOn: dateIn(r.updated_at),
     updatedBy: '',
@@ -383,12 +389,14 @@ export const experienceRows = {
     title: e.title,
     employer: e.employer,
     years: e.years,
+    duties: e.duties,
   }),
   in: (r: Row): ExperienceEntry => ({
     id: text(r.id),
     title: text(r.title),
     employer: text(r.employer),
     years: Number(r.years ?? 0),
+    duties: text(r.duties),
   }),
 }
 
@@ -550,7 +558,7 @@ export const payrollRows = {
     staff_id: e.staffId,
     period: monthOut(e.month),
     basic_salary: e.basicSalary,
-    overtime: e.overtime,
+    bonus: e.bonus,
     allowances: e.allowances,
     status: e.status,
     ...attachmentOut(e.attachment),
@@ -560,7 +568,7 @@ export const payrollRows = {
     staffId: text(r.staff_id),
     month: monthIn(r.period),
     basicSalary: money(r.basic_salary),
-    overtime: money(r.overtime),
+    bonus: money(r.bonus),
     allowances: money(r.allowances),
     status: r.status as PayrollEntry['status'],
     attachment: attachmentIn(r),

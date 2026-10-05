@@ -23,11 +23,11 @@ export default function PayrollPanel({ currency }: { currency: string }) {
   const totals = rows.reduce(
     (acc, entry) => ({
       basic: acc.basic + entry.basicSalary,
-      overtime: acc.overtime + entry.overtime,
+      bonus: acc.bonus + entry.bonus,
       allowances: acc.allowances + entry.allowances,
       total: acc.total + payrollTotal(entry),
     }),
-    { basic: 0, overtime: 0, allowances: 0, total: 0 },
+    { basic: 0, bonus: 0, allowances: 0, total: 0 },
   )
 
   function monthLabel(value: string): string {
@@ -72,8 +72,8 @@ export default function PayrollPanel({ currency }: { currency: string }) {
             <th className="px-2 py-2.5 text-end" title={t('fin_basic_salary')}>
               {t('fin_basic_short')}
             </th>
-            <th className="px-2 py-2.5 text-end" title={t('fin_overtime')}>
-              {t('fin_overtime_short')}
+            <th className="px-2 py-2.5 text-end" title={t('fin_bonus')}>
+              {t('fin_bonus_short')}
             </th>
             <th className="px-2 py-2.5 text-end" title={t('fin_allowances')}>
               {t('fin_allowances_short')}
@@ -106,7 +106,7 @@ export default function PayrollPanel({ currency }: { currency: string }) {
                   {formatMoney(entry.basicSalary, currency, 0)}
                 </td>
                 <td className="whitespace-nowrap px-2 py-2.5 text-end num text-ink-2">
-                  {formatMoney(entry.overtime, currency, 0)}
+                  {formatMoney(entry.bonus, currency, 0)}
                 </td>
                 <td className="whitespace-nowrap px-2 py-2.5 text-end num text-ink-2">
                   {formatMoney(entry.allowances, currency, 0)}
@@ -142,7 +142,7 @@ export default function PayrollPanel({ currency }: { currency: string }) {
                 {t('fin_total')}
               </td>
               <td className="whitespace-nowrap px-2 py-2.5 text-end num">{formatMoney(totals.basic, currency, 0)}</td>
-              <td className="whitespace-nowrap px-2 py-2.5 text-end num">{formatMoney(totals.overtime, currency, 0)}</td>
+              <td className="whitespace-nowrap px-2 py-2.5 text-end num">{formatMoney(totals.bonus, currency, 0)}</td>
               <td className="whitespace-nowrap px-2 py-2.5 text-end num">{formatMoney(totals.allowances, currency, 0)}</td>
               <td className="whitespace-nowrap px-2 py-2.5 text-end num">{formatMoney(totals.total, currency, 0)}</td>
               <td />

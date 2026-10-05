@@ -355,6 +355,25 @@ pointing at a row that is gone.
 An expense keeps the category it was filed under as text, so tidying the list
 later never rewrites what was already recorded.
 
+### The CV
+
+`ops.applicants.cv_details` is a json document rather than a column each:
+religion, languages, what she is asking for, the half-dozen other things a CV
+wants and a placement does not. They are all optional free text, the template
+will change, and a field added to it next month should not need a migration.
+The application reads them by name and fills in a blank where the office has
+not.
+
+The CV itself is built in the browser from that record, as one self-contained
+HTML document -- the same string the office previews, prints to PDF, and
+publishes as her CV. `ops.applicant_experience.duties` exists because the
+template's experience table asks what she actually did.
+
+Reading a CV that arrives as a file happens in the browser too, with patterns
+rather than a service: no account, no subscription, and the file never leaves
+the machine it was opened on. A scanned CV holds no text and is reported as
+such rather than guessed at.
+
 ### Deleting a worker
 
 `ops.requests.applicant_id` is `on delete restrict`, on purpose: a request

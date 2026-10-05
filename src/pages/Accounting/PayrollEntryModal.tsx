@@ -24,7 +24,7 @@ export default function PayrollEntryModal({
     staffId: entry?.staffId ?? staff[0]?.id ?? '',
     month: entry?.month ?? month,
     basicSalary: String(entry?.basicSalary ?? ''),
-    overtime: String(entry?.overtime ?? '0'),
+    bonus: String(entry?.bonus ?? '0'),
     allowances: String(entry?.allowances ?? '0'),
     status: entry?.status ?? ('Pending' as LedgerStatus),
   })
@@ -34,7 +34,7 @@ export default function PayrollEntryModal({
     const parsed = Number(value)
     return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0
   }
-  const total = number(form.basicSalary) + number(form.overtime) + number(form.allowances)
+  const total = number(form.basicSalary) + number(form.bonus) + number(form.allowances)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -43,7 +43,7 @@ export default function PayrollEntryModal({
       staffId: form.staffId,
       month: form.month,
       basicSalary: number(form.basicSalary),
-      overtime: number(form.overtime),
+      bonus: number(form.bonus),
       allowances: number(form.allowances),
       status: form.status,
       attachment,
@@ -79,13 +79,13 @@ export default function PayrollEntryModal({
               required
             />
           </Field>
-          <Field label={t('fin_overtime')}>
+          <Field label={t('fin_bonus')}>
             <TextInput
               type="number"
               min="0"
               step="1"
-              value={form.overtime}
-              onChange={(e) => setForm((f) => ({ ...f, overtime: e.target.value }))}
+              value={form.bonus}
+              onChange={(e) => setForm((f) => ({ ...f, bonus: e.target.value }))}
             />
           </Field>
           <Field label={t('fin_allowances')}>

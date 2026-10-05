@@ -193,6 +193,9 @@ create table if not exists ops.applicants (
   cv_path                text,
   -- The name the office uploaded, beside the uuid the file is stored under.
   cv_file_name           text,
+  -- Everything a CV needs that running a placement does not: religion,
+  -- languages, what she is asking for. Optional, and read by name.
+  cv_details             jsonb not null default '{}'::jsonb,
   passport_copy_path     text,
   -- The switch that decides whether this worker appears on the public site.
   published_to_website   boolean not null default false,
@@ -211,7 +214,9 @@ create table if not exists ops.applicant_experience (
   applicant_id  uuid not null references ops.applicants (id) on delete cascade,
   title         text not null,
   employer      text not null default '',
-  years         smallint not null default 0
+  years         smallint not null default 0,
+  -- What she actually did there. The CV asks for it by name.
+  duties        text not null default ''
 );
 
 create table if not exists ops.applicant_education (
@@ -310,7 +315,7 @@ create table if not exists ops.payroll_entries (
   -- First day of the month the entry covers.
   period          date not null,
   basic_salary    numeric(12,2) not null default 0 check (basic_salary >= 0),
-  overtime        numeric(12,2) not null default 0 check (overtime >= 0),
+  bonus           numeric(12,2) not null default 0 check (bonus >= 0),
   allowances      numeric(12,2) not null default 0 check (allowances >= 0),
   status          text not null default 'Pending' check (status in ('Paid', 'Pending')),
   attachment_path text,
@@ -1435,3 +1440,42 @@ select v.en, v.ar from (values
   ('Other', 'أخرى')
 ) as v(en, ar)
 where not exists (select 1 from ops.expense_categories c where c.name_en = v.en);
+
+
+-- ======================================================== 0010_cv_and_bonus.sql --
+
+-- The CV, and what payroll calls the extra.
+--
+-- A worker's record holds what the office needs to run a placement. A CV needs
+-- more than that -- religion, languages, what she can use, what she is asking
+-- for -- and none of it is worth a column of its own, because the template
+-- will change and these are all optional free text. So they travel together as
+-- one document on her record, and the CV page reads them by name.
+--
+-- Payroll's `overtime` becomes `bonus`: the office does not pay by the hour,
+-- it adds something to a month's pay when it chooses to. The column is renamed
+-- rather than added so nothing already entered is lost.
+
+alter table ops.applicants add column if not exists cv_details jsonb not null default '{}'::jsonb;
+
+-- What she did in a job, which the CV's experience table asks for by name.
+alter table ops.applicant_experience add column if not exists duties text not null default '';
+
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'ops' and table_name = 'payroll_entries' and column_name = 'overtime'
+  ) and not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'ops' and table_name = 'payroll_entries' and column_name = 'bonus'
+  ) then
+    execute 'alter table ops.payroll_entries rename column overtime to bonus';
+    execute 'alter table ops.payroll_entries rename constraint payroll_entries_overtime_check to payroll_entries_bonus_check';
+  end if;
+exception when undefined_object then
+  -- The check constraint is named by Postgres and an older database may call
+  -- it something else. The rename that matters is the column's.
+  null;
+end
+$$;

@@ -23,6 +23,9 @@ create table if not exists ops.applicants (
   cv_path                text,
   -- The name the office uploaded, beside the uuid the file is stored under.
   cv_file_name           text,
+  -- Everything a CV needs that running a placement does not: religion,
+  -- languages, what she is asking for. Optional, and read by name.
+  cv_details             jsonb not null default '{}'::jsonb,
   passport_copy_path     text,
   -- The switch that decides whether this worker appears on the public site.
   published_to_website   boolean not null default false,
@@ -41,7 +44,9 @@ create table if not exists ops.applicant_experience (
   applicant_id  uuid not null references ops.applicants (id) on delete cascade,
   title         text not null,
   employer      text not null default '',
-  years         smallint not null default 0
+  years         smallint not null default 0,
+  -- What she actually did there. The CV asks for it by name.
+  duties        text not null default ''
 );
 
 create table if not exists ops.applicant_education (

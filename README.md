@@ -35,6 +35,7 @@ npm run preview # serve dist/ locally
 | [`docs/MONEY-RULES.md`](docs/MONEY-RULES.md) | Every rule that turns a stage of a placement into money: agency price, agent commission, backout. |
 | [`docs/DEPLOY.md`](docs/DEPLOY.md) | Putting the dashboard online. |
 | [`db/`](db/) | The migrations, the bootstrap, and the SQL to paste when there is no terminal to hand. |
+| [`src/lib/cvDocument.ts`](src/lib/cvDocument.ts) | The agency's CV template, built from a worker's record as one self-contained page. |
 | [`website/`](website/README.md) | The workers page for the public site, which reads the workers the office publishes. |
 | [`scripts/`](scripts/) | The test suites — the schema, the money rules, the row mapping, the save path, the import. |
 

@@ -71,6 +71,8 @@ export interface ExperienceEntry {
   title: string
   employer: string
   years: number
+  /** What she did there, in her own words or the office's. */
+  duties: string
 }
 
 export interface EducationEntry {
@@ -130,6 +132,8 @@ export interface Applicant {
   agentId: string | null
   /** Whose worker she is, for splitting the month's takings. */
   managerId: string | null
+  /** The extra the CV asks for, beyond what a placement needs. */
+  cvDetails: CvDetails
   createdOn: string
   updatedOn: string
   updatedBy: string
@@ -250,6 +254,70 @@ export interface City {
   countryId: string
 }
 
+/**
+ * What a CV needs that running a placement does not.
+ *
+ * Every field is optional and every field is free text: the office fills in
+ * what it knows, the template leaves a dash where it does not, and the one
+ * that is wanted next month can be added without a migration.
+ */
+export interface CvDetails {
+  /** Overrides the profession on the CV when the two differ. */
+  jobTitle: string
+  reference: string
+  profileEn: string
+  profileAr: string
+  maritalStatus: string
+  religion: string
+  currentLocation: string
+  email: string
+  coreSkills: string
+  specialization: string
+  tools: string
+  safety: string
+  overseasExperience: string
+  education: string
+  technicalTraining: string
+  tesda: string
+  otherCertificates: string
+  certificateNo: string
+  languages: string
+  placeOfIssue: string
+  availability: string
+  expectedSalary: string
+  preferredCountry: string
+  client: string
+  interviewStatus: string
+}
+
+export const EMPTY_CV_DETAILS: CvDetails = {
+  jobTitle: '',
+  reference: '',
+  profileEn: '',
+  profileAr: '',
+  maritalStatus: '',
+  religion: '',
+  currentLocation: '',
+  email: '',
+  coreSkills: '',
+  specialization: '',
+  tools: '',
+  safety: '',
+  overseasExperience: '',
+  education: '',
+  technicalTraining: '',
+  tesda: '',
+  otherCertificates: '',
+  certificateNo: '',
+  languages: '',
+  placeOfIssue: '',
+  availability: '',
+  expectedSalary: '',
+  preferredCountry: '',
+  client: '',
+  interviewStatus: '',
+}
+
 /** One of the people whose domestic workers are counted separately. */
 export interface Manager {
   id: string
@@ -283,7 +351,8 @@ export interface PayrollEntry {
   /** Pay period, formatted YYYY-MM. */
   month: string
   basicSalary: number
-  overtime: number
+  /** Whatever the office adds to this month's pay on top of the salary. */
+  bonus: number
   allowances: number
   status: LedgerStatus
   /** The payslip or transfer slip for this month. */

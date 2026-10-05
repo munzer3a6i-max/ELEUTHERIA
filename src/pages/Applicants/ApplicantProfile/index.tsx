@@ -12,6 +12,7 @@ import StageStepper from './StageStepper'
 import InfoTab from './InfoTab'
 import RecruitmentStagesTab from './RecruitmentStagesTab'
 import FinancialCenter from './FinancialCenter'
+import CvTab from './CvTab'
 import DocumentsTab from './DocumentsTab'
 import NotesTab from './NotesTab'
 
@@ -168,6 +169,7 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
       )}
       {activeTab === 'info' && <InfoTab applicant={applicant} />}
       {activeTab === 'stages' && <RecruitmentStagesTab activeRequest={activeRequest} />}
+      {activeTab === 'cv' && <CvTab applicant={applicant} />}
       {activeTab === 'documents' && <DocumentsTab applicant={applicant} />}
       {activeTab === 'notes' && <NotesTab applicant={applicant} />}
 

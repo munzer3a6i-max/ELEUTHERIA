@@ -332,10 +332,10 @@ try {
     const file = attachment(e.attachment, `payroll-${e.id}`)
     return {
       id: idFor('payroll', e.id), staff_id: idFor('staff', e.staffId), period: monthStart(e.month),
-      basic_salary: e.basicSalary, overtime: e.overtime, allowances: e.allowances, status: e.status,
+      basic_salary: e.basicSalary, bonus: e.bonus ?? e.overtime ?? 0, allowances: e.allowances, status: e.status,
       attachment_path: file.path, attachment_name: file.name, attachment_type: file.type, attachment_size: file.size,
     }
-  }), ['id', 'staff_id', 'period', 'basic_salary', 'overtime', 'allowances', 'status',
+  }), ['id', 'staff_id', 'period', 'basic_salary', 'bonus', 'allowances', 'status',
        'attachment_path', 'attachment_name', 'attachment_type', 'attachment_size'])
 
   await upsert('office_expenses', (state.officeExpenses ?? []).map((e) => {

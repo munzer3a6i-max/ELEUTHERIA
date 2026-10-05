@@ -1,7 +1,7 @@
-import { User, ListChecks, FileText, History } from 'lucide-react'
+import { User, ListChecks, FileText, History, IdCard } from 'lucide-react'
 import { useTranslation } from '../../../i18n/useTranslation'
 
-export type ProfileTabKey = 'info' | 'stages' | 'financial' | 'documents' | 'notes'
+export type ProfileTabKey = 'info' | 'stages' | 'financial' | 'cv' | 'documents' | 'notes'
 
 export default function ProfileTabs({
   active,
@@ -16,6 +16,7 @@ export default function ProfileTabs({
     { key: 'info', label: language === 'ar' ? 'معلومات المتقدم' : 'Applicant Information', icon: User },
     { key: 'stages', label: language === 'ar' ? 'مراحل الاستقدام' : 'Recruitment Stages', icon: ListChecks },
     { key: 'financial', label: language === 'ar' ? 'المركز المالي' : 'Financial Center', icon: null },
+    { key: 'cv', label: language === 'ar' ? 'السيرة الذاتية' : 'CV', icon: IdCard },
     { key: 'documents', label: language === 'ar' ? 'المستندات' : 'Documents', icon: FileText },
     { key: 'notes', label: language === 'ar' ? 'ملاحظات وسجل' : 'Notes & History', icon: History },
   ]
