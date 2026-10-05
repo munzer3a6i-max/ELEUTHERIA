@@ -449,8 +449,40 @@ four rules on each. It is safe to run twice and touches no file already
 uploaded. If the role running it cannot write Storage's own tables, it says so
 under Notices and names what to do by hand instead.
 
-`db/check-storage.sql` is the read-only version of the same question, for when
-it is easier to look than to try.
+`db/why-storage.sql` answers it from the database's own side, and is the
+quickest way to settle an argument: it walks the exact chain an upload walks --
+does the bucket exist, is there any rule that would let somebody write to it,
+is an account linked, what does `auth.uid()` see with the settings Storage puts
+on the connection, what does `ops.is_staff()` answer -- and then tries the
+insert itself as the `authenticated` role, reporting each step as a row. The
+first row that reads badly is the cause. It deletes its own test row and
+uploads no file.
+
+`db/check-storage.sql` is the read-only version, for when it is easier to look
+than to try.
+
+One failure deserves naming, because it is quiet: `storage.objects` belongs to
+Storage rather than to this database's owner, so the SQL editor's role may not
+be allowed to write rules on it. `fix-storage.sql` reports that under Notices,
+where it is easy to miss, and its table then shows `0` rules. Two policies
+written in the dashboard instead cover every bucket, and `why-storage.sql`
+ends with the exact fields to fill in.
+
+### Who the caller is
+
+`ops.is_staff()` turns on `auth.uid()`, which reads the signed-in account out
+of a setting the server puts on the connection. There is more than one server:
+PostgREST, which the dashboard's queries go through, and Storage, which uploads
+go through, and an older project's `auth.uid()` reads only one of the two
+settings they set. When it reads the one Storage did not set, every upload is
+refused for row level security while every other screen works perfectly --
+which is a confusing thing to debug and worth being able to rule out.
+
+`0012_caller_identity.sql` resolves the identity from whichever setting is
+there, through `ops.caller_uid()`, and `ops.current_role()` asks that instead
+of `auth.uid()` alone. It is still the signed-in account and nothing else:
+both settings are written by the server out of a verified token, and a caller
+cannot set either.
 
 ## What is still to build
 
