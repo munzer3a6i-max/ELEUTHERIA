@@ -364,10 +364,16 @@ will change, and a field added to it next month should not need a migration.
 The application reads them by name and fills in a blank where the office has
 not.
 
-The CV itself is built in the browser from that record, as one self-contained
-HTML document -- the same string the office previews, prints to PDF, and
-publishes as her CV. `ops.applicant_experience.duties` exists because the
-template's experience table asks what she actually did.
+There are two documents, and a worker's type picks one: a domestic worker goes
+to a household on a bio data sheet, a tradesman to an employer on a curriculum
+vitae. They ask different questions, which is why `cv_details` holds both sets
+and the CV tab shows only the half that the chosen template prints.
+`ops.applicant_experience.duties` and `.country` exist because the two
+experience tables ask what she did and where.
+
+Either document is built in the browser from the record, as one self-contained
+HTML page -- the same string the office previews, prints to PDF, and publishes
+as her CV.
 
 Reading a CV that arrives as a file happens in the browser too, with patterns
 rather than a service: no account, no subscription, and the file never leaves

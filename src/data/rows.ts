@@ -390,6 +390,7 @@ export const experienceRows = {
     employer: e.employer,
     years: e.years,
     duties: e.duties,
+    country: e.country,
   }),
   in: (r: Row): ExperienceEntry => ({
     id: text(r.id),
@@ -397,6 +398,7 @@ export const experienceRows = {
     employer: text(r.employer),
     years: Number(r.years ?? 0),
     duties: text(r.duties),
+    country: text(r.country),
   }),
 }
 

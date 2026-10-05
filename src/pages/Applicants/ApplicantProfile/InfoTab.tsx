@@ -400,18 +400,25 @@ function ExperienceModal({
   onSubmit,
 }: {
   onClose: () => void
-  onSubmit: (entry: { title: string; employer: string; years: number; duties: string }) => void
+  onSubmit: (entry: { title: string; employer: string; years: number; duties: string; country: string }) => void
 }) {
   const { t, language } = useTranslation()
   const [title, setTitle] = useState('')
   const [employer, setEmployer] = useState('')
   const [years, setYears] = useState('')
   const [duties, setDuties] = useState('')
+  const [country, setCountry] = useState('')
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!title.trim()) return
-    onSubmit({ title: title.trim(), employer: employer.trim(), years: Number(years) || 0, duties: duties.trim() })
+    onSubmit({
+      title: title.trim(),
+      employer: employer.trim(),
+      years: Number(years) || 0,
+      duties: duties.trim(),
+      country: country.trim(),
+    })
   }
 
   return (
@@ -422,6 +429,12 @@ function ExperienceModal({
         </Field>
         <Field label={language === 'ar' ? 'جهة العمل' : 'Employer'}>
           <TextInput value={employer} onChange={(e) => setEmployer(e.target.value)} />
+        </Field>
+        <Field
+          label={language === 'ar' ? 'الدولة' : 'Country'}
+          hint={language === 'ar' ? 'تظهر في جدول الخبرة خارج البلاد' : 'The bio data lists this under employment abroad.'}
+        >
+          <TextInput value={country} onChange={(e) => setCountry(e.target.value)} />
         </Field>
         <Field label={language === 'ar' ? 'عدد السنوات' : 'Years'}>
           <TextInput type="number" min={0} value={years} onChange={(e) => setYears(e.target.value)} />

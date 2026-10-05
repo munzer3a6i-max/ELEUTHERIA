@@ -215,8 +215,9 @@ create table if not exists ops.applicant_experience (
   title         text not null,
   employer      text not null default '',
   years         smallint not null default 0,
-  -- What she actually did there. The CV asks for it by name.
-  duties        text not null default ''
+  -- What she actually did there, and where. Both are columns in the CV.
+  duties        text not null default '',
+  country       text not null default ''
 );
 
 create table if not exists ops.applicant_education (
@@ -1460,6 +1461,9 @@ alter table ops.applicants add column if not exists cv_details jsonb not null de
 
 -- What she did in a job, which the CV's experience table asks for by name.
 alter table ops.applicant_experience add column if not exists duties text not null default '';
+
+-- Where the job was. The bio data's employment table is a list of countries.
+alter table ops.applicant_experience add column if not exists country text not null default '';
 
 do $$
 begin

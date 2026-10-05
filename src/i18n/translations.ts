@@ -369,6 +369,9 @@ export const translations = {
     en: 'This file is a scan — a picture of a CV, with no text in it to read. Type the details in, or ask for a CV saved as a document rather than an image.',
     ar: 'هذا الملف صورة ممسوحة ضوئيًا ولا يحتوي نصًا يمكن قراءته. أدخل البيانات يدويًا أو اطلب سيرة ذاتية محفوظة كمستند لا كصورة.',
   },
+  cv_template: { en: 'Document', ar: 'المستند' },
+  cv_template_domestic: { en: 'Domestic bio data', ar: 'بيانات عاملة منزلية' },
+  cv_template_professional: { en: 'Professional CV', ar: 'سيرة ذاتية مهنية' },
   cv_title: { en: 'Curriculum vitae', ar: 'السيرة الذاتية' },
   cv_subtitle: {
     en: 'The agency template, filled in from her record. What is left blank is left blank on the page.',

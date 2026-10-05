@@ -18,6 +18,9 @@ alter table ops.applicants add column if not exists cv_details jsonb not null de
 -- What she did in a job, which the CV's experience table asks for by name.
 alter table ops.applicant_experience add column if not exists duties text not null default '';
 
+-- Where the job was. The bio data's employment table is a list of countries.
+alter table ops.applicant_experience add column if not exists country text not null default '';
+
 do $$
 begin
   if exists (

@@ -73,7 +73,9 @@ export default function CvImport({ applicant }: { applicant: Applicant }) {
     for (const [key, value] of Object.entries(result.found)) {
       if (!chosen[key]) continue
       count += 1
-      if (key.startsWith('cv.')) details[key.slice(3) as keyof CvDetails] = value
+      // Every field the reader fills is free text; `template` is the one
+      // choice in CvDetails that is not, and nothing reads it off a CV.
+      if (key.startsWith('cv.')) Object.assign(details, { [key.slice(3)]: value })
       else if (key === 'experienceYears') patch.experienceYears = Number(value) || 0
       else (patch as Record<string, unknown>)[key] = value
     }

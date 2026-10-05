@@ -12,81 +12,132 @@ import { useEffect, useMemo, useState } from 'react'
 import { Download, FileText, Globe, Printer } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
 import { useTranslation } from '../../../i18n/useTranslation'
-import { buildCvHtml, cvFileNameFor } from '../../../lib/cvDocument'
+import { buildCvHtml, cvFileNameFor, templateFor } from '../../../lib/cvDocument'
 import { photoAsDataUrl } from '../../../lib/cvPhoto'
 import { setWorkerCv } from '../../../lib/cvs'
 import CvImport from './CvImport'
 import { Field, TextInput, PrimaryButton, SecondaryButton } from '../../../components/form'
 import type { Applicant, CvDetails } from '../../../types'
 
-type Line = { key: keyof CvDetails; en: string; ar: string; long?: boolean }
+type Line = { key: keyof CvDetails; en: string; ar: string; long?: boolean; hint?: string }
 
-const PERSONAL: Line[] = [
-  { key: 'jobTitle', en: 'Job title', ar: 'المهنة' },
-  { key: 'maritalStatus', en: 'Marital status', ar: 'الحالة الاجتماعية' },
-  { key: 'religion', en: 'Religion', ar: 'الديانة' },
-  { key: 'currentLocation', en: 'Current location', ar: 'مكان الإقامة' },
-  { key: 'email', en: 'Email', ar: 'البريد الإلكتروني' },
-  { key: 'reference', en: 'Reference no.', ar: 'الرقم المرجعي' },
+type Group = { en: string; ar: string; lines: Line[] }
+
+/** What the professional curriculum vitae asks for beyond the record. */
+const PROFESSIONAL: Group[] = [
+  {
+    en: 'Heading',
+    ar: 'الترويسة',
+    lines: [
+      { key: 'jobTitle', en: 'Job title', ar: 'المهنة' },
+      { key: 'reference', en: 'Reference no.', ar: 'الرقم المرجعي' },
+    ],
+  },
+  {
+    en: 'Professional profile',
+    ar: 'النبذة المهنية',
+    lines: [
+      { key: 'profileEn', en: 'Profile (English)', ar: 'النبذة بالإنجليزية', long: true },
+      { key: 'profileAr', en: 'Profile (Arabic)', ar: 'النبذة بالعربية', long: true },
+    ],
+  },
+  {
+    en: 'Personal details',
+    ar: 'البيانات الشخصية',
+    lines: [
+      { key: 'maritalStatus', en: 'Marital status', ar: 'الحالة الاجتماعية' },
+      { key: 'religion', en: 'Religion', ar: 'الديانة' },
+      { key: 'currentLocation', en: 'Current location', ar: 'مكان الإقامة' },
+      { key: 'email', en: 'Email', ar: 'البريد الإلكتروني' },
+    ],
+  },
+  {
+    en: 'Education & certifications',
+    ar: 'التعليم والشهادات',
+    lines: [
+      { key: 'education', en: 'Education', ar: 'المؤهل', long: true },
+      { key: 'technicalTraining', en: 'Technical training', ar: 'التدريب الفني' },
+      { key: 'tesda', en: 'TESDA / Training', ar: 'تدريب' },
+      { key: 'otherCertificates', en: 'Other certificates', ar: 'شهادات أخرى' },
+      { key: 'certificateNo', en: 'Certificate no.', ar: 'رقم الشهادة' },
+      { key: 'languages', en: 'Languages', ar: 'اللغات' },
+    ],
+  },
 ]
 
-const PROFILE: Line[] = [
-  { key: 'profileEn', en: 'Profile (English)', ar: 'النبذة بالإنجليزية', long: true },
-  { key: 'profileAr', en: 'Profile (Arabic)', ar: 'النبذة بالعربية', long: true },
-]
-
-const SKILLS: Line[] = [
-  { key: 'coreSkills', en: 'Core skills', ar: 'المهارات الأساسية', long: true },
-  { key: 'specialization', en: 'Specialization', ar: 'التخصص' },
-  { key: 'tools', en: 'Tools & equipment', ar: 'الأدوات والمعدات', long: true },
-  { key: 'safety', en: 'Safety', ar: 'السلامة المهنية' },
-  { key: 'overseasExperience', en: 'Overseas experience', ar: 'خبرة خارجية' },
-  { key: 'languages', en: 'Languages', ar: 'اللغات' },
-]
-
-const EDUCATION: Line[] = [
-  { key: 'education', en: 'Education', ar: 'المؤهل', long: true },
-  { key: 'technicalTraining', en: 'Technical training', ar: 'التدريب الفني' },
-  { key: 'tesda', en: 'TESDA / Training', ar: 'تدريب' },
-  { key: 'otherCertificates', en: 'Other certificates', ar: 'شهادات أخرى' },
-  { key: 'certificateNo', en: 'Certificate no.', ar: 'رقم الشهادة' },
-]
-
-const PLACEMENT: Line[] = [
-  { key: 'placeOfIssue', en: 'Passport place of issue', ar: 'مكان إصدار الجواز' },
-  { key: 'availability', en: 'Availability', ar: 'التوفر' },
-  { key: 'expectedSalary', en: 'Expected salary', ar: 'الراتب المتوقع' },
-  { key: 'preferredCountry', en: 'Preferred country', ar: 'الدولة المفضلة' },
-  { key: 'client', en: 'Client', ar: 'العميل' },
-  { key: 'interviewStatus', en: 'Interview status', ar: 'حالة المقابلة' },
+/** What the domestic bio data asks for, which is a different list. */
+const DOMESTIC: Group[] = [
+  {
+    en: 'The posting',
+    ar: 'بيانات الوظيفة',
+    lines: [
+      { key: 'postApplied', en: 'Post applied', ar: 'الوظيفة' },
+      { key: 'destinationCountry', en: 'Country', ar: 'الدولة', hint: 'KSA unless you say otherwise' },
+      { key: 'monthlySalary', en: 'Monthly salary', ar: 'الراتب الشهري' },
+      { key: 'contractPeriod', en: 'Contract period', ar: 'مدة العقد', hint: 'Two years unless you say otherwise' },
+      { key: 'reference', en: 'Reference no.', ar: 'الرقم المرجعي' },
+    ],
+  },
+  {
+    en: 'Personal data',
+    ar: 'المعلومات الشخصية',
+    lines: [
+      { key: 'religion', en: 'Religion', ar: 'الديانة' },
+      { key: 'placeOfBirth', en: 'Place of birth', ar: 'مكان الميلاد' },
+      { key: 'livingTown', en: 'Living town', ar: 'مكان السكن' },
+      { key: 'maritalStatus', en: 'Marital status', ar: 'الحالة الاجتماعية' },
+      { key: 'children', en: 'No. of children', ar: 'عدد الأطفال' },
+      { key: 'height', en: 'Height', ar: 'الطول' },
+      { key: 'weight', en: 'Weight', ar: 'الوزن' },
+      { key: 'motherName', en: "Mother's full name", ar: 'اسم الأم كامل' },
+      { key: 'fatherName', en: "Father's full name", ar: 'اسم الأب كامل' },
+      { key: 'nextOfKin', en: 'Next of kin', ar: 'اسم أحد الأقارب' },
+    ],
+  },
+  {
+    en: 'Passport, language & education',
+    ar: 'الجواز واللغة والتعليم',
+    lines: [
+      { key: 'placeOfIssue', en: 'Passport place of issue', ar: 'مكان الإصدار' },
+      { key: 'english', en: 'English', ar: 'الإنجليزية' },
+      { key: 'arabic', en: 'Arabic', ar: 'العربية' },
+      { key: 'education', en: 'Education', ar: 'التعليم' },
+    ],
+  },
+  {
+    en: 'Skills & experience',
+    ar: 'خبرة العمل',
+    lines: [
+      { key: 'skillBabySitting', en: 'Baby sitting', ar: 'عناية الرضع' },
+      { key: 'skillChildrenCare', en: 'Children care', ar: 'عناية الطفل' },
+      { key: 'skillTutoring', en: 'Tutoring', ar: 'تعليم الأطفال' },
+      { key: 'skillElderlyCare', en: 'Elderly care', ar: 'عناية كبار السن' },
+      { key: 'skillCleaning', en: 'Cleaning', ar: 'التنظيف' },
+      { key: 'skillWashing', en: 'Washing', ar: 'الغسيل' },
+      { key: 'skillIroning', en: 'Ironing', ar: 'الكوي' },
+      { key: 'skillCooking', en: 'Cooking', ar: 'الطبخ' },
+    ],
+  },
 ]
 
 export default function CvTab({ applicant }: { applicant: Applicant }) {
   const updateApplicant = useAppStore((s) => s.updateApplicant)
   const settings = useAppStore((s) => s.settings)
-  const requests = useAppStore((s) => s.requests)
-  const employers = useAppStore((s) => s.employers)
-  const { t, tb, language } = useTranslation()
+  const { t, language } = useTranslation()
   const ar = language === 'ar'
 
   const [photo, setPhoto] = useState<string | null>(null)
-  // The seal is a data URL of its own weight, and most of the dashboard never
-  // needs it: fetched when this tab opens rather than carried everywhere.
-  const [logo, setLogo] = useState<string | null>(null)
+  // The letterheads are data URLs of their own weight, and most of the
+  // dashboard never needs them: fetched when this tab opens rather than
+  // carried everywhere.
+  const [letterhead, setLetterhead] = useState<{ logo: string; partner: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
 
-  // Her latest request names the client and the stage she has reached, which
-  // the template asks for and the record already knows.
-  const latest = useMemo(
-    () =>
-      requests
-        .filter((r) => r.applicantId === applicant.id)
-        .sort((a, b) => (a.createdOn < b.createdOn ? 1 : -1))[0] ?? null,
-    [requests, applicant.id],
-  )
-  const client = employers.find((e) => e.id === latest?.employerId)
-  const stage = latest?.statusHistory[latest.statusHistory.length - 1]?.status ?? ''
+  // Her type picks the document unless somebody has said otherwise, and what
+  // they said is on the record rather than in this screen's memory.
+  const template = templateFor(applicant)
+  const groups = template === 'domestic' ? DOMESTIC : PROFESSIONAL
 
   useEffect(() => {
     let live = true
@@ -94,7 +145,7 @@ export default function CvTab({ applicant }: { applicant: Applicant }) {
       if (live) setPhoto(data)
     })
     void import('../../../lib/cvAsset').then((asset) => {
-      if (live) setLogo(asset.LOGO_DATA_URL)
+      if (live) setLetterhead({ logo: asset.LOGO_DATA_URL, partner: asset.PARTNER_LOGO_DATA_URL })
     })
     return () => {
       live = false
@@ -114,11 +165,11 @@ export default function CvTab({ applicant }: { applicant: Applicant }) {
           address: settings.address,
         },
         photo,
-        logo,
-        client: client ? tb({ en: client.englishName, ar: client.arabicName }) : '',
-        interviewStatus: stage,
+        logo: letterhead?.logo ?? null,
+        partnerLogo: letterhead?.partner ?? null,
+        template,
       }),
-    [applicant, settings, photo, logo, client, stage, tb],
+    [applicant, settings, photo, letterhead, template],
   )
 
   function set(key: keyof CvDetails, value: string) {
@@ -162,6 +213,30 @@ export default function CvTab({ applicant }: { applicant: Applicant }) {
           <h2 className="panel-title">{t('cv_title')}</h2>
           <p className="mt-0.5 text-[11px] text-ink-3">{t('cv_subtitle')}</p>
 
+          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] text-ink-3">{t('cv_template')}</span>
+            {(
+              [
+                ['', ar ? `حسب نوعها (${applicant.type === 'Domestic' ? 'بيانات' : 'سيرة'})` : `Follow her type (${applicant.type === 'Domestic' ? 'bio data' : 'CV'})`],
+                ['domestic', t('cv_template_domestic')],
+                ['professional', t('cv_template_professional')],
+              ] as [CvDetails['template'], string][]
+            ).map(([value, label]) => (
+              <button
+                key={value || 'auto'}
+                type="button"
+                onClick={() => set('template', value)}
+                className={`rounded-control px-2.5 py-1.5 text-[11px] ${
+                  applicant.cvDetails.template === value
+                    ? 'bg-accent-soft text-accent-text'
+                    : 'border border-line text-ink-2 hover:bg-raised'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
           <div className="mt-3 flex flex-wrap gap-2">
             <PrimaryButton onClick={publish} disabled={busy} className="flex items-center gap-1.5">
               <Globe className="size-3.5" /> {t('cv_publish')}
@@ -188,11 +263,9 @@ export default function CvTab({ applicant }: { applicant: Applicant }) {
 
         <CvImport applicant={applicant} />
 
-        <Group title={ar ? 'التفاصيل الشخصية' : 'Personal details'} lines={PERSONAL} applicant={applicant} onSet={set} ar={ar} />
-        <Group title={ar ? 'النبذة المهنية' : 'Professional profile'} lines={PROFILE} applicant={applicant} onSet={set} ar={ar} />
-        <Group title={ar ? 'المهارات' : 'Skills'} lines={SKILLS} applicant={applicant} onSet={set} ar={ar} />
-        <Group title={ar ? 'التعليم والشهادات' : 'Education & certifications'} lines={EDUCATION} applicant={applicant} onSet={set} ar={ar} />
-        <Group title={ar ? 'التوظيف' : 'Placement'} lines={PLACEMENT} applicant={applicant} onSet={set} ar={ar} />
+        {groups.map((group) => (
+          <Group key={group.en} title={ar ? group.ar : group.en} lines={group.lines} applicant={applicant} onSet={set} ar={ar} />
+        ))}
       </div>
 
       <div className="rounded-panel border border-line bg-surface p-3">
@@ -227,7 +300,7 @@ function Group({
       <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
         {lines.map((line) => (
           <div key={line.key} className={line.long ? 'sm:col-span-2' : undefined}>
-            <Field label={ar ? line.ar : line.en}>
+            <Field label={ar ? line.ar : line.en} hint={line.hint}>
               <TextInput
                 value={applicant.cvDetails[line.key]}
                 onChange={(event) => onSet(line.key, event.target.value)}

@@ -73,6 +73,8 @@ export interface ExperienceEntry {
   years: number
   /** What she did there, in her own words or the office's. */
   duties: string
+  /** Where the job was, which the bio data asks for by name. */
+  country: string
 }
 
 export interface EducationEntry {
@@ -265,6 +267,8 @@ export interface CvDetails {
   /** Overrides the profession on the CV when the two differ. */
   jobTitle: string
   reference: string
+  /** Which of the two templates to build. Empty follows her type. */
+  template: '' | 'professional' | 'domestic'
   profileEn: string
   profileAr: string
   maritalStatus: string
@@ -288,11 +292,39 @@ export interface CvDetails {
   preferredCountry: string
   client: string
   interviewStatus: string
+
+  // --- the bio data asks for these, and the professional CV does not -------
+  /** The post on the bio data, when it differs from her profession. */
+  postApplied: string
+  /** Where she is going, which is nearly always Saudi Arabia. */
+  destinationCountry: string
+  monthlySalary: string
+  contractPeriod: string
+  placeOfBirth: string
+  livingTown: string
+  children: string
+  height: string
+  weight: string
+  motherName: string
+  fatherName: string
+  nextOfKin: string
+  english: string
+  arabic: string
+  /** Each is yes, no, or however the office wants to put it. */
+  skillBabySitting: string
+  skillChildrenCare: string
+  skillTutoring: string
+  skillElderlyCare: string
+  skillCleaning: string
+  skillWashing: string
+  skillIroning: string
+  skillCooking: string
 }
 
 export const EMPTY_CV_DETAILS: CvDetails = {
   jobTitle: '',
   reference: '',
+  template: '',
   profileEn: '',
   profileAr: '',
   maritalStatus: '',
@@ -316,6 +348,28 @@ export const EMPTY_CV_DETAILS: CvDetails = {
   preferredCountry: '',
   client: '',
   interviewStatus: '',
+  postApplied: '',
+  destinationCountry: '',
+  monthlySalary: '',
+  contractPeriod: '',
+  placeOfBirth: '',
+  livingTown: '',
+  children: '',
+  height: '',
+  weight: '',
+  motherName: '',
+  fatherName: '',
+  nextOfKin: '',
+  english: '',
+  arabic: '',
+  skillBabySitting: '',
+  skillChildrenCare: '',
+  skillTutoring: '',
+  skillElderlyCare: '',
+  skillCleaning: '',
+  skillWashing: '',
+  skillIroning: '',
+  skillCooking: '',
 }
 
 /** One of the people whose domestic workers are counted separately. */

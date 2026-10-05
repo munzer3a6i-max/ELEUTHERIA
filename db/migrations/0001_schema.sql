@@ -208,8 +208,9 @@ create table if not exists ops.applicant_experience (
   title         text not null,
   employer      text not null default '',
   years         smallint not null default 0,
-  -- What she actually did there. The CV asks for it by name.
-  duties        text not null default ''
+  -- What she actually did there, and where. Both are columns in the CV.
+  duties        text not null default '',
+  country       text not null default ''
 );
 
 create table if not exists ops.applicant_education (
