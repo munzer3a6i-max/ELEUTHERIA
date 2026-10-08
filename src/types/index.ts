@@ -303,10 +303,6 @@ export interface CvDetails {
   // --- the bio data asks for these, and the professional CV does not -------
   /** The post on the bio data, when it differs from her profession. */
   postApplied: string
-  /** Where she is going, which is nearly always Saudi Arabia. */
-  destinationCountry: string
-  monthlySalary: string
-  contractPeriod: string
   placeOfBirth: string
   livingTown: string
   children: string
@@ -317,7 +313,7 @@ export interface CvDetails {
   nextOfKin: string
   english: string
   arabic: string
-  /** Each is yes, no, or however the office wants to put it. */
+  /** Each is a yes or a no, and the bio data prints it as one. */
   skillBabySitting: string
   skillChildrenCare: string
   skillTutoring: string
@@ -356,9 +352,6 @@ export const EMPTY_CV_DETAILS: CvDetails = {
   client: '',
   interviewStatus: '',
   postApplied: '',
-  destinationCountry: '',
-  monthlySalary: '',
-  contractPeriod: '',
   placeOfBirth: '',
   livingTown: '',
   children: '',

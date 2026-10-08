@@ -100,6 +100,22 @@ function referenceFor(applicant: Applicant): string {
   return applicant.cvDetails.reference || `EIP-${applicant.id.slice(0, 4).toUpperCase()}`
 }
 
+/*
+  The terms of the posting.
+
+  Every domestic worker on this agency's books goes to the same place on the
+  same contract for the same money, so these are three facts about the office
+  rather than three questions about her. They are printed, not asked: a field
+  that can only hold one answer is a field somebody can get wrong.
+*/
+export const DOMESTIC_TERMS = {
+  country: 'KSA',
+  countryAr: 'المملكة العربية السعودية',
+  salary: 'USD 400',
+  period: 'TWO YEARS',
+  periodAr: 'سنتان',
+} as const
+
 /** Which document this worker gets, unless somebody has said otherwise. */
 export function templateFor(applicant: Applicant): CvTemplate {
   if (applicant.cvDetails.template) return applicant.cvDetails.template
@@ -207,13 +223,22 @@ function threeUp(en: string, value: string | number | null | undefined, ar: stri
   </div>`
 }
 
+/**
+ * A skill is a yes or a no and nothing else -- an employer reading the page
+ * wants to know whether she cooks, not how the office phrased it. Anything
+ * that is not plainly a yes reads as a no, so a half-filled record never
+ * claims something nobody said.
+ */
+export function saysYes(value: string): boolean {
+  return /^(y|yes|true|1|نعم|اي|أي)$/i.test(value.trim())
+}
+
 function skillRow(en: string, ar: string, value: string, last = false): string {
-  const said = value.trim()
-  const on = said !== ''
+  const on = saysYes(value)
   return `<div style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:3px 0;${last ? '' : `border-bottom:1px solid ${LINE_SOFT};`}">
     <span style="font-size:9pt;color:${INK}">${escape(en)}</span>
     <span class="ar" dir="rtl" style="font-size:8pt;color:${MUTED_AR};text-align:right;white-space:nowrap">${escape(ar)}</span>
-    <span style="display:inline-block;min-width:38px;text-align:center;padding:1px 8px;border-radius:100px;font-size:7.5pt;font-weight:600;letter-spacing:0.08em;border:1px solid ${on ? GOLD_RULE : LINE_MID};color:${on ? GOLD : '#9a8c6e'};background:${on ? '#faf4e3' : 'transparent'}">${on ? escape(said.toUpperCase()) : '—'}</span>
+    <span style="display:inline-block;min-width:38px;text-align:center;padding:1px 8px;border-radius:100px;font-size:7.5pt;font-weight:600;letter-spacing:0.08em;border:1px solid ${on ? GOLD_RULE : LINE_MID};color:${on ? GOLD : '#9a8c6e'};background:${on ? '#faf4e3' : 'transparent'}">${on ? 'YES' : 'NO'}</span>
   </div>`
 }
 
@@ -390,7 +415,7 @@ function domesticBioData({ applicant, company, photo, fullBody, passportCopy, lo
       </div>
       <div style="display:flex;gap:22px;flex:0 0 auto">
         ${banner('Post Applied', 'الوظيفة', (cv.postApplied || cv.jobTitle || applicant.profession).toUpperCase())}
-        ${banner('Country', 'الدولة', (cv.destinationCountry || 'KSA').toUpperCase())}
+        ${banner('Country', 'الدولة', DOMESTIC_TERMS.country)}
         ${banner('Ref. No.', '', referenceFor(applicant))}
       </div>
     </div>
@@ -407,12 +432,12 @@ function domesticBioData({ applicant, company, photo, fullBody, passportCopy, lo
         <div style="display:flex;flex-direction:column;gap:2px">
           <span class="lab" style="white-space:nowrap">Monthly Salary</span>
           <span class="ar" dir="rtl" style="font-size:7.5pt;color:${MUTED_AR}">الراتب الشهري</span>
-          <span style="font-size:12pt;font-weight:600;color:${INK_STRONG};white-space:nowrap">${show(cv.monthlySalary || cv.expectedSalary)}</span>
+          <span style="font-size:12pt;font-weight:600;color:${INK_STRONG};white-space:nowrap">${DOMESTIC_TERMS.salary}</span>
         </div>
         <div style="display:flex;flex-direction:column;gap:2px">
           <span class="lab" style="white-space:nowrap">Contract Period</span>
           <span class="ar" dir="rtl" style="font-size:7.5pt;color:${MUTED_AR}">مدة العقد</span>
-          <span style="font-size:12pt;font-weight:600;color:${INK_STRONG};white-space:nowrap">${show(cv.contractPeriod || 'TWO YEARS')}</span>
+          <span style="font-size:12pt;font-weight:600;color:${INK_STRONG};white-space:nowrap">${DOMESTIC_TERMS.period}</span>
         </div>
       </div>
     </div>

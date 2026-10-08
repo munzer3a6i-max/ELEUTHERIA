@@ -12,7 +12,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Download, FileText, Globe, Printer } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
 import { useTranslation } from '../../../i18n/useTranslation'
-import { buildCvHtml, cvFileNameFor, templateFor } from '../../../lib/cvDocument'
+import { buildCvHtml, cvFileNameFor, saysYes, templateFor, DOMESTIC_TERMS } from '../../../lib/cvDocument'
 import { fullBodyAsDataUrl, passportCopyAsDataUrl, photoAsDataUrl } from '../../../lib/cvPhoto'
 import { setWorkerCv } from '../../../lib/cvs'
 import CvImport from './CvImport'
@@ -20,9 +20,17 @@ import CvPictures from './CvPictures'
 import { Field, TextInput, PrimaryButton, SecondaryButton } from '../../../components/form'
 import type { Applicant, CvDetails } from '../../../types'
 
-type Line = { key: keyof CvDetails; en: string; ar: string; long?: boolean; hint?: string }
+type Line = {
+  key: keyof CvDetails
+  en: string
+  ar: string
+  long?: boolean
+  hint?: string
+  /** A skill is a yes or a no; everything else is typed. */
+  yesno?: boolean
+}
 
-type Group = { en: string; ar: string; lines: Line[] }
+type Group = { en: string; ar: string; lines: Line[]; note?: { en: string; ar: string } }
 
 /** What the professional curriculum vitae asks for beyond the record. */
 const PROFESSIONAL: Group[] = [
@@ -73,11 +81,12 @@ const DOMESTIC: Group[] = [
     ar: 'بيانات الوظيفة',
     lines: [
       { key: 'postApplied', en: 'Post applied', ar: 'الوظيفة' },
-      { key: 'destinationCountry', en: 'Country', ar: 'الدولة', hint: 'KSA unless you say otherwise' },
-      { key: 'monthlySalary', en: 'Monthly salary', ar: 'الراتب الشهري' },
-      { key: 'contractPeriod', en: 'Contract period', ar: 'مدة العقد', hint: 'Two years unless you say otherwise' },
       { key: 'reference', en: 'Reference no.', ar: 'الرقم المرجعي' },
     ],
+    note: {
+      en: `Country, salary and contract period are the same on every bio data and are printed as they stand: ${DOMESTIC_TERMS.country} · ${DOMESTIC_TERMS.salary} · ${DOMESTIC_TERMS.period}.`,
+      ar: `الدولة والراتب ومدة العقد ثابتة في كل سيرة وتُطبع كما هي: ${DOMESTIC_TERMS.countryAr} · ${DOMESTIC_TERMS.salary} · ${DOMESTIC_TERMS.periodAr}.`,
+    },
   },
   {
     en: 'Personal data',
@@ -109,14 +118,14 @@ const DOMESTIC: Group[] = [
     en: 'Skills & experience',
     ar: 'خبرة العمل',
     lines: [
-      { key: 'skillBabySitting', en: 'Baby sitting', ar: 'عناية الرضع' },
-      { key: 'skillChildrenCare', en: 'Children care', ar: 'عناية الطفل' },
-      { key: 'skillTutoring', en: 'Tutoring', ar: 'تعليم الأطفال' },
-      { key: 'skillElderlyCare', en: 'Elderly care', ar: 'عناية كبار السن' },
-      { key: 'skillCleaning', en: 'Cleaning', ar: 'التنظيف' },
-      { key: 'skillWashing', en: 'Washing', ar: 'الغسيل' },
-      { key: 'skillIroning', en: 'Ironing', ar: 'الكوي' },
-      { key: 'skillCooking', en: 'Cooking', ar: 'الطبخ' },
+      { yesno: true, key: 'skillBabySitting', en: 'Baby sitting', ar: 'عناية الرضع' },
+      { yesno: true, key: 'skillChildrenCare', en: 'Children care', ar: 'عناية الطفل' },
+      { yesno: true, key: 'skillTutoring', en: 'Tutoring', ar: 'تعليم الأطفال' },
+      { yesno: true, key: 'skillElderlyCare', en: 'Elderly care', ar: 'عناية كبار السن' },
+      { yesno: true, key: 'skillCleaning', en: 'Cleaning', ar: 'التنظيف' },
+      { yesno: true, key: 'skillWashing', en: 'Washing', ar: 'الغسيل' },
+      { yesno: true, key: 'skillIroning', en: 'Ironing', ar: 'الكوي' },
+      { yesno: true, key: 'skillCooking', en: 'Cooking', ar: 'الطبخ' },
     ],
   },
 ]
@@ -280,7 +289,15 @@ export default function CvTab({ applicant }: { applicant: Applicant }) {
         <CvImport applicant={applicant} />
 
         {groups.map((group) => (
-          <Group key={group.en} title={ar ? group.ar : group.en} lines={group.lines} applicant={applicant} onSet={set} ar={ar} />
+          <Group
+            key={group.en}
+            title={ar ? group.ar : group.en}
+            lines={group.lines}
+            note={group.note && (ar ? group.note.ar : group.note.en)}
+            applicant={applicant}
+            onSet={set}
+            ar={ar}
+          />
         ))}
       </div>
 
@@ -300,31 +317,70 @@ export default function CvTab({ applicant }: { applicant: Applicant }) {
 function Group({
   title,
   lines,
+  note,
   applicant,
   onSet,
   ar,
 }: {
   title: string
   lines: Line[]
+  note?: string
   applicant: Applicant
   onSet: (key: keyof CvDetails, value: string) => void
   ar: boolean
 }) {
   return (
     <div className="rounded-panel border border-line bg-surface p-4">
-      <h2 className="mb-3 panel-title">{title}</h2>
+      <h2 className={note ? 'panel-title' : 'mb-3 panel-title'}>{title}</h2>
+      {note && <p className="mb-3 mt-0.5 text-[10.5px] leading-relaxed text-ink-3">{note}</p>}
       <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
         {lines.map((line) => (
           <div key={line.key} className={line.long ? 'sm:col-span-2' : undefined}>
             <Field label={ar ? line.ar : line.en} hint={line.hint}>
-              <TextInput
-                value={applicant.cvDetails[line.key]}
-                onChange={(event) => onSet(line.key, event.target.value)}
-              />
+              {line.yesno ? (
+                <YesNo value={applicant.cvDetails[line.key]} onChange={(next) => onSet(line.key, next)} ar={ar} />
+              ) : (
+                <TextInput
+                  value={applicant.cvDetails[line.key]}
+                  onChange={(event) => onSet(line.key, event.target.value)}
+                />
+              )}
             </Field>
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+/**
+ * Yes or no, and it says which it is at a glance. A skill nobody has answered
+ * reads as a no on the document, so the two buttons show that too rather than
+ * leaving the office to guess what a blank means.
+ */
+function YesNo({ value, onChange, ar }: { value: string; onChange: (next: string) => void; ar: boolean }) {
+  const yes = saysYes(value)
+  const choice = (on: boolean, label: string) => (
+    <button
+      key={label}
+      type="button"
+      onClick={() => onChange(on ? 'yes' : 'no')}
+      aria-pressed={on === yes}
+      className={`h-8 flex-1 rounded-control border text-[11.5px] font-medium transition-colors ${
+        on === yes
+          ? on
+            ? 'border-pos/40 bg-pos-soft text-pos'
+            : 'border-line bg-sunken text-ink-2'
+          : 'border-line text-ink-3 hover:text-ink'
+      }`}
+    >
+      {label}
+    </button>
+  )
+  return (
+    <div className="flex gap-1.5">
+      {choice(true, ar ? 'نعم' : 'Yes')}
+      {choice(false, ar ? 'لا' : 'No')}
     </div>
   )
 }
