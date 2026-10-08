@@ -36,7 +36,7 @@ export default function OfficeExpensesPanel({
           >
             <Plus className="size-3" /> {t('action_add')}
           </button>
-          <Link to="/accounting/office-expenses" className="text-[11px] text-accent-text hover:text-accent">
+          <Link to="/accounting/expenses" className="text-[11px] text-accent-text hover:text-accent">
             {t('fin_view_all')}
           </Link>
         </>

@@ -46,9 +46,10 @@ export const seedExpenseCategories: ExpenseCategory[] = [
   { id: 'ec-1', name: { en: 'Rent', ar: 'إيجار' } },
   { id: 'ec-2', name: { en: 'Utilities', ar: 'خدمات' } },
   { id: 'ec-3', name: { en: 'Supplies', ar: 'لوازم' } },
-  { id: 'ec-4', name: { en: 'Accommodation', ar: 'سكن' } },
+  { id: 'ec-4', name: { en: 'Accommodation expenses', ar: 'مصروفات السكن' } },
   { id: 'ec-5', name: { en: 'Logistics', ar: 'نقل' } },
   { id: 'ec-6', name: { en: 'Other', ar: 'أخرى' } },
+  { id: 'ec-7', name: { en: 'Office expenses', ar: 'مصروفات المكتب' } },
 ]
 
 export const seedProfessions: Profession[] = [
@@ -643,15 +644,15 @@ export const seedPayroll: PayrollEntry[] = [
 // belong to a request's status history.
 export const seedOfficeExpenses: OfficeExpense[] = [
   { id: 'oe-1', item: { en: 'Office Rent', ar: 'إيجار المكتب' }, category: 'Rent', amount: 320, date: '2024-04-05', status: 'Paid', attachment: null },
-  { id: 'oe-2', item: { en: 'Electricity', ar: 'الكهرباء' }, category: 'Utilities', amount: 72, date: '2024-04-12', status: 'Paid', attachment: null },
-  { id: 'oe-3', item: { en: 'Water', ar: 'المياه' }, category: 'Utilities', amount: 14, date: '2024-04-12', status: 'Paid', attachment: null },
-  { id: 'oe-4', item: { en: 'Internet & Phone', ar: 'الإنترنت والهاتف' }, category: 'Utilities', amount: 38, date: '2024-04-18', status: 'Paid', attachment: null },
+  { id: 'oe-2', item: { en: 'Electricity', ar: 'الكهرباء' }, category: 'Office expenses', amount: 72, date: '2024-04-12', status: 'Paid', attachment: null },
+  { id: 'oe-3', item: { en: 'Water', ar: 'المياه' }, category: 'Office expenses', amount: 14, date: '2024-04-12', status: 'Paid', attachment: null },
+  { id: 'oe-4', item: { en: 'Internet & Phone', ar: 'الإنترنت والهاتف' }, category: 'Office expenses', amount: 38, date: '2024-04-18', status: 'Paid', attachment: null },
   { id: 'oe-5', item: { en: 'Office Rent', ar: 'إيجار المكتب' }, category: 'Rent', amount: 320, date: '2024-05-05', status: 'Paid', attachment: null },
-  { id: 'oe-6', item: { en: 'Electricity', ar: 'الكهرباء' }, category: 'Utilities', amount: 81, date: '2024-05-12', status: 'Paid', attachment: null },
-  { id: 'oe-7', item: { en: 'Worker Accommodation', ar: 'سكن العمالة' }, category: 'Accommodation', amount: 180, date: '2024-05-14', status: 'Paid', attachment: null },
+  { id: 'oe-6', item: { en: 'Electricity', ar: 'الكهرباء' }, category: 'Office expenses', amount: 81, date: '2024-05-12', status: 'Paid', attachment: null },
+  { id: 'oe-7', item: { en: 'Electricity', ar: 'الكهرباء' }, category: 'Accommodation expenses', amount: 180, date: '2024-05-14', status: 'Paid', attachment: null },
   { id: 'oe-8', item: { en: 'Office Supplies', ar: 'مستلزمات مكتبية' }, category: 'Supplies', amount: 46, date: '2024-05-22', status: 'Paid', attachment: null },
   { id: 'oe-9', item: { en: 'Office Rent', ar: 'إيجار المكتب' }, category: 'Rent', amount: 320, date: '2024-06-05', status: 'Paid', attachment: null },
-  { id: 'oe-10', item: { en: 'Electricity', ar: 'الكهرباء' }, category: 'Utilities', amount: 68, date: '2024-06-12', status: 'Pending', attachment: null },
+  { id: 'oe-10', item: { en: 'Electricity', ar: 'الكهرباء' }, category: 'Office expenses', amount: 68, date: '2024-06-12', status: 'Pending', attachment: null },
   { id: 'oe-11', item: { en: 'Courier & Documents', ar: 'الشحن والمستندات' }, category: 'Logistics', amount: 25, date: '2024-06-14', status: 'Pending', attachment: null },
 ]
 

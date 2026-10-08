@@ -120,8 +120,8 @@ export const translations = {
   acc_payroll_subtitle: { en: 'Monthly salaries, bonuses and allowances', ar: 'الرواتب والمكافآت والبدلات الشهرية' },
   acc_agency_accounts_title: { en: 'Agency Accounts', ar: 'حسابات المكاتب' },
   acc_agency_accounts_subtitle: { en: 'What each partner office was paid and still owes', ar: 'ما دُفع لكل مكتب شريك وما هو مستحق' },
-  acc_office_expenses_title: { en: 'Office Expenses', ar: 'مصروفات المكتب' },
-  acc_office_expenses_subtitle: { en: 'Rent, utilities and day-to-day running costs', ar: 'الإيجار والمرافق ومصروفات التشغيل اليومية' },
+  acc_office_expenses_title: { en: 'Expenses', ar: 'المصروفات' },
+  acc_office_expenses_subtitle: { en: 'The office, the accommodation and everything else the month cost', ar: 'المكتب والسكن وكل ما كلّفه الشهر' },
   acc_reports_title: { en: 'Accounting Reports', ar: 'التقارير المحاسبية' },
   acc_reports_subtitle: { en: 'Profit and loss across the whole business', ar: 'الأرباح والخسائر على مستوى الشركة' },
 
