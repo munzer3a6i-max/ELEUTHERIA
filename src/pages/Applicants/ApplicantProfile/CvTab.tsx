@@ -80,12 +80,11 @@ const DOMESTIC: Group[] = [
     en: 'The posting',
     ar: 'بيانات الوظيفة',
     lines: [
-      { key: 'postApplied', en: 'Post applied', ar: 'الوظيفة' },
       { key: 'reference', en: 'Reference no.', ar: 'الرقم المرجعي' },
     ],
     note: {
-      en: `Country, salary and contract period are the same on every bio data and are printed as they stand: ${DOMESTIC_TERMS.country} · ${DOMESTIC_TERMS.salary} · ${DOMESTIC_TERMS.period}.`,
-      ar: `الدولة والراتب ومدة العقد ثابتة في كل سيرة وتُطبع كما هي: ${DOMESTIC_TERMS.countryAr} · ${DOMESTIC_TERMS.salary} · ${DOMESTIC_TERMS.periodAr}.`,
+      en: `The post, country, salary and contract period are the same on every bio data and are printed as they stand: ${DOMESTIC_TERMS.post} · ${DOMESTIC_TERMS.country} · ${DOMESTIC_TERMS.salary} · ${DOMESTIC_TERMS.period}.`,
+      ar: `الوظيفة والدولة والراتب ومدة العقد ثابتة في كل سيرة وتُطبع كما هي: ${DOMESTIC_TERMS.postAr} · ${DOMESTIC_TERMS.countryAr} · ${DOMESTIC_TERMS.salary} · ${DOMESTIC_TERMS.periodAr}.`,
     },
   },
   {

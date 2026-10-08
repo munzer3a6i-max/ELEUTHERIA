@@ -301,8 +301,6 @@ export interface CvDetails {
   interviewStatus: string
 
   // --- the bio data asks for these, and the professional CV does not -------
-  /** The post on the bio data, when it differs from her profession. */
-  postApplied: string
   placeOfBirth: string
   livingTown: string
   children: string
@@ -351,7 +349,6 @@ export const EMPTY_CV_DETAILS: CvDetails = {
   preferredCountry: '',
   client: '',
   interviewStatus: '',
-  postApplied: '',
   placeOfBirth: '',
   livingTown: '',
   children: '',

@@ -109,6 +109,8 @@ function referenceFor(applicant: Applicant): string {
   that can only hold one answer is a field somebody can get wrong.
 */
 export const DOMESTIC_TERMS = {
+  post: 'HOUSEMAID',
+  postAr: 'عاملة منزلية',
   country: 'KSA',
   countryAr: 'المملكة العربية السعودية',
   salary: 'USD 400',
@@ -414,7 +416,7 @@ function domesticBioData({ applicant, company, photo, fullBody, passportCopy, lo
         <span class="ar" dir="rtl" style="font-size:10pt;font-weight:600;color:${INK}">السيرة الذاتية للعمل في المملكة العربية السعودية</span>
       </div>
       <div style="display:flex;gap:22px;flex:0 0 auto">
-        ${banner('Post Applied', 'الوظيفة', (cv.postApplied || cv.jobTitle || applicant.profession).toUpperCase())}
+        ${banner('Post Applied', 'الوظيفة', DOMESTIC_TERMS.post)}
         ${banner('Country', 'الدولة', DOMESTIC_TERMS.country)}
         ${banner('Ref. No.', '', referenceFor(applicant))}
       </div>
