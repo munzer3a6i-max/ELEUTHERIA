@@ -220,6 +220,11 @@ create table if not exists ops.applicant_experience (
   applicant_id  uuid not null references ops.applicants (id) on delete cascade,
   title         text not null,
   employer      text not null default '',
+  -- The years she was there, as the office types them. Null together on an
+  -- entry recorded before the range existed.
+  from_year     smallint,
+  to_year       smallint,
+  -- How long that comes to, worked out from the range rather than typed.
   years         smallint not null default 0,
   -- What she actually did there, and where. Both are columns in the CV.
   duties        text not null default '',
@@ -1586,3 +1591,39 @@ alter table ops.settings add column if not exists email   text not null default 
 
 comment on column ops.settings.phones is
   'Printed on the CV letterhead as written, so the separators and country prefixes are the office''s choice.';
+
+
+-- ======================================================== 0014_experience_span.sql --
+
+-- The years she was there.
+--
+-- The office types a range -- 2021 to 2023 -- because that is what her
+-- passport, her contract and her own memory say. The count of years is worked
+-- out from it rather than typed a second time and disagreed with, so `years`
+-- stays exactly what it was and everything reading it, the website's cards
+-- included, is untouched.
+--
+-- Null on an entry recorded before the range existed, which is why neither
+-- column is required: a job somebody logged as "4 years" and nothing else is
+-- still a job she did.
+
+alter table ops.applicant_experience add column if not exists from_year smallint;
+alter table ops.applicant_experience add column if not exists to_year   smallint;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'applicant_experience_span_sane'
+  ) then
+    alter table ops.applicant_experience add constraint applicant_experience_span_sane
+      check (
+        (from_year is null or from_year between 1950 and 2100)
+        and (to_year is null or to_year between 1950 and 2100)
+        and (from_year is null or to_year is null or to_year >= from_year)
+      );
+  end if;
+end
+$$;
+
+comment on column ops.applicant_experience.from_year is
+  'The year the job started. Null on an entry recorded before the range existed.';

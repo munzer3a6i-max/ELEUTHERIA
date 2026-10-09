@@ -272,8 +272,10 @@ try {
         'published_to_website', 'agency_id', 'agent_id'])
 
   await upsert('applicant_experience', applicants.flatMap((a) => a.experience.map((e) => ({
-    id: idFor('experience', e.id), applicant_id: idFor('applicant', a.id), title: e.title, employer: e.employer, years: e.years,
-  }))), ['id', 'applicant_id', 'title', 'employer', 'years'])
+    id: idFor('experience', e.id), applicant_id: idFor('applicant', a.id), title: e.title, employer: e.employer,
+    from_year: e.fromYear || null, to_year: e.toYear || null, years: e.years,
+    duties: e.duties ?? '', country: e.country ?? '',
+  }))), ['id', 'applicant_id', 'title', 'employer', 'from_year', 'to_year', 'years', 'duties', 'country'])
 
   await upsert('applicant_education', applicants.flatMap((a) => a.education.map((e) => ({
     id: idFor('education', e.id), applicant_id: idFor('applicant', a.id), degree: e.degree, institution: e.institution, year: e.year,

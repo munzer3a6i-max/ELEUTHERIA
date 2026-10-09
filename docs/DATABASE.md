@@ -371,6 +371,15 @@ and the CV tab shows only the half that the chosen template prints.
 `ops.applicant_experience.duties` and `.country` exist because the two
 experience tables ask what she did and where.
 
+A job is recorded as the years she was there -- `from_year` and `to_year`,
+2021 to 2023 -- because that is what her passport, her contract and her own
+memory say, and it is what both documents print under Period. `years` is
+still there and still a number: it is worked out from the range rather than
+typed a second time and disagreed with, so the total on her record and the
+website's cards read exactly what they always did. Both year columns are null
+on an entry recorded before the range existed, and an entry with no range
+falls back to printing its count of years.
+
 The bio data prints two more pictures than the website ever sees:
 `full_body_path` is the standing photograph beside her details, and
 `passport_copy_path` is the copy on its second page. Both live in the private

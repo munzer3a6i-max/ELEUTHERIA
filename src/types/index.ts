@@ -70,6 +70,13 @@ export interface ExperienceEntry {
   id: string
   title: string
   employer: string
+  /**
+   * The years she was there, which is what the office types: 2024 to 2038.
+   * Zero on an entry recorded before the range existed.
+   */
+  fromYear: number
+  toYear: number
+  /** How long that comes to. Worked out from the range, never typed. */
   years: number
   /** What she did there, in her own words or the office's. */
   duties: string

@@ -6,7 +6,8 @@ import { useTranslation } from '../../../i18n/useTranslation'
 import Modal from '../../../components/Modal'
 import { Field, TextInput, PrimaryButton, SecondaryButton } from '../../../components/form'
 import { clearWorkerCv, setWorkerCv, useCvUrl } from '../../../lib/cvs'
-import type { Applicant } from '../../../types'
+import { experiencePeriod, isYear, spanYears } from '../../../lib/experience'
+import type { Applicant, ExperienceEntry } from '../../../types'
 
 export default function InfoTab({ applicant }: { applicant: Applicant }) {
   const updateApplicant = useAppStore((s) => s.updateApplicant)
@@ -122,7 +123,7 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
                 <div>
                   <p className="text-ink">{exp.title}</p>
                   <p className="text-[10px] text-ink-3">
-                    {exp.employer} · {exp.years} {language === 'ar' ? 'سنوات' : 'yrs'}
+                    {[exp.employer, experiencePeriod(exp, language === 'ar' ? 'ar' : 'en')].filter(Boolean).join(' · ')}
                   </p>
                 </div>
                 <button type="button" onClick={() => deleteExperience(applicant.id, exp.id)} className="text-ink-3 hover:text-neg">
@@ -400,22 +401,42 @@ function ExperienceModal({
   onSubmit,
 }: {
   onClose: () => void
-  onSubmit: (entry: { title: string; employer: string; years: number; duties: string; country: string }) => void
+  onSubmit: (entry: Omit<ExperienceEntry, 'id'>) => void
 }) {
   const { t, language } = useTranslation()
   const [title, setTitle] = useState('')
   const [employer, setEmployer] = useState('')
-  const [years, setYears] = useState('')
+  const [fromYear, setFromYear] = useState('')
+  const [toYear, setToYear] = useState('')
   const [duties, setDuties] = useState('')
   const [country, setCountry] = useState('')
+  const [problem, setProblem] = useState<string | null>(null)
+
+  const from = Number(fromYear)
+  const to = Number(toYear)
+  const years = spanYears(from, to)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setProblem(null)
     if (!title.trim()) return
+    // Half a range is no range: either both years make sense together, or the
+    // entry is kept without one rather than with a year nobody can read.
+    const ranged = isYear(from) && isYear(to)
+    if ((fromYear || toYear) && !ranged) {
+      setProblem(language === 'ar' ? 'اكتب سنتين بأربعة أرقام، من وإلى.' : 'Give both years, four digits each.')
+      return
+    }
+    if (ranged && to < from) {
+      setProblem(language === 'ar' ? 'سنة النهاية قبل سنة البداية.' : 'The last year comes before the first.')
+      return
+    }
     onSubmit({
       title: title.trim(),
       employer: employer.trim(),
-      years: Number(years) || 0,
+      fromYear: ranged ? from : 0,
+      toYear: ranged ? to : 0,
+      years,
       duties: duties.trim(),
       country: country.trim(),
     })
@@ -436,8 +457,39 @@ function ExperienceModal({
         >
           <TextInput value={country} onChange={(e) => setCountry(e.target.value)} />
         </Field>
-        <Field label={language === 'ar' ? 'عدد السنوات' : 'Years'}>
-          <TextInput type="number" min={0} value={years} onChange={(e) => setYears(e.target.value)} />
+        <Field
+          label={language === 'ar' ? 'سنوات العمل' : 'Years worked'}
+          hint={
+            years > 0
+              ? `${fromYear} - ${toYear} · ${years} ${language === 'ar' ? 'سنوات' : years === 1 ? 'year' : 'years'}`
+              : language === 'ar'
+                ? 'من سنة إلى سنة، مثل 2024 - 2038'
+                : 'From one year to another, like 2024 - 2038'
+          }
+        >
+          <div className="flex items-center gap-2">
+            <TextInput
+              type="number"
+              min={1950}
+              max={2100}
+              step={1}
+              placeholder="2024"
+              value={fromYear}
+              onChange={(e) => setFromYear(e.target.value)}
+              className="text-center"
+            />
+            <span className="shrink-0 text-ink-3">—</span>
+            <TextInput
+              type="number"
+              min={1950}
+              max={2100}
+              step={1}
+              placeholder="2038"
+              value={toYear}
+              onChange={(e) => setToYear(e.target.value)}
+              className="text-center"
+            />
+          </div>
         </Field>
         <Field
           label={language === 'ar' ? 'أهم المهام' : 'Key duties'}
@@ -445,6 +497,7 @@ function ExperienceModal({
         >
           <TextInput value={duties} onChange={(e) => setDuties(e.target.value)} />
         </Field>
+        {problem && <p className="mt-1 text-[11px] font-medium text-neg">{problem}</p>}
         <div className="mt-4 flex justify-end gap-2">
           <SecondaryButton onClick={onClose}>{t('action_cancel')}</SecondaryButton>
           <PrimaryButton type="submit">{t('action_add')}</PrimaryButton>

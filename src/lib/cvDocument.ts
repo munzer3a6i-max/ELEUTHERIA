@@ -13,6 +13,7 @@
   because a CV with gaps is honest and one that fills them in is not.
 */
 
+import { experiencePeriod } from './experience'
 import type { Applicant, ExperienceEntry } from '../types'
 
 export type CvTemplate = 'professional' | 'domestic'
@@ -86,8 +87,7 @@ function ageFrom(dob: string): string {
 }
 
 function period(job: ExperienceEntry): string {
-  if (job.years <= 0) return '—'
-  return `${job.years} ${job.years === 1 ? 'year' : 'years'}`
+  return experiencePeriod(job) || '—'
 }
 
 function issuedToday(): string {
