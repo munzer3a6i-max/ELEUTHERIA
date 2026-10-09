@@ -371,6 +371,15 @@ and the CV tab shows only the half that the chosen template prints.
 `ops.applicant_experience.duties` and `.country` exist because the two
 experience tables ask what she did and where.
 
+A job is recorded as the years she was there -- `from_year` and `to_year`,
+2021 to 2023 -- because that is what her passport, her contract and her own
+memory say, and it is what both documents print under Period. `years` is
+still there and still a number: it is worked out from the range rather than
+typed a second time and disagreed with, so the total on her record and the
+website's cards read exactly what they always did. Both year columns are null
+on an entry recorded before the range existed, and an entry with no range
+falls back to printing its count of years.
+
 The bio data prints two more pictures than the website ever sees:
 `full_body_path` is the standing photograph beside her details, and
 `passport_copy_path` is the copy on its second page. Both live in the private
@@ -419,12 +428,80 @@ https://<project>.supabase.co/storage/v1/object/public/published-cvs/<cv_path>
 holds the name the office uploaded and stays inside `ops`, because a visitor
 has no use for it.
 
+What is stored matters as much as where. A file is served back with the type
+it was given when it was uploaded, and a browser sent a document labelled
+`text/plain` prints the markup on the screen rather than the page -- and reads
+its bytes as Western European rather than Unicode, so every Arabic word turns
+to rubbish. So the type is decided by the key's extension rather than by
+whatever the browser said when somebody chose the file: `.html` is stored as
+`text/html; charset=utf-8`, `.pdf` as `application/pdf`. A CV published before
+that was true keeps its old type until it is published again, which the CV tab's
+Publish does.
+
 This is the one place where the dashboard hands a document to strangers, so it
 is worth being plain about what it means: while a worker is on the website, her
 CV can be read by anyone who has the link, with no key and no sign-in. Nothing
 narrows that to people the office knows. Keep passport scans and identity
 papers out of the CV -- they belong in `worker-documents`, which is private --
 and unpublishing the worker deletes the public copy.
+
+### When an upload is refused
+
+Storage answers four quite different refusals with the same `400 Bad Request`,
+which in a browser console reads as though the file were at fault. It usually
+is not. The four are: the bucket does not exist; the rules on it do not let
+this account write; the bucket has a type or size limit somebody set in the
+dashboard; or the key is malformed.
+
+Two things tell them apart.
+
+**Settings, Database, Check file storage** puts a one-pixel picture into each
+of the five buckets and deletes it again, using the session the real upload
+would use, and names what came back for each. It also asks the database
+whether it recognises the signed-in account as active staff, which is what
+every write rule turns on.
+
+**`db/fix-storage.sql`**, pasted into the SQL editor, repairs all four causes:
+it creates any missing bucket, puts each one back to public or private as it
+should be, clears any file size limit and allowed MIME types, and rewrites the
+four rules on each. It is safe to run twice and touches no file already
+uploaded. If the role running it cannot write Storage's own tables, it says so
+under Notices and names what to do by hand instead.
+
+`db/why-storage.sql` answers it from the database's own side, and is the
+quickest way to settle an argument: it walks the exact chain an upload walks --
+does the bucket exist, is there any rule that would let somebody write to it,
+is an account linked, what does `auth.uid()` see with the settings Storage puts
+on the connection, what does `ops.is_staff()` answer -- and then tries the
+insert itself as the `authenticated` role, reporting each step as a row. The
+first row that reads badly is the cause. It deletes its own test row and
+uploads no file.
+
+`db/check-storage.sql` is the read-only version, for when it is easier to look
+than to try.
+
+One failure deserves naming, because it is quiet: `storage.objects` belongs to
+Storage rather than to this database's owner, so the SQL editor's role may not
+be allowed to write rules on it. `fix-storage.sql` reports that under Notices,
+where it is easy to miss, and its table then shows `0` rules. Two policies
+written in the dashboard instead cover every bucket, and `why-storage.sql`
+ends with the exact fields to fill in.
+
+### Who the caller is
+
+`ops.is_staff()` turns on `auth.uid()`, which reads the signed-in account out
+of a setting the server puts on the connection. There is more than one server:
+PostgREST, which the dashboard's queries go through, and Storage, which uploads
+go through, and an older project's `auth.uid()` reads only one of the two
+settings they set. When it reads the one Storage did not set, every upload is
+refused for row level security while every other screen works perfectly --
+which is a confusing thing to debug and worth being able to rule out.
+
+`0012_caller_identity.sql` resolves the identity from whichever setting is
+there, through `ops.caller_uid()`, and `ops.current_role()` asks that instead
+of `auth.uid()` alone. It is still the signed-in account and nothing else:
+both settings are written by the server out of a verified token, and a caller
+cannot set either.
 
 ## What is still to build
 

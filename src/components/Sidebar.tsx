@@ -206,7 +206,7 @@ export default function Sidebar({
             <NavItem to="/accounting" end icon={<Landmark className="size-3.5" />} label={t('fin_title')} />
             <NavItem to="/accounting/payroll" icon={<Banknote className="size-3.5" />} label={t('acc_payroll_title')} />
             <NavItem to="/accounting/agency-accounts" icon={<Building2 className="size-3.5" />} label={t('acc_agency_accounts_title')} />
-            <NavItem to="/accounting/office-expenses" icon={<Building className="size-3.5" />} label={t('acc_office_expenses_title')} />
+            <NavItem to="/accounting/expenses" icon={<Building className="size-3.5" />} label={t('acc_office_expenses_title')} />
             <NavItem to="/accounting/backouts" icon={<PlaneLanding className="size-3.5" />} label={t('backout_title')} />
             <NavItem to="/accounting/reports" icon={<FileSpreadsheet className="size-3.5" />} label={t('acc_reports_title')} />
               </NavGroup>

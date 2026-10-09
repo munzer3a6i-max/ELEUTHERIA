@@ -165,6 +165,9 @@ export const settingsRows = {
     company_tagline: s.companyTagline,
     license_number: s.licenseNumber,
     address: s.address,
+    website: s.website,
+    phones: s.phones,
+    email: s.email,
     currency: s.currency,
   }),
   in: (r: Row): CompanySettings => ({
@@ -172,6 +175,9 @@ export const settingsRows = {
     companyTagline: text(r.company_tagline),
     licenseNumber: text(r.license_number),
     address: text(r.address),
+    website: text(r.website),
+    phones: text(r.phones),
+    email: text(r.email),
     currency: text(r.currency) || 'USD',
   }),
 }
@@ -181,6 +187,9 @@ export interface CompanySettings {
   companyTagline: string
   licenseNumber: string
   address: string
+  website: string
+  phones: string
+  email: string
   currency: string
 }
 
@@ -393,6 +402,8 @@ export const experienceRows = {
     applicant_id: applicantId,
     title: e.title,
     employer: e.employer,
+    from_year: e.fromYear || null,
+    to_year: e.toYear || null,
     years: e.years,
     duties: e.duties,
     country: e.country,
@@ -401,6 +412,8 @@ export const experienceRows = {
     id: text(r.id),
     title: text(r.title),
     employer: text(r.employer),
+    fromYear: Number(r.from_year ?? 0),
+    toYear: Number(r.to_year ?? 0),
     years: Number(r.years ?? 0),
     duties: text(r.duties),
     country: text(r.country),

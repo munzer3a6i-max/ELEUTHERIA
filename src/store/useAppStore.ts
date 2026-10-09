@@ -249,6 +249,12 @@ interface AppSettings {
   companyTagline: string
   licenseNumber: string
   address: string
+  // What the CV prints under the licence number: the way somebody holding the
+  // document gets in touch with the office. On the letterhead rather than in
+  // the body, so it is on the page whoever reads it.
+  website: string
+  phones: string
+  email: string
   currency: string
   language: Language
   theme: Theme
@@ -421,6 +427,9 @@ export const useAppStore = create<AppState>()(
         companyTagline: 'International Placement Services',
         licenseNumber: 'DMW-622-LB-07032025-R',
         address: 'Gedisco Center, Ermita, Manila',
+        website: 'eleutheria.agency',
+        phones: 'PH +63 961 278 0038 · PH +63 960 401 4714',
+        email: 'info@eleutheria.agency',
         currency: 'USD',
         language: 'en',
         theme: 'dark',

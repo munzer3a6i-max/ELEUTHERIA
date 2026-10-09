@@ -46,9 +46,10 @@ export const seedExpenseCategories: ExpenseCategory[] = [
   { id: 'ec-1', name: { en: 'Rent', ar: 'إيجار' } },
   { id: 'ec-2', name: { en: 'Utilities', ar: 'خدمات' } },
   { id: 'ec-3', name: { en: 'Supplies', ar: 'لوازم' } },
-  { id: 'ec-4', name: { en: 'Accommodation', ar: 'سكن' } },
+  { id: 'ec-4', name: { en: 'Accommodation expenses', ar: 'مصروفات السكن' } },
   { id: 'ec-5', name: { en: 'Logistics', ar: 'نقل' } },
   { id: 'ec-6', name: { en: 'Other', ar: 'أخرى' } },
+  { id: 'ec-7', name: { en: 'Office expenses', ar: 'مصروفات المكتب' } },
 ]
 
 export const seedProfessions: Profession[] = [
@@ -224,7 +225,7 @@ export const seedApplicants: Applicant[] = [
     cvPath: null,
     passportCopyFileName: 'maricel_passport.pdf',
     cvLinkedToWebsite: true,
-    experience: [{ id: 'exp-1', title: 'Housemaid', employer: 'Private household, Dubai', years: 2 , duties: '', country: '' }],
+    experience: [{ id: 'exp-1', title: 'Housemaid', employer: 'Private household, Dubai', fromYear: 2021, toYear: 2023, years: 2, duties: '', country: '' }],
     education: [{ id: 'edu-1', degree: 'High School Diploma', institution: 'Manila East High School', year: '2013' }],
     documents: [
       { id: 'd-1', name: 'passport_scan.pdf', category: 'Identification', uploadedOn: '2024-05-18' },
@@ -270,8 +271,8 @@ export const seedApplicants: Applicant[] = [
     passportCopyFileName: 'rosalinda_passport.pdf',
     cvLinkedToWebsite: true,
     experience: [
-      { id: 'exp-2', title: 'Housemaid', employer: 'Private household, Kuwait', years: 4 , duties: '', country: '' },
-      { id: 'exp-3', title: 'Nanny', employer: 'Private household, Manila', years: 2 , duties: '', country: '' },
+      { id: 'exp-2', title: 'Housemaid', employer: 'Private household, Kuwait', fromYear: 2016, toYear: 2020, years: 4, duties: '', country: '' },
+      { id: 'exp-3', title: 'Nanny', employer: 'Private household, Manila', fromYear: 2021, toYear: 2023, years: 2, duties: '', country: '' },
     ],
     education: [{ id: 'edu-2', degree: 'High School Diploma', institution: 'Cebu City National High School', year: '2008' }],
     documents: [{ id: 'd-3', name: 'passport_scan.pdf', category: 'Identification', uploadedOn: '2024-03-30' }],
@@ -350,7 +351,7 @@ export const seedApplicants: Applicant[] = [
     cvPath: null,
     passportCopyFileName: 'ariel_passport.pdf',
     cvLinkedToWebsite: true,
-    experience: [{ id: 'exp-4', title: 'Family Driver', employer: 'Private household, Manila', years: 5 , duties: '', country: '' }],
+    experience: [{ id: 'exp-4', title: 'Family Driver', employer: 'Private household, Manila', fromYear: 2018, toYear: 2023, years: 5, duties: '', country: '' }],
     education: [{ id: 'edu-4', degree: "Bachelor's, Automotive Technology", institution: 'Cebu Technological University', year: '2015' }],
     documents: [{ id: 'd-4', name: 'passport_scan.pdf', category: 'Identification', uploadedOn: '2024-05-15' }],
     notes: [],
@@ -389,7 +390,7 @@ export const seedApplicants: Applicant[] = [
     cvPath: null,
     passportCopyFileName: 'miguel_passport.pdf',
     cvLinkedToWebsite: true,
-    experience: [{ id: 'exp-5', title: 'Auto Mechanic', employer: 'Toyota Manila Service Center', years: 8 , duties: '', country: '' }],
+    experience: [{ id: 'exp-5', title: 'Auto Mechanic', employer: 'Toyota Manila Service Center', fromYear: 2015, toYear: 2023, years: 8, duties: '', country: '' }],
     education: [{ id: 'edu-5', degree: 'Automotive Servicing NC II', institution: 'TESDA Manila', year: '2014' }],
     documents: [],
     notes: [],
@@ -428,7 +429,7 @@ export const seedApplicants: Applicant[] = [
     cvPath: null,
     passportCopyFileName: 'divine_passport.pdf',
     cvLinkedToWebsite: true,
-    experience: [{ id: 'exp-6', title: 'Hairstylist', employer: 'Bella Salon, Cebu', years: 4 , duties: '', country: '' }],
+    experience: [{ id: 'exp-6', title: 'Hairstylist', employer: 'Bella Salon, Cebu', fromYear: 2019, toYear: 2023, years: 4, duties: '', country: '' }],
     education: [{ id: 'edu-6', degree: 'Hairdressing NC II', institution: 'TESDA Cebu', year: '2018' }],
     documents: [],
     notes: [],
@@ -643,15 +644,15 @@ export const seedPayroll: PayrollEntry[] = [
 // belong to a request's status history.
 export const seedOfficeExpenses: OfficeExpense[] = [
   { id: 'oe-1', item: { en: 'Office Rent', ar: 'إيجار المكتب' }, category: 'Rent', amount: 320, date: '2024-04-05', status: 'Paid', attachment: null },
-  { id: 'oe-2', item: { en: 'Electricity', ar: 'الكهرباء' }, category: 'Utilities', amount: 72, date: '2024-04-12', status: 'Paid', attachment: null },
-  { id: 'oe-3', item: { en: 'Water', ar: 'المياه' }, category: 'Utilities', amount: 14, date: '2024-04-12', status: 'Paid', attachment: null },
-  { id: 'oe-4', item: { en: 'Internet & Phone', ar: 'الإنترنت والهاتف' }, category: 'Utilities', amount: 38, date: '2024-04-18', status: 'Paid', attachment: null },
+  { id: 'oe-2', item: { en: 'Electricity', ar: 'الكهرباء' }, category: 'Office expenses', amount: 72, date: '2024-04-12', status: 'Paid', attachment: null },
+  { id: 'oe-3', item: { en: 'Water', ar: 'المياه' }, category: 'Office expenses', amount: 14, date: '2024-04-12', status: 'Paid', attachment: null },
+  { id: 'oe-4', item: { en: 'Internet & Phone', ar: 'الإنترنت والهاتف' }, category: 'Office expenses', amount: 38, date: '2024-04-18', status: 'Paid', attachment: null },
   { id: 'oe-5', item: { en: 'Office Rent', ar: 'إيجار المكتب' }, category: 'Rent', amount: 320, date: '2024-05-05', status: 'Paid', attachment: null },
-  { id: 'oe-6', item: { en: 'Electricity', ar: 'الكهرباء' }, category: 'Utilities', amount: 81, date: '2024-05-12', status: 'Paid', attachment: null },
-  { id: 'oe-7', item: { en: 'Worker Accommodation', ar: 'سكن العمالة' }, category: 'Accommodation', amount: 180, date: '2024-05-14', status: 'Paid', attachment: null },
+  { id: 'oe-6', item: { en: 'Electricity', ar: 'الكهرباء' }, category: 'Office expenses', amount: 81, date: '2024-05-12', status: 'Paid', attachment: null },
+  { id: 'oe-7', item: { en: 'Electricity', ar: 'الكهرباء' }, category: 'Accommodation expenses', amount: 180, date: '2024-05-14', status: 'Paid', attachment: null },
   { id: 'oe-8', item: { en: 'Office Supplies', ar: 'مستلزمات مكتبية' }, category: 'Supplies', amount: 46, date: '2024-05-22', status: 'Paid', attachment: null },
   { id: 'oe-9', item: { en: 'Office Rent', ar: 'إيجار المكتب' }, category: 'Rent', amount: 320, date: '2024-06-05', status: 'Paid', attachment: null },
-  { id: 'oe-10', item: { en: 'Electricity', ar: 'الكهرباء' }, category: 'Utilities', amount: 68, date: '2024-06-12', status: 'Pending', attachment: null },
+  { id: 'oe-10', item: { en: 'Electricity', ar: 'الكهرباء' }, category: 'Office expenses', amount: 68, date: '2024-06-12', status: 'Pending', attachment: null },
   { id: 'oe-11', item: { en: 'Courier & Documents', ar: 'الشحن والمستندات' }, category: 'Logistics', amount: 25, date: '2024-06-14', status: 'Pending', attachment: null },
 ]
 

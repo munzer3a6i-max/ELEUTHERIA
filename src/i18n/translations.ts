@@ -120,8 +120,8 @@ export const translations = {
   acc_payroll_subtitle: { en: 'Monthly salaries, bonuses and allowances', ar: 'الرواتب والمكافآت والبدلات الشهرية' },
   acc_agency_accounts_title: { en: 'Agency Accounts', ar: 'حسابات المكاتب' },
   acc_agency_accounts_subtitle: { en: 'What each partner office was paid and still owes', ar: 'ما دُفع لكل مكتب شريك وما هو مستحق' },
-  acc_office_expenses_title: { en: 'Office Expenses', ar: 'مصروفات المكتب' },
-  acc_office_expenses_subtitle: { en: 'Rent, utilities and day-to-day running costs', ar: 'الإيجار والمرافق ومصروفات التشغيل اليومية' },
+  acc_office_expenses_title: { en: 'Expenses', ar: 'المصروفات' },
+  acc_office_expenses_subtitle: { en: 'The office, the accommodation and everything else the month cost', ar: 'المكتب والسكن وكل ما كلّفه الشهر' },
   acc_reports_title: { en: 'Accounting Reports', ar: 'التقارير المحاسبية' },
   acc_reports_subtitle: { en: 'Profit and loss across the whole business', ar: 'الأرباح والخسائر على مستوى الشركة' },
 
@@ -283,6 +283,14 @@ export const translations = {
   db_step_4: { en: 'Put the project URL and anon key in .env.local.', ar: 'ضع رابط المشروع ومفتاح anon في ملف .env.local.' },
   db_step_5: { en: 'Export this browser’s data and import it with the script.', ar: 'صدّر بيانات هذا المتصفح واستوردها بالبرنامج النصي.' },
   db_docs_note: { en: 'docs/DATABASE.md has the exact commands, including what the website reads.', ar: 'يحتوي docs/DATABASE.md على الأوامر الدقيقة، بما في ذلك ما يقرأه الموقع.' },
+
+  // File storage, and why an upload is refused
+  storage_title: { en: 'File storage', ar: 'تخزين الملفات' },
+  storage_subtitle: { en: 'Photographs, CVs and receipts', ar: 'الصور والسير الذاتية والفواتير' },
+  storage_check: { en: 'Check file storage', ar: 'فحص تخزين الملفات' },
+  storage_checking: { en: 'Trying every bucket…', ar: 'جاري فحص كل مخزن…' },
+  storage_all_ok: { en: 'Every bucket accepts uploads.', ar: 'كل المخازن تقبل الرفع.' },
+  storage_hint: { en: 'This puts a one-pixel picture into each bucket and deletes it again, so a refusal is named rather than left as a bad request in the console.', ar: 'يرفع هذا الفحص صورة بحجم نقطة واحدة إلى كل مخزن ثم يحذفها، ليظهر سبب الرفض بوضوح بدل رسالة خطأ غامضة.' },
 
   // Signing in and accounts
   auth_sign_in: { en: 'Sign in', ar: 'تسجيل الدخول' },

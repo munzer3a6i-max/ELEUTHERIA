@@ -4,6 +4,7 @@ import { useTranslation } from '../../i18n/useTranslation'
 import { checkConnection, exportLocalData, type ConnectionState } from '../../lib/connection'
 import Card from '../../components/Card'
 import { SecondaryButton } from '../../components/form'
+import StorageCheck from './StorageCheck'
 
 const TONE = {
   ok: { icon: CheckCircle2, className: 'text-pos' },
@@ -108,6 +109,10 @@ export default function DatabaseTab() {
             {t('db_docs_note')}
           </p>
         </Card>
+      </div>
+
+      <div className="lg:col-span-12">
+        <StorageCheck />
       </div>
     </div>
   )

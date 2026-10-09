@@ -1,25 +1,30 @@
 import type { StatusDefinition } from '../types'
 
-// The real government/logistics pipeline for each request type. Costs are
-// defaults only — every logged status update can override the amount, since
-// several steps (passport, medical, ticket) are situational.
+// The real government/logistics pipeline for each request type.
+//
+// A default cost is filled in only where the amount genuinely does not move:
+// ENJAZ, TESDA, insurance. Everything else is left at nothing and typed when
+// the step is logged, because a figure that looks official and is out of date
+// is worse than an empty box -- the OEC fee rises month to month, the agent's
+// down payments are whatever that agent is on, and the government's own fees
+// are not the same twice. The cost note on each step says which it is.
 export const domesticPipeline: StatusDefinition[] = [
   { id: 'd-1', label: 'Passporting', pipeline: 'Domestic', order: 1, defaultCost: 0, costNote: 'No cost if the applicant already holds a valid passport; otherwise the passport fee applies.', isTerminal: false, isException: false },
   { id: 'd-2', label: 'Ticket to Manila', pipeline: 'Domestic', order: 2, defaultCost: 0, costNote: 'Travel cost to Manila for processing.', isTerminal: false, isException: false },
   { id: 'd-3', label: 'Medical', pipeline: 'Domestic', order: 3, defaultCost: 0, costNote: 'Medical examination fee.', isTerminal: false, isException: false },
   { id: 'd-4', label: 'Vaccine', pipeline: 'Domestic', order: 4, defaultCost: 0, costNote: 'Vaccination fee.', isTerminal: false, isException: false },
-  { id: 'd-5', label: 'Selected', pipeline: 'Domestic', order: 5, defaultCost: 500, costNote: 'First down payment to agent ($500), or $150 cash assistance if not placed through an agent.', isTerminal: false, isException: false },
+  { id: 'd-5', label: 'Selected', pipeline: 'Domestic', order: 5, defaultCost: 0, costNote: 'First down payment to the agent — typed each time, since every agent is on a different commission. $150 cash assistance if no agent introduced her.', isTerminal: false, isException: false },
   { id: 'd-6', label: 'Contract', pipeline: 'Domestic', order: 6, defaultCost: 0, costNote: 'Contract signing - no standard fee.', isTerminal: false, isException: false },
   { id: 'd-7', label: 'TESDA', pipeline: 'Domestic', order: 7, defaultCost: 24.01, costNote: 'First-time applicants only ($24.01); not required for ex-abroad workers.', isTerminal: false, isException: false },
   { id: 'd-8', label: 'OWWA', pipeline: 'Domestic', order: 8, defaultCost: 0, costNote: 'First-time applicants only, no cost; not required for ex-abroad workers.', isTerminal: false, isException: false },
   { id: 'd-9', label: 'PDOS', pipeline: 'Domestic', order: 9, defaultCost: 0, costNote: 'Pre-Departure Orientation Seminar.', isTerminal: false, isException: false },
-  { id: 'd-10', label: 'ENJAZ', pipeline: 'Domestic', order: 10, defaultCost: 0, costNote: 'Saudi labor contract platform processing.', isTerminal: false, isException: false },
-  { id: 'd-11', label: 'Biometric', pipeline: 'Domestic', order: 11, defaultCost: 5, costNote: 'Standard government fee.', isTerminal: false, isException: false },
+  { id: 'd-10', label: 'ENJAZ', pipeline: 'Domestic', order: 10, defaultCost: 21, costNote: 'Saudi labour contract platform. Fixed at $21.', isTerminal: false, isException: false },
+  { id: 'd-11', label: 'Biometric', pipeline: 'Domestic', order: 11, defaultCost: 0, costNote: 'Government fee — typed each time, since it is not the same amount every time.', isTerminal: false, isException: false },
   { id: 'd-12', label: 'Insurance', pipeline: 'Domestic', order: 12, defaultCost: 38, costNote: 'Standard government fee.', isTerminal: false, isException: false },
-  { id: 'd-13', label: 'OEC', pipeline: 'Domestic', order: 13, defaultCost: 38.41, costNote: 'Overseas Employment Certificate fee.', isTerminal: false, isException: false },
-  { id: 'd-14', label: 'Visa Stamping', pipeline: 'Domestic', order: 14, defaultCost: 25, costNote: 'Standard government fee.', isTerminal: false, isException: false },
+  { id: 'd-13', label: 'OEC', pipeline: 'Domestic', order: 13, defaultCost: 0, costNote: 'Overseas Employment Certificate — typed each time, since the fee goes up month to month.', isTerminal: false, isException: false },
+  { id: 'd-14', label: 'Visa Stamping', pipeline: 'Domestic', order: 14, defaultCost: 0, costNote: 'Typed each time, since it is not the same amount every time.', isTerminal: false, isException: false },
   { id: 'd-15', label: 'Ticket', pipeline: 'Domestic', order: 15, defaultCost: 0, costNote: 'Deployment flight ticket.', isTerminal: false, isException: false },
-  { id: 'd-16', label: 'Deployed', pipeline: 'Domestic', order: 16, defaultCost: 500, costNote: 'Second down payment to agent ($500), or $150 cash assistance if not placed through an agent.', isTerminal: false, isException: false },
+  { id: 'd-16', label: 'Deployed', pipeline: 'Domestic', order: 16, defaultCost: 0, costNote: 'Second down payment to the agent — typed each time, since every agent is on a different commission. $150 cash assistance if no agent introduced her.', isTerminal: false, isException: false },
   { id: 'd-17', label: 'Guarantee Completed', pipeline: 'Domestic', order: 17, defaultCost: 0, costNote: 'Terminal status - guarantee period served in full.', isTerminal: true, isException: false },
   { id: 'd-18', label: 'Repatriated', pipeline: 'Domestic', order: 18, defaultCost: 0, costNote: 'Terminal branch - worker returned before contract end.', isTerminal: true, isException: false },
   { id: 'd-19', label: 'Transfer', pipeline: 'Domestic', order: 19, defaultCost: 0, costNote: 'Terminal branch - worker transferred to a new employer.', isTerminal: true, isException: false },
@@ -31,13 +36,13 @@ export const professionPipeline: StatusDefinition[] = [
   { id: 'p-1', label: 'Selected', pipeline: 'Profession', order: 1, defaultCost: 0, costNote: 'Cost varies by trade.', isTerminal: false, isException: false },
   { id: 'p-2', label: 'On Medical', pipeline: 'Profession', order: 2, defaultCost: 0, costNote: 'Medical examination fee.', isTerminal: false, isException: false },
   { id: 'p-3', label: 'Vaccine', pipeline: 'Profession', order: 3, defaultCost: 0, costNote: 'Vaccination fee.', isTerminal: false, isException: false },
-  { id: 'p-4', label: 'ENJAZ', pipeline: 'Profession', order: 4, defaultCost: 0, costNote: 'Saudi labor contract platform processing.', isTerminal: false, isException: false },
-  { id: 'p-5', label: 'Biometric', pipeline: 'Profession', order: 5, defaultCost: 5, costNote: 'Standard government fee.', isTerminal: false, isException: false },
+  { id: 'p-4', label: 'ENJAZ', pipeline: 'Profession', order: 4, defaultCost: 21, costNote: 'Saudi labour contract platform. Fixed at $21.', isTerminal: false, isException: false },
+  { id: 'p-5', label: 'Biometric', pipeline: 'Profession', order: 5, defaultCost: 0, costNote: 'Government fee — typed each time, since it is not the same amount every time.', isTerminal: false, isException: false },
   { id: 'p-6', label: 'TESDA', pipeline: 'Profession', order: 6, defaultCost: 24.01, costNote: 'First-time applicants only; not required for ex-abroad workers.', isTerminal: false, isException: false },
   { id: 'p-7', label: 'SVP', pipeline: 'Profession', order: 7, defaultCost: 0, costNote: 'Skills Verification Program - cost varies by trade.', isTerminal: false, isException: false },
-  { id: 'p-8', label: 'Visa Stamping', pipeline: 'Profession', order: 8, defaultCost: 25, costNote: 'Standard government fee.', isTerminal: false, isException: false },
+  { id: 'p-8', label: 'Visa Stamping', pipeline: 'Profession', order: 8, defaultCost: 0, costNote: 'Typed each time, since it is not the same amount every time.', isTerminal: false, isException: false },
   { id: 'p-9', label: 'Insurance', pipeline: 'Profession', order: 9, defaultCost: 38, costNote: 'Standard government fee.', isTerminal: false, isException: false },
-  { id: 'p-10', label: 'OEC', pipeline: 'Profession', order: 10, defaultCost: 38.41, costNote: 'Overseas Employment Certificate fee.', isTerminal: false, isException: false },
+  { id: 'p-10', label: 'OEC', pipeline: 'Profession', order: 10, defaultCost: 0, costNote: 'Overseas Employment Certificate — typed each time, since the fee goes up month to month.', isTerminal: false, isException: false },
   { id: 'p-11', label: 'Ticket', pipeline: 'Profession', order: 11, defaultCost: 0, costNote: 'Deployment flight ticket.', isTerminal: false, isException: false },
   { id: 'p-12', label: 'Deployed', pipeline: 'Profession', order: 12, defaultCost: 0, costNote: 'Deployment - cost varies by arrangement.', isTerminal: false, isException: false },
   { id: 'p-13', label: 'Guarantee Completed', pipeline: 'Profession', order: 13, defaultCost: 0, costNote: 'Terminal status - guarantee period served in full.', isTerminal: true, isException: false },
