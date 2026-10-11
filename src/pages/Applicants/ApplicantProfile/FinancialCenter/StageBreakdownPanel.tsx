@@ -1,14 +1,21 @@
-import { requestCost, invoiceTotalPaid, formatMoney } from '../../../../store/useAppStore'
+import { useAppStore, requestCost, invoiceTotalPaid, formatMoney } from '../../../../store/useAppStore'
 import { useTranslation } from '../../../../i18n/useTranslation'
-import type { Invoice, RecruitmentRequest } from '../../../../types'
+import type { AgentCommission, Invoice, RecruitmentRequest } from '../../../../types'
 
 const PALETTE = ['#38bdf8', '#3b82f6', '#10b981', '#fbbf24', '#fb923c', '#2dd4bf', '#818cf8', '#f43f5e', '#d97706', '#a3e635']
 
-function groupByStatus(request: RecruitmentRequest) {
+/**
+ * Where this placement's money went, which has to add up to the total beside
+ * it. The agent's fee is a slice of its own: it is not in the stage log, but
+ * it is as much a cost of this worker as any fee paid at a counter.
+ */
+function groupByStatus(request: RecruitmentRequest, fees: AgentCommission[], agentLabel: string) {
   const totals = new Map<string, number>()
   for (const h of request.statusHistory) {
     totals.set(h.status, (totals.get(h.status) ?? 0) + h.cost)
   }
+  const agentTotal = fees.reduce((sum, fee) => sum + fee.amount, 0)
+  if (agentTotal > 0) totals.set(agentLabel, (totals.get(agentLabel) ?? 0) + agentTotal)
   return Array.from(totals.entries())
     .map(([label, amount], i) => ({ label, amount, color: PALETTE[i % PALETTE.length] }))
     .sort((a, b) => b.amount - a.amount)
@@ -64,12 +71,17 @@ function DonutChart({ slices, total }: { slices: ReturnType<typeof groupByStatus
 }
 
 export default function StageBreakdownPanel({ request, invoice }: { request: RecruitmentRequest; invoice: Invoice | null }) {
+  const commissions = useAppStore((s) => s.agentCommissions)
   const { language } = useTranslation()
-  const totalExpenses = requestCost(request)
+  const totalExpenses = requestCost(request, commissions)
   const totalIncome = invoice ? invoiceTotalPaid(invoice) : 0
   const netProfit = totalIncome - totalExpenses
   const profitMargin = totalIncome === 0 ? 0 : (netProfit / totalIncome) * 100
-  const slices = groupByStatus(request)
+  const slices = groupByStatus(
+    request,
+    commissions.filter((c) => c.requestId === request.id),
+    language === 'ar' ? 'أتعاب الوكيل' : 'Agent fee',
+  )
 
   return (
     <div className="flex flex-col gap-4">

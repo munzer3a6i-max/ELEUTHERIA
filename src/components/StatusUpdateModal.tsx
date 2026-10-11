@@ -94,8 +94,8 @@ export default function StatusUpdateModal({
           <p className="-mt-2 mb-3 rounded-control border border-line bg-sunken p-2 text-[10.5px] leading-relaxed text-ink-3">
             {hasAgent
               ? language === 'ar'
-                ? 'أتعاب الوكيل تُسجَّل في صفحة الوكلاء، لذلك تبقى تكلفة هذه المرحلة صفرًا حتى لا تُحتسب مرتين.'
-                : "The agent's fee is booked on the Agents page, so this stage stays at zero and the money is counted once."
+                ? 'أتعاب الوكيل تُسجَّل على الوكيل، لذلك تبقى تكلفة هذه المرحلة صفرًا. تظهر رغم ذلك بندًا مستقلًا في مصروفاتها، وتُدفع من صفحة الوكلاء.'
+                : "The agent's fee is booked against the agent, so this stage stays at zero. It still shows as a line of its own in her expenses, and is paid from the Agents page."
               : language === 'ar'
                 ? 'لا يوجد وكيل لهذه المرشحة، لذلك تُصرف مساعدة نقدية بدلًا من أتعاب الوكيل.'
                 : 'No agent introduced this candidate, so cash assistance is paid instead of an agent fee.'}

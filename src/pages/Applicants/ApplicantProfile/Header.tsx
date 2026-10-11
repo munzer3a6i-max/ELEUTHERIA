@@ -71,6 +71,7 @@ export default function Header({
 }) {
   const setApplicantStatus = useAppStore((s) => s.setApplicantStatus)
   const employers = useAppStore((s) => s.employers)
+  const commissions = useAppStore((s) => s.agentCommissions)
   const { language } = useTranslation()
   const { canEdit } = useCurrentUser()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -78,7 +79,7 @@ export default function Header({
 
   const employer = activeRequest ? employers.find((e) => e.id === activeRequest.employerId) : undefined
   const age = ageFromDob(applicant.dob)
-  const totalExpenses = activeRequest ? requestCost(activeRequest) : 0
+  const totalExpenses = activeRequest ? requestCost(activeRequest, commissions) : 0
   const totalIncome = invoice ? invoiceTotalPaid(invoice) : 0
   const netProfit = totalIncome - totalExpenses
   const profitMargin = totalIncome === 0 ? 0 : (netProfit / totalIncome) * 100

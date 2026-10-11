@@ -40,6 +40,7 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
   const applicant = useAppStore((s) => s.applicants.find((a) => a.id === applicantId))
   const allRequests = useAppStore((s) => s.requests)
   const invoices = useAppStore((s) => s.invoices)
+  const commissions = useAppStore((s) => s.agentCommissions)
   const { t, language } = useTranslation()
   const { canEdit } = useCurrentUser()
   const [activeTab, setActiveTab] = useState<ProfileTabKey>('financial')
@@ -62,7 +63,7 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
   }
 
   function handleSendToClient() {
-    const cost = activeRequest ? requestCost(activeRequest) : 0
+    const cost = activeRequest ? requestCost(activeRequest, commissions) : 0
     const paid = invoice ? invoiceTotalPaid(invoice) : 0
     const subject = encodeURIComponent(`Applicant Summary - ${applicant!.englishName}`)
     const body = encodeURIComponent(

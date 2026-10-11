@@ -22,6 +22,7 @@ export default function Reports() {
   const employers = useAppStore((s) => s.employers)
   const agencies = useAppStore((s) => s.agencies)
   const invoices = useAppStore((s) => s.invoices)
+  const commissions = useAppStore((s) => s.agentCommissions)
   const { t, tb, language } = useTranslation()
 
   // Defaults to "all time" so a fresh visit never silently shows zero
@@ -38,11 +39,11 @@ export default function Reports() {
       const key = employer ? tb({ en: employer.englishName, ar: employer.arabicName }) : '-'
       const entry = map.get(key) ?? { count: 0, cost: 0 }
       entry.count += 1
-      entry.cost += requestCost(r)
+      entry.cost += requestCost(r, commissions)
       map.set(key, entry)
     }
     return Array.from(map.entries()).sort((a, b) => b[1].count - a[1].count)
-  }, [scopedRequests, employers, tb])
+  }, [scopedRequests, employers, commissions, tb])
 
   const byAgency = useMemo(() => {
     const map = new Map<string, number>()
@@ -71,7 +72,7 @@ export default function Reports() {
       const key = nameFor(request.applicantId)
       const entry = map.get(key) ?? blank()
       entry.requests += 1
-      entry.cost += requestCost(request)
+      entry.cost += requestCost(request, commissions)
       entry.workers.add(request.applicantId)
       map.set(key, entry)
     }
@@ -86,9 +87,9 @@ export default function Reports() {
     return Array.from(map.entries())
       .map(([name, entry]) => ({ name, ...entry, workers: entry.workers.size, net: entry.collected - entry.cost }))
       .sort((a, b) => b.net - a.net)
-  }, [scopedRequests, scopedInvoices, requests, applicants, managers, tb, t])
+  }, [scopedRequests, scopedInvoices, requests, applicants, managers, commissions, tb, t])
 
-  const totalCost = scopedRequests.reduce((sum, r) => sum + requestCost(r), 0)
+  const totalCost = scopedRequests.reduce((sum, r) => sum + requestCost(r, commissions), 0)
   const totalPaid = scopedInvoices.reduce((sum, i) => sum + invoiceTotalPaid(i), 0)
   const maxAgencyCount = Math.max(1, ...byAgency.map(([, c]) => c))
 

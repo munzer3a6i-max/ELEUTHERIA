@@ -1027,8 +1027,25 @@ export function currentStatus(request: RecruitmentRequest): string | null {
   return request.statusHistory[request.statusHistory.length - 1].status
 }
 
-export function requestCost(request: RecruitmentRequest): number {
+/** What the stage log alone came to: the fees the office paid out step by step. */
+export function stageCost(request: RecruitmentRequest): number {
   return request.statusHistory.reduce((sum, h) => sum + h.cost, 0)
+}
+
+/**
+ * What this placement has cost, which is the stage log plus the agent's fee.
+ *
+ * The fee is not in the stage log on purpose: it is owed to the agent rather
+ * than spent at a counter, so it is booked against the agent and paid on the
+ * Agents page. It is still money this worker cost, incurred the day she
+ * reached the milestone, and leaving it out made every placement look cheaper
+ * than it was. The commissions are passed in rather than read here because
+ * this is a plain function, and they are already derived from the same stage
+ * log it is reading.
+ */
+export function requestCost(request: RecruitmentRequest, commissions: AgentCommission[]): number {
+  const fees = commissions.reduce((sum, c) => (c.requestId === request.id ? sum + c.amount : sum), 0)
+  return stageCost(request) + fees
 }
 
 export function invoiceTotalPaid(invoice: Invoice): number {

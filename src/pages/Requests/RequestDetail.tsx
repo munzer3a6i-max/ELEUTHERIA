@@ -37,6 +37,7 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
   const staff = useAppStore((s) => s.staff)
   const paymentSources = useAppStore((s) => s.paymentSources)
   const invoices = useAppStore((s) => s.invoices)
+  const commissions = useAppStore((s) => s.agentCommissions)
   const addInvoice = useAppStore((s) => s.addInvoice)
   const deleteRequest = useAppStore((s) => s.deleteRequest)
   const updateRequest = useAppStore((s) => s.updateRequest)
@@ -58,7 +59,7 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
   const officer = staff.find((s) => s.id === request.responsibleEmployeeId)
   const invoice = invoices.find((i) => i.recruitmentRequestId === requestId)
   const status = currentStatus(request)
-  const totalCost = requestCost(request)
+  const totalCost = requestCost(request, commissions)
 
   function handleDelete() {
     if (window.confirm(t('action_delete') + '?')) deleteRequest(requestId)

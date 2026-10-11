@@ -23,8 +23,9 @@ export default function ApplicantsList() {
   const agencies = useAppStore((s) => s.agencies)
   const managers = useAppStore((s) => s.managers)
   const addApplicant = useAppStore((s) => s.addApplicant)
+  const addRequest = useAppStore((s) => s.addRequest)
   const { t, tb, language } = useTranslation()
-  const { canEdit } = useCurrentUser()
+  const { canEdit, member } = useCurrentUser()
   const navigate = useNavigate()
 
   const [searchParams, setSearchParams] = useSearchParams()
@@ -229,8 +230,22 @@ export default function ApplicantsList() {
           professions={professions.map((p) => p.name.en)}
           countries={countries.map((c) => c.name.en)}
           onClose={() => setAddOpen(false)}
-          onSubmit={(data) => {
+          onSubmit={({ employerId, ...data }) => {
             const id = addApplicant(data)
+            // An employer chosen here is the placement itself, so it opens the
+            // recruitment request rather than being remembered twice. Without
+            // one she is simply on the books, as before.
+            if (employerId) {
+              addRequest({
+                type: data.type,
+                contractDurationMonths: 24,
+                applicantId: id,
+                employerId,
+                responsibleEmployeeId: member?.id ?? '',
+                recruitmentAgencyId: data.recruitmentAgencyId ?? '',
+                mosanedNumber: '',
+              })
+            }
             setAddOpen(false)
             navigate(`/applicants/${id}`)
           }}
@@ -292,9 +307,12 @@ function AddApplicantModal({
     recruitmentAgencyId: string | null
     agentId: string | null
     managerId: string | null
+    /** The employer she is being placed with, when one is known already. */
+    employerId: string
   }) => void
 }) {
   const agencies = useAppStore((s) => s.agencies)
+  const employers = useAppStore((s) => s.employers)
   const agents = useAppStore((s) => s.agents)
   const managers = useAppStore((s) => s.managers)
   const { t, tb, language } = useTranslation()
@@ -313,6 +331,7 @@ function AddApplicantModal({
   const [agencyId, setAgencyId] = useState('')
   const [agentId, setAgentId] = useState('')
   const [managerId, setManagerId] = useState('')
+  const [employerId, setEmployerId] = useState('')
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -335,6 +354,7 @@ function AddApplicantModal({
       recruitmentAgencyId: agencyId || null,
       agentId: agentId || null,
       managerId: managerId || null,
+      employerId,
     })
   }
 
@@ -439,6 +459,23 @@ function AddApplicantModal({
             ))}
           </SelectInput>
           <p className="mt-1 text-[10.5px] text-ink-3">{t('label_manager_hint')}</p>
+        </Field>
+        <Field label={language === 'ar' ? 'صاحب العمل (اختياري)' : 'Employer (optional)'}>
+          <SelectInput value={employerId} onChange={(e) => setEmployerId(e.target.value)}>
+            <option value="">{language === 'ar' ? 'لم يُحدَّد بعد' : 'Not placed yet'}</option>
+            {employers
+              .filter((e) => e.status === 'Active' || e.id === employerId)
+              .map((e) => (
+                <option key={e.id} value={e.id}>
+                  {tb({ en: e.englishName, ar: e.arabicName })}
+                </option>
+              ))}
+          </SelectInput>
+          <p className="mt-1 text-[10.5px] leading-relaxed text-ink-3">
+            {language === 'ar'
+              ? 'اختيار صاحب العمل هنا يفتح طلب الاستقدام فورًا على عقد سنتين، فتبدأ مراحلها وماليّتها من اليوم الأول. اتركه فارغًا إن لم تُحدَّد بعد.'
+              : 'Choosing one opens her recruitment request straight away, on a two-year contract, so her stages and her money start from day one. Leave it empty if she is not placed yet.'}
+          </p>
         </Field>
         <div className="mt-4 flex justify-end gap-2">
           <SecondaryButton onClick={onClose}>{t('action_cancel')}</SecondaryButton>
