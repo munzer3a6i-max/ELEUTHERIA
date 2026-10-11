@@ -56,6 +56,21 @@ export function movesForward(from: ApplicantStatus, to: ApplicantStatus): boolea
  */
 export const CASH_ASSISTANCE = 150
 
+/**
+ * What a milestone stage costs the office. An agent's fee at selection or
+ * deployment is booked as that agent's commission, so the stage itself stays
+ * at nothing and the money is counted once. A candidate who came to us
+ * directly has no agent to pay, and is given cash assistance at the same two
+ * points instead. Null means this is an ordinary stage, priced by the pipeline.
+ *
+ * Both the stage form and the store that opens a request with Selected already
+ * logged ask this, so a placement is costed the same either way.
+ */
+export function milestoneCost(label: string, hasAgent: boolean): number | null {
+  if (label !== SELECTION_STAGE && label !== DEPLOYMENT_STAGE) return null
+  return hasAgent ? 0 : CASH_ASSISTANCE
+}
+
 /** Months between two dates, used to decide who carries a backout. */
 export function monthsBetween(from: string, to: string): number {
   const start = new Date(from)

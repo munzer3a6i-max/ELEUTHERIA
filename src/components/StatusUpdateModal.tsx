@@ -2,22 +2,11 @@ import { useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { useTranslation } from '../i18n/useTranslation'
 import { pipelineForType, nextStatus } from '../data/statusPipelines'
-import { CASH_ASSISTANCE, DEPLOYMENT_STAGE, SELECTION_STAGE } from '../data/businessRules'
+import { milestoneCost } from '../data/businessRules'
 import Modal from './Modal'
 import { Field, SelectInput, TextInput, TextArea, PrimaryButton, SecondaryButton } from './form'
 import AttachmentField from './AttachmentField'
 import type { Attachment, StatusHistoryEntry } from '../types'
-
-/**
- * The fee an agent earns at a milestone is booked as their commission, so the
- * stage itself costs nothing. A candidate who came to us directly has no agent
- * to pay, and gets cash assistance at the same two points instead. Either way
- * the money is counted once.
- */
-function milestoneCost(label: string, hasAgent: boolean): number | null {
-  if (label !== SELECTION_STAGE && label !== DEPLOYMENT_STAGE) return null
-  return hasAgent ? 0 : CASH_ASSISTANCE
-}
 
 export default function StatusUpdateModal({
   requestType,

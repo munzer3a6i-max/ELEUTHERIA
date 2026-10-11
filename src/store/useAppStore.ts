@@ -56,7 +56,7 @@ import {
   seedBackouts,
 } from '../data/seed'
 import { syncDerivedBilling } from '../lib/derivedBilling'
-import { BACKOUT_STAGE, movesForward, statusFromStages } from '../data/businessRules'
+import { BACKOUT_STAGE, SELECTION_STAGE, milestoneCost, movesForward, statusFromStages } from '../data/businessRules'
 import { serverOwnsBilling } from '../data/ownership'
 import { canEdit, type Area } from '../lib/permissions'
 import { DEFAULT_PASSWORD, makeCredentials, normaliseUsername, verifyPassword } from '../lib/passwords'
@@ -245,6 +245,33 @@ function followStages(
       ? { ...a, status: wanted, updatedOn: todayIso() }
       : a,
   )
+}
+
+/**
+ * The stage a new request opens on. Raising a recruitment request is the office
+ * saying this candidate has been chosen for this employer, so Selected is
+ * already true the moment the request exists -- waiting for somebody to type it
+ * in afterwards left the agent's first half unbooked and the worker still
+ * advertised as available on the public website.
+ *
+ * It is an ordinary stage entry, editable and deletable like any other, priced
+ * by the same milestone rule the stage form uses: nothing when an agent
+ * introduced her, because their fee is booked against them, and cash assistance
+ * when she came to us directly.
+ */
+function openingStage(state: AppState, applicantId: string, responsibleEmployeeId: string): StatusHistoryEntry {
+  const applicant = state.applicants.find((a) => a.id === applicantId)
+  const source = state.paymentSources.find((p) => p.scopes.includes('Request Status'))
+  return {
+    id: newId(),
+    status: SELECTION_STAGE,
+    date: todayIso(),
+    cost: milestoneCost(SELECTION_STAGE, Boolean(applicant?.agentId)) ?? 0,
+    paymentSourceId: source?.id ?? '',
+    responsibleEmployeeId,
+    attachment: null,
+    notes: '',
+  }
 }
 
 function latestRequestFor(requests: RecruitmentRequest[], applicantId: string): RecruitmentRequest | null {
@@ -658,15 +685,18 @@ export const useAppStore = create<AppState>()(
 
       addRequest: (data) => {
         const id = newId()
-        const request: RecruitmentRequest = {
-          ...data,
-          id,
-          notes: { en: '', ar: '' },
-          statusHistory: [],
-          createdOn: todayIso(),
-          updatedOn: todayIso(),
-        }
-        set((s) => withBilling(s, { requests: [request, ...s.requests] }))
+        set((s) => {
+          const request: RecruitmentRequest = {
+            ...data,
+            id,
+            notes: { en: '', ar: '' },
+            statusHistory: [openingStage(s, data.applicantId, data.responsibleEmployeeId)],
+            createdOn: todayIso(),
+            updatedOn: todayIso(),
+          }
+          const requests = [request, ...s.requests]
+          return withBilling(s, { requests, applicants: followStages(s, requests, id) })
+        })
         return id
       },
       updateRequest: (id, patch) =>

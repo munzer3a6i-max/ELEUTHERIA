@@ -2,6 +2,12 @@ import type { StatusDefinition } from '../types'
 
 // The real government/logistics pipeline for each request type.
 //
+// Selected comes first on both. Opening a recruitment request is the office
+// saying this candidate has been chosen for this employer -- there is nothing
+// to passport or medically clear before that decision -- so the request is
+// opened with the stage already logged rather than waiting for somebody to
+// add it afterwards.
+//
 // A default cost is filled in only where the amount genuinely does not move:
 // ENJAZ, TESDA, insurance. Everything else is left at nothing and typed when
 // the step is logged, because a figure that looks official and is out of date
@@ -9,11 +15,11 @@ import type { StatusDefinition } from '../types'
 // down payments are whatever that agent is on, and the government's own fees
 // are not the same twice. The cost note on each step says which it is.
 export const domesticPipeline: StatusDefinition[] = [
-  { id: 'd-1', label: 'Passporting', pipeline: 'Domestic', order: 1, defaultCost: 0, costNote: 'No cost if the applicant already holds a valid passport; otherwise the passport fee applies.', isTerminal: false, isException: false },
-  { id: 'd-2', label: 'Ticket to Manila', pipeline: 'Domestic', order: 2, defaultCost: 0, costNote: 'Travel cost to Manila for processing.', isTerminal: false, isException: false },
-  { id: 'd-3', label: 'Medical', pipeline: 'Domestic', order: 3, defaultCost: 0, costNote: 'Medical examination fee.', isTerminal: false, isException: false },
-  { id: 'd-4', label: 'Vaccine', pipeline: 'Domestic', order: 4, defaultCost: 0, costNote: 'Vaccination fee.', isTerminal: false, isException: false },
-  { id: 'd-5', label: 'Selected', pipeline: 'Domestic', order: 5, defaultCost: 0, costNote: 'First down payment to the agent — typed each time, since every agent is on a different commission. $150 cash assistance if no agent introduced her.', isTerminal: false, isException: false },
+  { id: 'd-5', label: 'Selected', pipeline: 'Domestic', order: 1, defaultCost: 0, costNote: 'First down payment to the agent — typed each time, since every agent is on a different commission. $150 cash assistance if no agent introduced her.', isTerminal: false, isException: false },
+  { id: 'd-1', label: 'Passporting', pipeline: 'Domestic', order: 2, defaultCost: 0, costNote: 'No cost if the applicant already holds a valid passport; otherwise the passport fee applies.', isTerminal: false, isException: false },
+  { id: 'd-2', label: 'Ticket to Manila', pipeline: 'Domestic', order: 3, defaultCost: 0, costNote: 'Travel cost to Manila for processing.', isTerminal: false, isException: false },
+  { id: 'd-3', label: 'Medical', pipeline: 'Domestic', order: 4, defaultCost: 0, costNote: 'Medical examination fee.', isTerminal: false, isException: false },
+  { id: 'd-4', label: 'Vaccine', pipeline: 'Domestic', order: 5, defaultCost: 0, costNote: 'Vaccination fee.', isTerminal: false, isException: false },
   { id: 'd-6', label: 'Contract', pipeline: 'Domestic', order: 6, defaultCost: 0, costNote: 'Contract signing - no standard fee.', isTerminal: false, isException: false },
   { id: 'd-7', label: 'TESDA', pipeline: 'Domestic', order: 7, defaultCost: 24.01, costNote: 'First-time applicants only ($24.01); not required for ex-abroad workers.', isTerminal: false, isException: false },
   { id: 'd-8', label: 'OWWA', pipeline: 'Domestic', order: 8, defaultCost: 0, costNote: 'First-time applicants only, no cost; not required for ex-abroad workers.', isTerminal: false, isException: false },

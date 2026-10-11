@@ -43,6 +43,14 @@ the agent's, not the stage's. So:
 The status-update form applies this automatically and says which case it is,
 so the stage log and the Agents page can never bill the same fee twice.
 
+**A request opens on Selected.** Raising a recruitment request *is* the office
+saying this candidate has been chosen for this employer, so the stage is logged
+the moment the request is created, dated today and credited to whoever raised
+it. That is what makes the agent's first half, or the cash assistance, fall due
+straight away instead of waiting for somebody to type the stage in afterwards.
+It is an ordinary stage entry — editable, re-datable and deletable like any
+other — and it is priced by the same rule as the table above.
+
 Commissions are an **expense**, booked on the day the milestone was reached
 whether or not the money has left yet — the same accrual rule the stage costs
 already follow. They count against the placement that earned them: `requestCost`
