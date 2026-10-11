@@ -31,9 +31,9 @@ An agent introduces some of the candidates, not all of them. They earn
 **half their fee when their candidate is Selected** and **the other half when
 she is Deployed** — $500 and $500 by default, editable per agent.
 
-The fee is counted once. The pipeline's `Selected` and `Deployed` stages
-default to a $500 cost with the note "or $150 cash assistance if not placed
-through an agent". So:
+The fee is counted once. The `Selected` and `Deployed` stages carry no default
+cost of their own — every agent is on a different commission, so the figure is
+the agent's, not the stage's. So:
 
 | Candidate came from | Stage cost | Commission record |
 | --- | --- | --- |
@@ -45,7 +45,16 @@ so the stage log and the Agents page can never bill the same fee twice.
 
 Commissions are an **expense**, booked on the day the milestone was reached
 whether or not the money has left yet — the same accrual rule the stage costs
-already follow.
+already follow. They count against the placement that earned them: `requestCost`
+is the stage log plus the fees booked against that request, and the worker's own
+expenses list each fee as a line of its own. (`stageCost` is the stage log
+alone, for the few places that mean only that.)
+
+Reaching a milestone also moves the worker's own status — Selected, Deployed,
+Back Out — because the published view asks her record, not her stage log, and a
+worker whose status never moved went on advertising herself after she had
+already flown. It only ever moves her forward: deleting a stage does not undo a
+status somebody set on purpose.
 
 ## The partner office
 

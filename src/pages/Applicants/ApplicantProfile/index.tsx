@@ -42,8 +42,12 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
   const invoices = useAppStore((s) => s.invoices)
   const commissions = useAppStore((s) => s.agentCommissions)
   const { t, language } = useTranslation()
-  const { canEdit } = useCurrentUser()
-  const [activeTab, setActiveTab] = useState<ProfileTabKey>('financial')
+  const { canEdit, canView } = useCurrentUser()
+  // Data entry works the caseload and the money pages are not theirs, so the
+  // profile opens on her file rather than on her money, and the money tab is
+  // not offered at all.
+  const seesMoney = canView('finance')
+  const [activeTab, setActiveTab] = useState<ProfileTabKey>(seesMoney ? 'financial' : 'info')
   const [removing, setRemoving] = useState(false)
   const [refused, setRefused] = useState<number | null>(null)
 
@@ -107,13 +111,15 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
           >
             <Printer className="size-3.5" /> {language === 'ar' ? 'طباعة' : 'Print'}
           </button>
-          <button
-            type="button"
-            onClick={handleSendToClient}
-            className="btn btn-secondary"
-          >
-            <Send className="size-3.5" /> {language === 'ar' ? 'إرسال للعميل' : 'Send to Client'}
-          </button>
+          {seesMoney && (
+            <button
+              type="button"
+              onClick={handleSendToClient}
+              className="btn btn-secondary"
+            >
+              <Send className="size-3.5" /> {language === 'ar' ? 'إرسال للعميل' : 'Send to Client'}
+            </button>
+          )}
           {canEdit('operations') && (
             <button
               type="button"
@@ -151,10 +157,10 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
         />
       )}
 
-      <Header applicant={applicant} activeRequest={activeRequest} invoice={invoice} />
-      <ProfileTabs active={activeTab} onChange={setActiveTab} />
+      <Header applicant={applicant} activeRequest={activeRequest} invoice={invoice} seesMoney={seesMoney} />
+      <ProfileTabs active={activeTab} onChange={setActiveTab} seesMoney={seesMoney} />
 
-      {activeTab === 'financial' && (
+      {activeTab === 'financial' && seesMoney && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           <div className="lg:col-span-3">
             <StageStepper

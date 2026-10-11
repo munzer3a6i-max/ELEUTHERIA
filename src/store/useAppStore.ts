@@ -56,7 +56,7 @@ import {
   seedBackouts,
 } from '../data/seed'
 import { syncDerivedBilling } from '../lib/derivedBilling'
-import { BACKOUT_STAGE } from '../data/businessRules'
+import { BACKOUT_STAGE, movesForward, statusFromStages } from '../data/businessRules'
 import { serverOwnsBilling } from '../data/ownership'
 import { canEdit, type Area } from '../lib/permissions'
 import { DEFAULT_PASSWORD, makeCredentials, normaliseUsername, verifyPassword } from '../lib/passwords'
@@ -220,6 +220,33 @@ function isLastActiveAdmin(staff: StaffMember[], id: string): boolean {
 }
 
 /** The request a worker's own status change should be written against. */
+/**
+ * Her own record follows her placement.
+ *
+ * Logging a stage is the office saying what happened, so the status on her
+ * file should not need saying twice -- and when it did, the published view
+ * kept showing a worker who had already been selected or flown, because that
+ * view asks her record rather than her stage log.
+ *
+ * It only moves her forward. Deleting a stage does not quietly undo a status
+ * somebody set on purpose; that is a decision, and it is made on her profile.
+ */
+function followStages(
+  state: AppState,
+  requests: RecruitmentRequest[],
+  requestId: string,
+): Applicant[] {
+  const request = requests.find((r) => r.id === requestId)
+  if (!request) return state.applicants
+  const wanted = statusFromStages(request.statusHistory)
+  if (!wanted) return state.applicants
+  return state.applicants.map((a) =>
+    a.id === request.applicantId && a.status !== wanted && movesForward(a.status, wanted)
+      ? { ...a, status: wanted, updatedOn: todayIso() }
+      : a,
+  )
+}
+
 function latestRequestFor(requests: RecruitmentRequest[], applicantId: string): RecruitmentRequest | null {
   return (
     requests
@@ -664,31 +691,21 @@ export const useAppStore = create<AppState>()(
               ? { ...r, statusHistory: [...r.statusHistory, { ...entry, id: newId() }], updatedOn: todayIso() }
               : r,
           )
-          // Logging the stage is what makes her a backout worker, wherever it
-          // was logged from, so her own record says so too.
-          const applicantId = s.requests.find((r) => r.id === requestId)?.applicantId
-          const applicants =
-            entry.status === BACKOUT_STAGE && applicantId
-              ? s.applicants.map((a) =>
-                  a.id === applicantId ? { ...a, status: 'Back Out' as ApplicantStatus } : a,
-                )
-              : s.applicants
-          return withBilling(s, { requests, applicants })
+          return withBilling(s, { requests, applicants: followStages(s, requests, requestId) })
         }),
       updateStatusUpdate: (requestId, entryId, patch) =>
-        set((s) =>
-          withBilling(s, {
-            requests: s.requests.map((r) =>
-              r.id === requestId
-                ? {
-                    ...r,
-                    statusHistory: r.statusHistory.map((h) => (h.id === entryId ? { ...patch, id: h.id } : h)),
-                    updatedOn: todayIso(),
-                  }
-                : r,
-            ),
-          }),
-        ),
+        set((s) => {
+          const requests = s.requests.map((r) =>
+            r.id === requestId
+              ? {
+                  ...r,
+                  statusHistory: r.statusHistory.map((h) => (h.id === entryId ? { ...patch, id: h.id } : h)),
+                  updatedOn: todayIso(),
+                }
+              : r,
+          )
+          return withBilling(s, { requests, applicants: followStages(s, requests, requestId) })
+        }),
       deleteStatusUpdate: (requestId, entryId) =>
         set((s) =>
           withBilling(s, {

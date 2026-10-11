@@ -4,6 +4,7 @@ import { Plus, Pencil, Trash2, Receipt } from 'lucide-react'
 import { useAppStore, currentStatus, requestCost, formatMoney } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
 import { useCurrentUser } from '../../lib/useCurrentUser'
+import NewInvoiceModal from '../Invoices/NewInvoiceModal'
 import StatusUpdateModal from '../../components/StatusUpdateModal'
 import { AttachmentChip } from '../../components/AttachmentField'
 import { TextArea, SecondaryButton } from '../../components/form'
@@ -38,7 +39,6 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
   const paymentSources = useAppStore((s) => s.paymentSources)
   const invoices = useAppStore((s) => s.invoices)
   const commissions = useAppStore((s) => s.agentCommissions)
-  const addInvoice = useAppStore((s) => s.addInvoice)
   const deleteRequest = useAppStore((s) => s.deleteRequest)
   const updateRequest = useAppStore((s) => s.updateRequest)
   const addStatusUpdate = useAppStore((s) => s.addStatusUpdate)
@@ -47,6 +47,7 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
   const { t, tb, language } = useTranslation()
   const { canEdit } = useCurrentUser()
   const [statusModal, setStatusModal] = useState<'add' | StatusHistoryEntry | null>(null)
+  const [billing, setBilling] = useState(false)
 
   if (!request) {
     onDeleted()
@@ -69,17 +70,6 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
     if (window.confirm(t('action_delete') + '?')) deleteStatusUpdate(requestId, entryId)
   }
 
-  const recruitmentAgencyId = request.recruitmentAgencyId
-
-  function handleCreateInvoice() {
-    if (!employer) return
-    addInvoice({
-      recruitmentRequestId: requestId,
-      employerId: employer.id,
-      recruitmentAgencyId,
-      servicePrice: totalCost || 500,
-    })
-  }
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -223,7 +213,7 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
                   {language === 'ar' ? 'لا توجد فاتورة لهذا الطلب بعد.' : 'No invoice for this request yet.'}
                 </p>
                 {canEdit('finance') && (
-                  <SecondaryButton onClick={handleCreateInvoice} className="w-full">
+                  <SecondaryButton onClick={() => setBilling(true)} className="w-full">
                     {language === 'ar' ? 'إنشاء فاتورة' : 'Create Invoice'}
                   </SecondaryButton>
                 )}
@@ -250,6 +240,8 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
           }}
         />
       )}
+
+      {billing && <NewInvoiceModal requestId={requestId} onClose={() => setBilling(false)} />}
     </div>
   )
 }

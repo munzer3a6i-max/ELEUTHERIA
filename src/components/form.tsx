@@ -60,7 +60,11 @@ export function BilingualField({
       </label>
       <label className="block" dir="rtl">
         <span className="mb-1.5 block text-[11px] font-semibold text-ink-2">{labelAr}</span>
-        <TextInput value={valueAr} onChange={(e) => onChangeAr(e.target.value)} required={required} dir="rtl" />
+        {/* Required marks the English box alone. Every screen falls back to the
+            English name when there is no Arabic one, and the forms themselves
+            only ever check the English: asking for both made a name nobody had
+            yet the thing that stopped a worker being added at all. */}
+        <TextInput value={valueAr} onChange={(e) => onChangeAr(e.target.value)} dir="rtl" />
       </label>
     </div>
   )

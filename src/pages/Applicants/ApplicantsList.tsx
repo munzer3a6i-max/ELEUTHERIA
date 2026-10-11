@@ -332,10 +332,23 @@ function AddApplicantModal({
   const [agentId, setAgentId] = useState('')
   const [managerId, setManagerId] = useState('')
   const [employerId, setEmployerId] = useState('')
+  const [problem, setProblem] = useState<string | null>(null)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setProblem(null)
     if (!englishName.trim() || !passportNo.trim()) return
+    // A domestic worker is only placed through an office holding a contract,
+    // which is what prices the placement. The Requests form refuses a request
+    // without one, and opening a request from here cannot be the way round it.
+    if (employerId && type === 'Domestic' && !agencyId) {
+      setProblem(
+        language === 'ar'
+          ? 'العاملة المنزلية تُستقدم عبر مكتب شريك: اختر مكتب الاستقدام أو اترك صاحب العمل فارغًا الآن.'
+          : 'A domestic worker is placed through a partner office: choose the recruitment agency, or leave the employer empty for now.',
+      )
+      return
+    }
     onSubmit({
       englishName: englishName.trim(),
       arabicName: arabicName.trim(),
@@ -477,6 +490,7 @@ function AddApplicantModal({
               : 'Choosing one opens her recruitment request straight away, on a two-year contract, so her stages and her money start from day one. Leave it empty if she is not placed yet.'}
           </p>
         </Field>
+        {problem && <p className="mt-2 text-[11px] font-medium text-neg">{problem}</p>}
         <div className="mt-4 flex justify-end gap-2">
           <SecondaryButton onClick={onClose}>{t('action_cancel')}</SecondaryButton>
           <PrimaryButton type="submit">{language === 'ar' ? 'إضافة متقدم' : 'Add Applicant'}</PrimaryButton>

@@ -64,10 +64,13 @@ export default function Header({
   applicant,
   activeRequest,
   invoice,
+  seesMoney = true,
 }: {
   applicant: Applicant
   activeRequest: RecruitmentRequest | null
   invoice: Invoice | null
+  /** False for a role the money is not shown to. */
+  seesMoney?: boolean
 }) {
   const setApplicantStatus = useAppStore((s) => s.setApplicantStatus)
   const employers = useAppStore((s) => s.employers)
@@ -110,7 +113,7 @@ export default function Header({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-      <div className="lg:col-span-8 flex items-center gap-5 rounded-panel border border-line bg-surface p-[17px]">
+      <div className={`${seesMoney ? 'lg:col-span-8' : 'lg:col-span-12'} flex items-center gap-5 rounded-panel border border-line bg-surface p-[17px]`}>
         <div className="flex flex-col items-center">
           <div className="flex size-24 items-center justify-center overflow-hidden rounded-pill border-2 border-accent-line bg-raised p-1 shadow-md">
             <div className="flex size-full items-center justify-center overflow-hidden rounded-pill bg-raised">
@@ -198,6 +201,7 @@ export default function Header({
         </div>
       </div>
 
+      {seesMoney && (
       <div className="lg:col-span-4 flex flex-col justify-between rounded-panel border border-line bg-surface p-[17px]">
         <div className="flex items-center justify-between border-b border-line pb-[9px]">
           <h2 className="text-[11px] font-semibold text-ink-3">
@@ -220,6 +224,7 @@ export default function Header({
           {language === 'ar' ? 'محدث' : 'Updated'} {applicant.updatedOn} {language === 'ar' ? 'بواسطة' : 'by'} {applicant.updatedBy}
         </div>
       </div>
+      )}
     </div>
   )
 }

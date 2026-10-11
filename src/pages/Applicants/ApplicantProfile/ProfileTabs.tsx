@@ -6,9 +6,12 @@ export type ProfileTabKey = 'info' | 'stages' | 'financial' | 'cv' | 'documents'
 export default function ProfileTabs({
   active,
   onChange,
+  seesMoney = true,
 }: {
   active: ProfileTabKey
   onChange: (key: ProfileTabKey) => void
+  /** False for a role the money is not shown to, which hides the tab outright. */
+  seesMoney?: boolean
 }) {
   const { language } = useTranslation()
 
@@ -23,7 +26,9 @@ export default function ProfileTabs({
 
   return (
     <div className="-mx-4 flex items-center gap-1 overflow-x-auto border-b border-line px-4 pt-1 sm:mx-0 sm:px-0">
-      {tabs.map((tab) => {
+      {tabs
+        .filter((tab) => seesMoney || tab.key !== 'financial')
+        .map((tab) => {
         const isActive = tab.key === active
         const Icon = tab.icon
         return (

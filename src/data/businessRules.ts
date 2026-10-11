@@ -5,6 +5,8 @@
   owes and is owed.
 */
 
+import type { ApplicantStatus } from '../types'
+
 /** A worker who leaves before this many months is brought home at our expense. */
 export const GUARANTEE_MONTHS = 3
 
@@ -17,6 +19,34 @@ export const DEPLOYMENT_STAGE = 'Deployed'
 
 /** Logging this stage opens a backout, and marks the worker as one. */
 export const BACKOUT_STAGE = 'Back Out'
+
+/**
+ * The status her own record should carry, given what her placement has
+ * reached. Null means the stage log has nothing to say about it, and her
+ * status stays whatever the office set.
+ *
+ * This is what keeps the website honest. The published view shows only
+ * workers who are still Available, so a worker whose status never moved went
+ * on advertising herself after she had been selected and after she had flown.
+ * The stage log already knew; her record did not.
+ *
+ * It only ever moves her forward. Removing a stage does not quietly undo a
+ * status somebody may have set deliberately -- that is a decision, and it is
+ * made on her profile.
+ */
+export function statusFromStages(history: { status: string }[]): ApplicantStatus | null {
+  const reached = new Set(history.map((entry) => entry.status))
+  if (reached.has(BACKOUT_STAGE)) return 'Back Out'
+  if (reached.has(DEPLOYMENT_STAGE)) return 'Deployed'
+  if (reached.has(SELECTION_STAGE)) return 'Selected'
+  return null
+}
+
+/** True when the second status is further along than the first. */
+export function movesForward(from: ApplicantStatus, to: ApplicantStatus): boolean {
+  const order: ApplicantStatus[] = ['Available', 'Unavailable', 'Selected', 'Deployed', 'Back Out']
+  return order.indexOf(to) > order.indexOf(from)
+}
 
 /**
  * Paid to a candidate who came to us directly, at selection and again at
