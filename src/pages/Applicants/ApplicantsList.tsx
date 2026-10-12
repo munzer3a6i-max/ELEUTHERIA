@@ -10,7 +10,7 @@ import StatusBadge from '../../components/StatusBadge'
 import WorkerPhoto from '../../components/WorkerPhoto'
 import Modal from '../../components/Modal'
 import Confirm from '../../components/Confirm'
-import { removeApplicant, whyNotDelete } from '../../lib/applicants'
+import { BLOCKER_LABEL, deletePlan, removeApplicant, type Blocker } from '../../lib/applicants'
 import { BilingualField, Field, TextInput, SelectInput, PrimaryButton, SecondaryButton } from '../../components/form'
 import type { Applicant, ApplicantStatus, RequestType, Gender } from '../../types'
 
@@ -39,7 +39,8 @@ export default function ApplicantsList() {
   const [websiteOnly, setWebsiteOnly] = useState(false)
   const [managerFilter, setManagerFilter] = useState<string>('all')
   const [removing, setRemoving] = useState<Applicant | null>(null)
-  const [refused, setRefused] = useState<number | null>(null)
+  const [refused, setRefused] = useState<{ blocker: Blocker; count: number } | null>(null)
+  const [placements, setPlacements] = useState(0)
 
   const filtered = useMemo(() => {
     return applicants.filter((a) => {
@@ -59,11 +60,14 @@ export default function ApplicantsList() {
   }, [applicants, query, statusFilter, typeFilter, websiteOnly, managerFilter])
 
   function askToDelete(applicant: Applicant) {
-    // The database refuses a worker who is on a request, so find that out
-    // before she vanishes from the screen and comes back on the next load.
-    const blocked = whyNotDelete(applicant.id)
-    if (blocked.kind === 'has-requests') setRefused(blocked.count)
-    else setRemoving(applicant)
+    // Work out what the delete would take before she vanishes from the screen
+    // and comes back on the next load.
+    const plan = deletePlan(applicant.id)
+    if (plan.blocked) setRefused(plan.blocked)
+    else {
+      setPlacements(plan.placements)
+      setRemoving(applicant)
+    }
   }
 
   function handleDelete() {
@@ -71,7 +75,7 @@ export default function ApplicantsList() {
     const applicant = removing
     setRemoving(null)
     void removeApplicant(applicant).then((outcome) => {
-      if (outcome.kind === 'has-requests') setRefused(outcome.count)
+      if (outcome.kind === 'blocked') setRefused({ blocker: outcome.blocker, count: outcome.count })
     })
   }
 
@@ -219,6 +223,7 @@ export default function ApplicantsList() {
                   <td className="sticky end-0 bg-surface px-4 py-3 text-end">
                     <button
                       type="button"
+                      aria-label={t('action_delete')}
                       hidden={!canEdit('operations')}
                       onClick={() => askToDelete(a)}
                       className="text-ink-3 hover:text-neg"
@@ -271,7 +276,9 @@ export default function ApplicantsList() {
         <Confirm
           title={t('applicant_delete_title')}
           message={t('applicant_delete_confirm')}
-          detail={`${tb({ en: removing.englishName, ar: removing.arabicName || removing.englishName })} — ${removing.passportNo || removing.profession}`}
+          detail={`${tb({ en: removing.englishName, ar: removing.arabicName || removing.englishName })} — ${removing.passportNo || removing.profession}${
+            placements > 0 ? `\n${t('applicant_delete_placements')} ${placements}` : ''
+          }`}
           confirmLabel={t('action_delete')}
           tone="danger"
           onConfirm={handleDelete}
@@ -283,7 +290,7 @@ export default function ApplicantsList() {
         <Confirm
           title={t('applicant_has_requests_title')}
           message={t('applicant_has_requests')}
-          detail={`${t('applicant_requests_count')} ${refused}`}
+          detail={`${t(BLOCKER_LABEL[refused.blocker])} ${refused.count}`}
           confirmLabel={t('action_ok')}
           tone="danger"
           withoutCancel

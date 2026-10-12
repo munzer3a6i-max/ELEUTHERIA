@@ -335,8 +335,16 @@ export const translations = {
   },
   applicant_has_requests_title: { en: 'She cannot be removed yet', ar: 'لا يمكن حذفها بعد' },
   applicant_has_requests: {
-    en: 'She is on recruitment requests, and the stages, invoices and money recorded against them would go with her. Delete those from Recruitments first, or set her status to Unavailable to take her off the list and the website without losing the history.',
-    ar: 'لديها طلبات استقدام، وستُحذف معها المراحل والفواتير والمبالغ المسجلة عليها. احذف تلك الطلبات من صفحة الاستقدام أولًا، أو اجعل حالتها «غير متاحة» لإزالتها من القائمة والموقع مع الاحتفاظ بالسجل.',
+    en: 'Money is recorded against her placement, and deleting her would take it with her. Settle or remove that first from the pages it lives on, or set her status to Unavailable to take her off the list and the website without losing the history.',
+    ar: 'توجد مبالغ مسجَّلة على توظيفها، وحذفها سيأخذها معه. سوِّ ذلك أو احذفه أولًا من الصفحات التي يظهر فيها، أو اجعل حالتها «غير متاحة» لإزالتها من القائمة والموقع مع الاحتفاظ بالسجل.',
+  },
+  applicant_blocked_invoice: { en: 'Invoices issued for her:', ar: 'فواتير صادرة لها:' },
+  applicant_blocked_commission: { en: 'Agent commissions already paid:', ar: 'عمولات وكيل مدفوعة بالفعل:' },
+  applicant_blocked_charge: { en: 'Partner office charges already settled:', ar: 'مستحقات مكتب شريك مسددة:' },
+  applicant_blocked_backout: { en: 'Backout bills filed against her:', ar: 'فواتير تراجع مسجّلة عليها:' },
+  applicant_delete_placements: {
+    en: 'Placements removed with her, and the stages logged on them:',
+    ar: 'طلبات التوظيف التي ستُحذف معها، والمراحل المسجلة عليها:',
   },
   applicant_requests_count: { en: 'Recruitment requests on file:', ar: 'عدد طلبات الاستقدام المسجلة:' },
   action_ok: { en: 'OK', ar: 'حسنًا' },

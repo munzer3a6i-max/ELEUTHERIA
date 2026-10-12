@@ -5,7 +5,7 @@ import { useAppStore, requestCost, invoiceTotalPaid, formatMoney } from '../../.
 import { useTranslation } from '../../../i18n/useTranslation'
 import { useCurrentUser } from '../../../lib/useCurrentUser'
 import Confirm from '../../../components/Confirm'
-import { removeApplicant, whyNotDelete } from '../../../lib/applicants'
+import { BLOCKER_LABEL, deletePlan, removeApplicant, type Blocker } from '../../../lib/applicants'
 import Header from './Header'
 import ProfileTabs, { type ProfileTabKey } from './ProfileTabs'
 import StageStepper from './StageStepper'
@@ -49,7 +49,7 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
   const seesMoney = canView('finance')
   const [activeTab, setActiveTab] = useState<ProfileTabKey>(seesMoney ? 'financial' : 'info')
   const [removing, setRemoving] = useState(false)
-  const [refused, setRefused] = useState<number | null>(null)
+  const [refused, setRefused] = useState<{ blocker: Blocker; count: number } | null>(null)
 
   if (!applicant) {
     onDeleted()
@@ -80,8 +80,8 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
   function askToDelete() {
     // The database refuses a worker who is on a request, and a refusal after
     // the fact reads as the delete simply not working.
-    const blocked = whyNotDelete(applicantId)
-    if (blocked.kind === 'has-requests') setRefused(blocked.count)
+    const plan = deletePlan(applicantId)
+    if (plan.blocked) setRefused(plan.blocked)
     else setRemoving(true)
   }
 
@@ -89,7 +89,7 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
     const doomed = applicant!
     setRemoving(false)
     void removeApplicant(doomed).then((outcome) => {
-      if (outcome.kind === 'has-requests') setRefused(outcome.count)
+      if (outcome.kind === 'blocked') setRefused({ blocker: outcome.blocker, count: outcome.count })
     })
   }
 
@@ -148,7 +148,7 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
         <Confirm
           title={t('applicant_has_requests_title')}
           message={t('applicant_has_requests')}
-          detail={`${t('applicant_requests_count')} ${refused}`}
+          detail={`${t(BLOCKER_LABEL[refused.blocker])} ${refused.count}`}
           confirmLabel={t('action_ok')}
           tone="danger"
           withoutCancel
