@@ -23,6 +23,8 @@ export default function ApplicantsList() {
   const countries = useAppStore((s) => s.countries)
   const agencies = useAppStore((s) => s.agencies)
   const managers = useAppStore((s) => s.managers)
+  const requests = useAppStore((s) => s.requests)
+  const employers = useAppStore((s) => s.employers)
   const addApplicant = useAppStore((s) => s.addApplicant)
   const addRequest = useAppStore((s) => s.addRequest)
   const { t, tb, language } = useTranslation()
@@ -161,7 +163,7 @@ export default function ApplicantsList() {
               <th className="px-4 py-3">{t('label_name')}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'المهنة' : 'Profession'}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'النوع' : 'Type'}</th>
-              <th className="px-4 py-3">{language === 'ar' ? 'مكتب الاستقدام' : 'Agency'}</th>
+              <th className="px-4 py-3">{language === 'ar' ? 'المصدر' : 'Source'}</th>
               <th className="px-4 py-3">{t('label_owner')}</th>
               <th className="px-4 py-3">{t('label_status')}</th>
               <th className="sticky end-0 bg-surface px-4 py-3 text-end">{t('label_action')}</th>
@@ -171,6 +173,18 @@ export default function ApplicantsList() {
             {filtered.map((a) => {
               const agency = agencies.find((ag) => ag.id === a.recruitmentAgencyId)
               const owner = managers.find((m) => m.id === placementOwnerId(a.type, a.managerId))
+              // Where she came from. A domestic worker comes through a partner
+              // office; a tradesman is hired direct, so the column names the
+              // employer who asked for him -- which is on his placement, since
+              // that is what joins the two.
+              const placement = requests
+                .filter((r) => r.applicantId === a.id)
+                .sort((x, y) => (x.createdOn < y.createdOn ? 1 : -1))[0]
+              const employer = placement ? employers.find((e) => e.id === placement.employerId) : undefined
+              const source =
+                a.type === 'Domestic'
+                  ? agency && tb({ en: agency.englishName, ar: agency.arabicName })
+                  : employer && tb({ en: employer.englishName, ar: employer.arabicName })
               return (
                 <tr key={a.id} className="text-xs">
                   <td className="px-4 py-3">
@@ -187,7 +201,7 @@ export default function ApplicantsList() {
                   <td className="px-4 py-3 text-ink-2">
                     {a.type === 'Domestic' ? t('type_domestic') : t('type_profession')}
                   </td>
-                  <td className="px-4 py-3 text-ink-2">{agency ? tb({ en: agency.englishName, ar: agency.arabicName }) : '-'}</td>
+                  <td className="px-4 py-3 text-ink-2">{source || '-'}</td>
                   <td className="px-4 py-3 text-ink-2">{owner ? tb(owner.name) : t('label_owner_office')}</td>
                   <td className="px-4 py-3">
                     <span className="flex items-center gap-1.5">
