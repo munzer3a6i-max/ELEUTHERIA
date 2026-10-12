@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, FileSignature, Handshake, Pencil, Plus, Star, Trash2, Undo2 } from 'lucide-react'
+import { Check, FileSignature, Handshake, Pencil, Plus, Star, Trash2, Undo2, Users } from 'lucide-react'
 import { useAppStore, formatMoney } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
 import { useCurrentUser } from '../../lib/useCurrentUser'
 import { contractForAgency } from '../../lib/derivedBilling'
+import { workerMoney, totalMoney } from '../../lib/workerMoney'
+import { workerStage } from '../../lib/financials'
 import PageHeader from '../../components/PageHeader'
 import Card from '../../components/Card'
 import Modal from '../../components/Modal'
@@ -33,6 +35,9 @@ function Rating({ value }: { value: number }) {
 export default function AgenciesList() {
   const agencies = useAppStore((s) => s.agencies)
   const applicants = useAppStore((s) => s.applicants)
+  const requests = useAppStore((s) => s.requests)
+  const invoices = useAppStore((s) => s.invoices)
+  const commissions = useAppStore((s) => s.agentCommissions)
   const contracts = useAppStore((s) => s.agencyContracts)
   const charges = useAppStore((s) => s.agencyCharges)
   const currency = useAppStore((s) => s.settings.currency)
@@ -42,7 +47,8 @@ export default function AgenciesList() {
   const setAgencyChargeStatus = useAppStore((s) => s.setAgencyChargeStatus)
   const paymentSources = useAppStore((s) => s.paymentSources)
   const { t, tb, language } = useTranslation()
-  const { canEdit } = useCurrentUser()
+  const { canEdit, canView } = useCurrentUser()
+  const seesMoney = canView('finance')
 
   const [addOpen, setAddOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -59,6 +65,22 @@ export default function AgenciesList() {
   )
   const expected = agencyCharges.reduce((sum, c) => sum + c.amount, 0)
   const received = agencyCharges.filter((c) => c.status === 'Paid').reduce((sum, c) => sum + c.amount, 0)
+
+  // Every worker this office sent us, with what each one has cost and brought
+  // in across all of her placements. The count in the table above was the only
+  // sign they existed; this is the list behind that number.
+  const roster = useMemo(() => {
+    if (!selected) return []
+    return applicants
+      .filter((a) => a.recruitmentAgencyId === selected.id)
+      .map((applicant) => ({
+        applicant,
+        stage: workerStage(applicant.id, requests, applicant.status),
+        money: workerMoney(applicant.id, requests, invoices, commissions),
+      }))
+      .sort((a, b) => b.money.spent - a.money.spent)
+  }, [applicants, selected, requests, invoices, commissions])
+  const rosterTotal = useMemo(() => totalMoney(roster.map((row) => row.money)), [roster])
 
   function handleDelete(agency: RecruitmentAgency) {
     if (window.confirm(`${t('action_delete')} ${agency.englishName}?`)) deleteAgency(agency.id)
@@ -296,8 +318,82 @@ export default function AgenciesList() {
                   })}
                   {agencyCharges.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-4 py-10 text-center text-ink-3">
-                        {t('acc_no_rows')}
+                      <td colSpan={6} className="px-4 py-10 text-center text-[12px] leading-relaxed text-ink-3">
+                        {agencyContracts.length === 0 ? t('contract_charges_need_contract') : t('contract_charges_none')}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </Card>
+          </div>
+
+          <div className="lg:col-span-12">
+            <Card
+              icon={<Users className="size-3.5" />}
+              title={`${t('agency_workers')} \u00b7 ${tb({ en: selected.englishName, ar: selected.arabicName })}`}
+              subtitle={
+                seesMoney
+                  ? `${roster.length} ${t('agency_workers_count')} \u00b7 ${t('agency_workers_spent')} ${formatMoney(rosterTotal.spent, currency, 0)} \u00b7 ${t('agency_workers_collected')} ${formatMoney(rosterTotal.collected, currency, 0)} \u00b7 ${t('agency_workers_net')} ${formatMoney(rosterTotal.net, currency, 0)}`
+                  : `${roster.length} ${t('agency_workers_count')}`
+              }
+              bodyClassName="overflow-x-auto p-0"
+            >
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>{language === 'ar' ? 'العاملة' : 'Worker'}</th>
+                    <th>{language === 'ar' ? 'المهنة' : 'Profession'}</th>
+                    <th>{t('label_status')}</th>
+                    <th>{language === 'ar' ? 'المرحلة' : 'Stage'}</th>
+                    {seesMoney && <th className="text-end">{t('agency_workers_spent')}</th>}
+                    {seesMoney && <th className="text-end">{t('agency_workers_collected')}</th>}
+                    {seesMoney && <th className="text-end">{t('agency_workers_outstanding')}</th>}
+                    {seesMoney && <th className="text-end">{t('agency_workers_net')}</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {roster.map(({ applicant, stage, money }) => (
+                    <tr key={applicant.id}>
+                      <td>
+                        <Link to={`/applicants/${applicant.id}`} className="font-medium text-ink hover:text-accent-text">
+                          {language === 'ar' ? applicant.arabicName || applicant.englishName : applicant.englishName}
+                        </Link>
+                      </td>
+                      <td className="text-ink-2">{applicant.profession}</td>
+                      <td>
+                        <StatusBadge status={applicant.status} />
+                      </td>
+                      <td className="text-ink-2">{stage}</td>
+                      {seesMoney && (
+                        <td dir="ltr" className="num whitespace-nowrap text-end text-neg">
+                          {formatMoney(money.spent, currency, 0)}
+                        </td>
+                      )}
+                      {seesMoney && (
+                        <td dir="ltr" className="num whitespace-nowrap text-end text-pos">
+                          {formatMoney(money.collected, currency, 0)}
+                        </td>
+                      )}
+                      {seesMoney && (
+                        <td dir="ltr" className="num whitespace-nowrap text-end text-ink-2">
+                          {formatMoney(money.outstanding, currency, 0)}
+                        </td>
+                      )}
+                      {seesMoney && (
+                        <td
+                          dir="ltr"
+                          className={`num whitespace-nowrap text-end font-medium ${money.net >= 0 ? 'text-pos' : 'text-neg'}`}
+                        >
+                          {formatMoney(money.net, currency, 0)}
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                  {roster.length === 0 && (
+                    <tr>
+                      <td colSpan={seesMoney ? 8 : 4} className="px-4 py-10 text-center text-ink-3">
+                        {t('agency_workers_none')}
                       </td>
                     </tr>
                   )}
