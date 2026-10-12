@@ -92,7 +92,9 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <SummaryCard label={language === 'ar' ? 'المتقدم' : 'Applicant'} value={applicant ? (language === 'ar' ? applicant.arabicName || applicant.englishName : applicant.englishName) : '-'} to={applicant ? `/applicants/${applicant.id}` : undefined} />
         <SummaryCard label={language === 'ar' ? 'صاحب العمل' : 'Employer'} value={employer ? tb({ en: employer.englishName, ar: employer.arabicName }) : '-'} />
-        <SummaryCard label={language === 'ar' ? 'مكتب الاستقدام' : 'Agency'} value={agency ? tb({ en: agency.englishName, ar: agency.arabicName }) : '-'} />
+        {request.type === 'Domestic' && (
+          <SummaryCard label={language === 'ar' ? 'مكتب الاستقدام' : 'Agency'} value={agency ? tb({ en: agency.englishName, ar: agency.arabicName }) : '-'} />
+        )}
         <SummaryCard label={t('label_owner')} value={owner ? tb(owner.name) : t('label_owner_office')} />
       </div>
 
@@ -196,7 +198,7 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
             </h2>
             <div className="flex flex-col gap-2 text-[11px]">
               <DetailRow label={language === 'ar' ? 'مدة العقد' : 'Contract Duration'} value={`${request.contractDurationMonths} ${language === 'ar' ? 'شهر' : 'months'}`} />
-              <DetailRow label="Mosaned #" value={request.mosanedNumber || '-'} />
+              {request.type === 'Domestic' && <DetailRow label="Mosaned #" value={request.mosanedNumber || '-'} />}
               <DetailRow label={language === 'ar' ? 'تاريخ الإنشاء' : 'Created'} value={request.createdOn} />
               <DetailRow label={language === 'ar' ? 'آخر تحديث' : 'Last Updated'} value={request.updatedOn} />
               <DetailRow label={t('label_raised_by')} value={officer ? tb(officer.name) : '-'} />

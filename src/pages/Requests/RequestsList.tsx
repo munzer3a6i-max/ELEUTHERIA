@@ -202,6 +202,9 @@ function NewRequestModal({
   const [contractDurationMonths, setContractDurationMonths] = useState(24)
   const [mosanedNumber, setMosanedNumber] = useState('')
   const [problem, setProblem] = useState<string | null>(null)
+  // The partner office and the Mosaned number are both parts of the domestic
+  // route: a tradesman is hired direct, and neither is asked for or kept.
+  const domestic = type === 'Domestic'
 
   /** Her own record already names the office she came through, so picking her fills it in. */
   function chooseApplicant(id: string) {
@@ -246,9 +249,9 @@ function NewRequestModal({
       applicantId,
       employerId,
       responsibleEmployeeId,
-      recruitmentAgencyId,
-      mosanedNumber: mosanedNumber.trim(),
-      managerId: type === 'Domestic' ? '' : managerId,
+      recruitmentAgencyId: domestic ? recruitmentAgencyId : '',
+      mosanedNumber: domestic ? mosanedNumber.trim() : '',
+      managerId: domestic ? '' : managerId,
     })
   }
 
@@ -301,7 +304,7 @@ function NewRequestModal({
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={t('label_owner')}>
-            {type === 'Domestic' ? (
+            {domestic ? (
               <p className="rounded-control border border-line bg-sunken px-3 py-2 text-xs text-ink">
                 {t('label_owner_office')}
               </p>
@@ -316,9 +319,10 @@ function NewRequestModal({
               </SelectInput>
             )}
             <p className="mt-1 text-[10px] text-ink-3">
-              {type === 'Domestic' ? t('label_owner_office_note') : t('label_owner_partner_note')}
+              {domestic ? t('label_owner_office_note') : t('label_owner_partner_note')}
             </p>
           </Field>
+          {domestic && (
           <Field label={language === 'ar' ? 'مكتب الاستقدام' : 'Recruitment Agency'}>
             <SelectInput value={recruitmentAgencyId} onChange={(e) => setRecruitmentAgencyId(e.target.value)}>
               <option value="">{language === 'ar' ? 'اختر' : 'Select'}</option>
@@ -336,15 +340,18 @@ function NewRequestModal({
               </p>
             )}
           </Field>
+          )}
         </div>
-        <Field label="Mosaned #">
-          <input
-            value={mosanedNumber}
-            onChange={(e) => setMosanedNumber(e.target.value)}
-            placeholder="MSD-2024-00000"
-            className="w-full rounded-control border border-line bg-sunken px-3 py-2 text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-focus"
-          />
-        </Field>
+        {domestic && (
+          <Field label="Mosaned #">
+            <input
+              value={mosanedNumber}
+              onChange={(e) => setMosanedNumber(e.target.value)}
+              placeholder="MSD-2024-00000"
+              className="w-full rounded-control border border-line bg-sunken px-3 py-2 text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-focus"
+            />
+          </Field>
+        )}
 
         {problem && <p className="mt-2 text-[11px] font-medium text-neg">{problem}</p>}
 
