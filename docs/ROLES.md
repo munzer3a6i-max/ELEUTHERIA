@@ -48,6 +48,13 @@ default, the note shown under the amount when it is logged, and whether
 reaching it ends the placement (terminal) or interrupts it (an exception, which
 can happen at any point and so carries no place in the order).
 
+Where a stage sits in the process is not a number anybody types. A new stage is
+put after the one it follows (or first of all), the arrows on each row move one
+a step earlier or later, and every change renumbers that pipeline 1, 2, 3 --
+which is what stops two stages quietly sharing a number and sorting by whichever
+was loaded first. Exceptions have no place in that order at all, so they carry
+no number and no arrows.
+
 A stage already logged against a placement keeps its label in that log whatever
 happens to the list afterwards: the log records what was done, not what the
 list says today. Removing a stage therefore loses nothing that was recorded --

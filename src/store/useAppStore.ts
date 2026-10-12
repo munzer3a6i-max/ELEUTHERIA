@@ -144,6 +144,11 @@ const ACTION_AREA: Record<string, Area> = {
   deleteCity: 'system',
   addProfession: 'system',
   deleteProfession: 'system',
+  addStatusDefinition: 'system',
+  updateStatusDefinition: 'system',
+  moveStatusDefinition: 'system',
+  placeStatusDefinition: 'system',
+  deleteStatusDefinition: 'system',
   addManager: 'system',
   deleteManager: 'system',
   addExpenseCategory: 'system',
@@ -220,6 +225,30 @@ function isLastActiveAdmin(staff: StaffMember[], id: string): boolean {
   const member = staff.find((m) => m.id === id)
   if (!member || member.role !== 'super_admin' || member.status !== 'Active') return false
   return staff.filter((m) => m.role === 'super_admin' && m.status === 'Active').length <= 1
+}
+
+/**
+ * The stages of one pipeline in the order they happen, exceptions left out --
+ * those can occur at any point, so they have no place in the walk.
+ */
+function stageWalk(all: StatusDefinition[], pipeline: StatusDefinition['pipeline']): StatusDefinition[] {
+  return all.filter((d) => d.pipeline === pipeline && !d.isException).sort((a, b) => a.order - b.order)
+}
+
+/**
+ * Numbers one pipeline 1, 2, 3 down the list it is given.
+ *
+ * Every move renumbers the whole pipeline rather than nudging one figure,
+ * because an order typed by hand drifts: two stages end up sharing a number and
+ * the list quietly sorts by whichever was loaded first.
+ */
+function stagesInOrder(
+  all: StatusDefinition[],
+  pipeline: StatusDefinition['pipeline'],
+  ids: string[],
+): StatusDefinition[] {
+  const place = new Map(ids.map((id, index) => [id, index + 1]))
+  return all.map((d) => (place.has(d.id) ? { ...d, order: place.get(d.id)!, pipeline } : d))
 }
 
 /** The request a worker's own status change should be written against. */
@@ -413,8 +442,11 @@ export interface AppState {
   deleteCity: (id: string) => void
   addProfession: (name: Profession['name']) => void
   deleteProfession: (id: string) => void
-  addStatusDefinition: (data: Omit<StatusDefinition, 'id'>) => void
+  /** `afterId` is the stage it follows; null puts it first. */
+  addStatusDefinition: (data: Omit<StatusDefinition, 'id'>, afterId?: string | null) => void
   updateStatusDefinition: (id: string, patch: Partial<Omit<StatusDefinition, 'id'>>) => void
+  moveStatusDefinition: (id: string, direction: 'up' | 'down') => void
+  placeStatusDefinition: (id: string, afterId: string | null) => void
   deleteStatusDefinition: (id: string) => void
 
   addManager: (name: Manager['name']) => void
@@ -853,14 +885,71 @@ export const useAppStore = create<AppState>()(
       // administrator's to change. A stage already logged against a request
       // keeps its label in that log whatever happens here -- the log records
       // what was done, not what the list says today.
-      addStatusDefinition: (data) =>
-        set((s) => ({ statusDefinitions: [...s.statusDefinitions, { ...data, id: newId() }] })),
+      addStatusDefinition: (data, afterId = null) =>
+        set((s) => {
+          const created: StatusDefinition = { ...data, id: newId() }
+          const all = [...s.statusDefinitions, created]
+          if (created.isException) return { statusDefinitions: all }
+          const ids = stageWalk(all, created.pipeline)
+            .map((d) => d.id)
+            .filter((candidate) => candidate !== created.id)
+          const at = afterId === null ? 0 : ids.indexOf(afterId) + 1
+          ids.splice(at === 0 && afterId !== null ? ids.length : at, 0, created.id)
+          return { statusDefinitions: stagesInOrder(all, created.pipeline, ids) }
+        }),
       updateStatusDefinition: (id, patch) =>
-        set((s) => ({
-          statusDefinitions: s.statusDefinitions.map((d) => (d.id === id ? { ...d, ...patch } : d)),
-        })),
+        set((s) => {
+          const before = s.statusDefinitions.find((d) => d.id === id)
+          const all = s.statusDefinitions.map((d) => (d.id === id ? { ...d, ...patch } : d))
+          const after = all.find((d) => d.id === id)
+          if (!before || !after) return { statusDefinitions: all }
+          // Changed pipeline, or turned into an ordinary stage: renumber both
+          // sides so neither is left with a gap or a repeat.
+          const touched = new Set([before.pipeline, after.pipeline])
+          let next = all
+          for (const pipeline of touched) {
+            next = stagesInOrder(next, pipeline, stageWalk(next, pipeline).map((d) => d.id))
+          }
+          return { statusDefinitions: next }
+        }),
+      /** One step earlier or later in the process, swapping with its neighbour. */
+      moveStatusDefinition: (id, direction) =>
+        set((s) => {
+          const stage = s.statusDefinitions.find((d) => d.id === id)
+          if (!stage || stage.isException) return {}
+          const ids = stageWalk(s.statusDefinitions, stage.pipeline).map((d) => d.id)
+          const from = ids.indexOf(id)
+          const to = direction === 'up' ? from - 1 : from + 1
+          if (from === -1 || to < 0 || to >= ids.length) return {}
+          ids[from] = ids[to]
+          ids[to] = id
+          return { statusDefinitions: stagesInOrder(s.statusDefinitions, stage.pipeline, ids) }
+        }),
+      /** Straight to a place in the process: after that stage, or first of all. */
+      placeStatusDefinition: (id, afterId) =>
+        set((s) => {
+          const stage = s.statusDefinitions.find((d) => d.id === id)
+          if (!stage || stage.isException || afterId === id) return {}
+          const ids = stageWalk(s.statusDefinitions, stage.pipeline)
+            .map((d) => d.id)
+            .filter((candidate) => candidate !== id)
+          const at = afterId === null ? 0 : ids.indexOf(afterId) + 1
+          ids.splice(at === 0 && afterId !== null ? ids.length : at, 0, id)
+          return { statusDefinitions: stagesInOrder(s.statusDefinitions, stage.pipeline, ids) }
+        }),
       deleteStatusDefinition: (id) =>
-        set((s) => ({ statusDefinitions: s.statusDefinitions.filter((d) => d.id !== id) })),
+        set((s) => {
+          const stage = s.statusDefinitions.find((d) => d.id === id)
+          const left = s.statusDefinitions.filter((d) => d.id !== id)
+          if (!stage) return { statusDefinitions: left }
+          return {
+            statusDefinitions: stagesInOrder(
+              left,
+              stage.pipeline,
+              stageWalk(left, stage.pipeline).map((d) => d.id),
+            ),
+          }
+        }),
 
       addManager: (name) => set((s) => ({ managers: [...s.managers, { id: newId(), name }] })),
       // Her record keeps pointing at a manager who has been removed only until

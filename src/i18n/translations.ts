@@ -387,6 +387,19 @@ export const translations = {
     en: 'Shown under the amount when this stage is logged \u2014 say whether the figure is fixed or typed each time.',
     ar: 'تظهر أسفل المبلغ عند تسجيل هذه المرحلة \u2014 وضّح ما إذا كان المبلغ ثابتًا أم يُدخل في كل مرة.',
   },
+  stage_position: { en: 'Where in the process', ar: 'موضعها في المسار' },
+  stage_position_first: { en: 'First of all', ar: 'في البداية' },
+  stage_position_after: { en: 'After', ar: 'بعد' },
+  stage_position_anytime: {
+    en: 'An exception has no place in the order \u2014 it can happen at any point.',
+    ar: 'الاستثناء لا موضع له في الترتيب \u2014 يمكن أن يقع في أي وقت.',
+  },
+  stage_position_other_pipeline: {
+    en: 'Saved at the end of the pipeline it is moving to; use the arrows there to place it.',
+    ar: 'تُحفظ في نهاية المسار المنقولة إليه؛ استخدم الأسهم هناك لتحديد موضعها.',
+  },
+  stage_move_up: { en: 'Move earlier', ar: 'تقديمها' },
+  stage_move_down: { en: 'Move later', ar: 'تأخيرها' },
   stage_terminal: { en: 'Reaching this stage ends the placement', ar: 'الوصول إلى هذه المرحلة ينهي التوظيف' },
   stage_exception: { en: 'An exception \u2014 it can happen at any point', ar: 'استثناء \u2014 يمكن أن يقع في أي وقت' },
   stage_delete_confirm: {

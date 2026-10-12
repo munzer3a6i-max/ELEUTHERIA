@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useAppStore, useStatusDefinitions } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
 import PageHeader from '../../components/PageHeader'
@@ -394,6 +394,8 @@ function StatusesTab() {
   const definitions = useStatusDefinitions()
   const addStatusDefinition = useAppStore((s) => s.addStatusDefinition)
   const updateStatusDefinition = useAppStore((s) => s.updateStatusDefinition)
+  const moveStatusDefinition = useAppStore((s) => s.moveStatusDefinition)
+  const placeStatusDefinition = useAppStore((s) => s.placeStatusDefinition)
   const deleteStatusDefinition = useAppStore((s) => s.deleteStatusDefinition)
   const requests = useAppStore((s) => s.requests)
   const { t, language } = useTranslation()
@@ -410,6 +412,9 @@ function StatusesTab() {
     Profession: definitions.filter((d) => d.pipeline === 'Profession').length,
     Invoice: definitions.filter((d) => d.pipeline === 'Invoice').length,
   }
+
+  /** The stages that have a place in the process, in that order. */
+  const walk = filtered.filter((d) => !d.isException)
 
   /** How many placements have this stage in their log, which a delete leaves behind. */
   function loggedCount(label: string): number {
@@ -476,6 +481,30 @@ function StatusesTab() {
               <td className="py-2 text-ink-3">{d.costNote}</td>
               <td className="py-2 text-end">
                 <span className="flex items-center justify-end gap-2">
+                  {!d.isException && (
+                    <>
+                      <button
+                        type="button"
+                        aria-label={t('stage_move_up')}
+                        title={t('stage_move_up')}
+                        disabled={walk[0]?.id === d.id}
+                        onClick={() => moveStatusDefinition(d.id, 'up')}
+                        className="text-ink-3 hover:text-accent-text disabled:opacity-25 disabled:hover:text-ink-3"
+                      >
+                        <ArrowUp className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={t('stage_move_down')}
+                        title={t('stage_move_down')}
+                        disabled={walk[walk.length - 1]?.id === d.id}
+                        onClick={() => moveStatusDefinition(d.id, 'down')}
+                        className="text-ink-3 hover:text-accent-text disabled:opacity-25 disabled:hover:text-ink-3"
+                      >
+                        <ArrowDown className="size-3.5" />
+                      </button>
+                    </>
+                  )}
                   <button
                     type="button"
                     aria-label={t('action_edit')}
@@ -511,11 +540,14 @@ function StatusesTab() {
         <StageModal
           definition={editing === 'new' ? null : editing}
           pipeline={pipelineFilter}
-          nextOrder={Math.max(0, ...filtered.map((d) => d.order)) + 1}
+          walk={walk}
           onClose={() => setEditing(null)}
-          onSubmit={(data) => {
-            if (editing === 'new') addStatusDefinition(data)
-            else updateStatusDefinition(editing.id, data)
+          onSubmit={(data, afterId) => {
+            if (editing === 'new') addStatusDefinition(data, afterId)
+            else {
+              updateStatusDefinition(editing.id, data)
+              if (!data.isException) placeStatusDefinition(editing.id, afterId)
+            }
             setEditing(null)
           }}
         />
@@ -532,20 +564,29 @@ function StatusesTab() {
 function StageModal({
   definition,
   pipeline,
-  nextOrder,
+  walk,
   onClose,
   onSubmit,
 }: {
   definition: StatusDefinition | null
   pipeline: 'Domestic' | 'Profession' | 'Invoice'
-  nextOrder: number
+  /** The stages that have a place in this pipeline, in that order. */
+  walk: StatusDefinition[]
   onClose: () => void
-  onSubmit: (data: Omit<StatusDefinition, 'id'>) => void
+  onSubmit: (data: Omit<StatusDefinition, 'id'>, afterId: string | null) => void
 }) {
   const { t, language } = useTranslation()
   const [label, setLabel] = useState(definition?.label ?? '')
   const [where, setWhere] = useState(definition?.pipeline ?? pipeline)
-  const [order, setOrder] = useState(String(definition?.order ?? nextOrder))
+  // Where it sits in the process, named by the stage it comes after. A new one
+  // goes at the end unless it is put somewhere else.
+  const others = walk.filter((d) => d.id !== definition?.id)
+  const [afterId, setAfterId] = useState<string>(() => {
+    if (!definition) return others[others.length - 1]?.id ?? ''
+    const index = others.findIndex((d) => d.order > definition.order)
+    const before = index === -1 ? others[others.length - 1] : others[index - 1]
+    return before?.id ?? ''
+  })
   const [defaultCost, setDefaultCost] = useState(String(definition?.defaultCost ?? 0))
   const [costNote, setCostNote] = useState(definition?.costNote ?? '')
   const [isTerminal, setIsTerminal] = useState(definition?.isTerminal ?? false)
@@ -558,16 +599,20 @@ function StageModal({
       setProblem(language === 'ar' ? 'اسم المرحلة مطلوب.' : 'The stage needs a name.')
       return
     }
-    onSubmit({
-      label: label.trim(),
-      pipeline: where,
-      // An exception can happen at any point, so it carries no place in the walk.
-      order: isException ? 0 : Number(order) || 0,
-      defaultCost: Number(defaultCost) || 0,
-      costNote: costNote.trim(),
-      isTerminal,
-      isException,
-    })
+    onSubmit(
+      {
+        label: label.trim(),
+        pipeline: where,
+        // An exception can happen at any point, so it carries no place in the
+        // walk; everything else is numbered by where it was put.
+        order: isException ? 0 : (definition?.order ?? 0),
+        defaultCost: Number(defaultCost) || 0,
+        costNote: costNote.trim(),
+        isTerminal,
+        isException,
+      },
+      afterId || null,
+    )
   }
 
   return (
@@ -584,14 +629,21 @@ function StageModal({
               <option value="Invoice">{language === 'ar' ? 'فواتير' : 'Invoice'}</option>
             </SelectInput>
           </Field>
-          <Field label={language === 'ar' ? 'الترتيب' : 'Order'}>
-            <TextInput
-              type="number"
-              min={0}
-              value={isException ? '0' : order}
-              disabled={isException}
-              onChange={(e) => setOrder(e.target.value)}
-            />
+          <Field label={t('stage_position')}>
+            {isException || where !== pipeline ? (
+              <p className="rounded-control border border-line bg-sunken px-3 py-2 text-xs text-ink-3">
+                {isException ? t('stage_position_anytime') : t('stage_position_other_pipeline')}
+              </p>
+            ) : (
+              <SelectInput value={afterId} onChange={(e) => setAfterId(e.target.value)}>
+                <option value="">{t('stage_position_first')}</option>
+                {others.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {t('stage_position_after')} {d.label}
+                  </option>
+                ))}
+              </SelectInput>
+            )}
           </Field>
         </div>
         <Field label={`${language === 'ar' ? 'التكلفة الافتراضية' : 'Default cost'} (USD)`}>
