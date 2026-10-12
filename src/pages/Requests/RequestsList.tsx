@@ -85,7 +85,7 @@ export default function RequestsList() {
               <th className="px-4 py-3">{language === 'ar' ? 'النوع' : 'Type'}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'الحالة الحالية' : 'Current Status'}</th>
               <th className="px-4 py-3">{t('label_owner')}</th>
-              <th className="px-4 py-3">{language === 'ar' ? 'مكتب الاستقدام' : 'Agency'}</th>
+              <th className="px-4 py-3">{language === 'ar' ? 'المصدر' : 'Source'}</th>
               <th className="sticky end-0 bg-surface px-4 py-3 text-end">{t('label_action')}</th>
             </tr>
           </thead>
@@ -119,7 +119,18 @@ export default function RequestsList() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-ink-2">{owner ? tb(owner.name) : t('label_owner_office')}</td>
-                  <td className="px-4 py-3 text-ink-2">{agency ? tb({ en: agency.englishName, ar: agency.arabicName }) : '-'}</td>
+                  {/* Where she came from. A domestic worker comes through a partner
+                      office; a tradesman is hired direct, so the column names the
+                      employer who asked for him rather than sitting empty. */}
+                  <td className="px-4 py-3 text-ink-2">
+                    {r.type === 'Domestic'
+                      ? agency
+                        ? tb({ en: agency.englishName, ar: agency.arabicName })
+                        : '-'
+                      : employer
+                        ? tb({ en: employer.englishName, ar: employer.arabicName })
+                        : '-'}
+                  </td>
                   <td className="sticky end-0 bg-surface px-4 py-3 text-end">
                     <button
                       type="button"
