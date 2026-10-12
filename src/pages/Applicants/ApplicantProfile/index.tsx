@@ -42,11 +42,12 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
   const invoices = useAppStore((s) => s.invoices)
   const commissions = useAppStore((s) => s.agentCommissions)
   const { t, language } = useTranslation()
-  const { canEdit, canView } = useCurrentUser()
+  const { canRemove, canView } = useCurrentUser()
   // Data entry works the caseload and the money pages are not theirs, so the
   // profile opens on her file rather than on her money, and the money tab is
   // not offered at all.
   const seesMoney = canView('finance')
+  const seesPlacements = canView('placements')
   const [activeTab, setActiveTab] = useState<ProfileTabKey>(seesMoney ? 'financial' : 'info')
   const [removing, setRemoving] = useState(false)
   const [refused, setRefused] = useState<{ blocker: Blocker; count: number } | null>(null)
@@ -120,7 +121,7 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
               <Send className="size-3.5" /> {language === 'ar' ? 'إرسال للعميل' : 'Send to Client'}
             </button>
           )}
-          {canEdit('operations') && (
+          {canRemove('directory') && (
             <button
               type="button"
               onClick={askToDelete}
@@ -158,7 +159,12 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
       )}
 
       <Header applicant={applicant} activeRequest={activeRequest} invoice={invoice} seesMoney={seesMoney} />
-      <ProfileTabs active={activeTab} onChange={setActiveTab} seesMoney={seesMoney} />
+      <ProfileTabs
+        active={activeTab}
+        onChange={setActiveTab}
+        seesMoney={seesMoney}
+        seesPlacements={seesPlacements}
+      />
 
       {activeTab === 'financial' && seesMoney && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -175,7 +181,7 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
         </div>
       )}
       {activeTab === 'info' && <InfoTab applicant={applicant} />}
-      {activeTab === 'stages' && <RecruitmentStagesTab activeRequest={activeRequest} />}
+      {activeTab === 'stages' && seesPlacements && <RecruitmentStagesTab activeRequest={activeRequest} />}
       {activeTab === 'cv' && <CvTab applicant={applicant} />}
       {activeTab === 'documents' && <DocumentsTab applicant={applicant} />}
       {activeTab === 'notes' && <NotesTab applicant={applicant} />}

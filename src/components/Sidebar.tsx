@@ -187,14 +187,20 @@ export default function Sidebar({
         </div>
 
         <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2.5">
-          <NavItem to="/" end icon={<LayoutDashboard className="size-4" />} label={t('nav_dashboard')} />
+          {/* The dashboard reports on the placements, so it is shown to the
+              people who may open them. */}
+          {canView('placements') && (
+            <NavItem to="/" end icon={<LayoutDashboard className="size-4" />} label={t('nav_dashboard')} />
+          )}
 
           <GroupLabel>{language === 'ar' ? 'العمليات' : 'Operations'}</GroupLabel>
           <NavItem to="/applicants" icon={<Users className="size-4" />} label={t('nav_applicants')} />
           <NavItem to="/employers" icon={<Building2 className="size-4" />} label={t('nav_employers')} />
           <NavItem to="/agencies" icon={<Handshake className="size-4" />} label={t('nav_agencies')} />
           <NavItem to="/agents" icon={<UserPlus className="size-4" />} label={t('nav_agents')} />
-          <NavItem to="/recruitments" icon={<ClipboardList className="size-4" />} label={t('nav_recruitments')} />
+          {canView('placements') && (
+            <NavItem to="/recruitments" icon={<ClipboardList className="size-4" />} label={t('nav_recruitments')} />
+          )}
           {canView('finance') && (
             <NavItem to="/invoices" icon={<Receipt className="size-4" />} label={t('nav_invoices')} />
           )}

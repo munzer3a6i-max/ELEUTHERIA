@@ -53,7 +53,7 @@ export default function RequestsList() {
         title={t('nav_recruitments')}
         subtitle={t('page_requests_subtitle')}
         actions={
-          canEdit('operations') && (
+          canEdit('placements') && (
             <PrimaryButton onClick={() => setAddOpen(true)} className="flex items-center gap-1.5">
               <Plus className="size-3.5" /> {language === 'ar' ? 'إنشاء طلب استقدام' : 'New Recruitment Request'}
             </PrimaryButton>
@@ -134,7 +134,7 @@ export default function RequestsList() {
                   <td className="sticky end-0 bg-surface px-4 py-3 text-end">
                     <button
                       type="button"
-                      hidden={!canEdit('operations')}
+                      hidden={!canEdit('placements')}
                       onClick={() => handleDelete(r.id)}
                       className="text-ink-3 hover:text-neg"
                     >

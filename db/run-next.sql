@@ -1,20 +1,24 @@
 -- Run this whole file once in the Supabase SQL editor.
 --
--- It is the one migration the dashboard is waiting for. It is additive: it
--- widens the list of roles a staff row may hold, adds one table for the stages
--- of the recruitment, and moves the right to write the System tables from the
--- administrator to the new super administrator. It does not change, move or
--- delete a single row of your data. Running it twice is safe.
+-- It is the two migrations the dashboard is waiting for, in order. Both are
+-- additive: they widen the list of roles a staff row may hold, add one table
+-- for the stages of the recruitment, and rewrite who may write what. Not a
+-- single row of your data is changed, moved or deleted. Running it twice is
+-- safe, and running it again after the first part is safe too.
 --
--- The last statement promotes Maan and Elmunzer Abdelkarim by name and prints
--- the staff list, so the last thing on screen is who holds what. If a name
--- there is spelled differently in your staff list, edit the WHERE clause at the
--- bottom before running -- or run the file, read the list, and fix it with:
+--   1. The super administrator, and the stages as data
+--   2. The directories and the placements, told apart
+--
+-- Part 1 promotes Maan and Elmunzer Abdelkarim by name. If a name is spelled
+-- differently in your staff list, edit the WHERE clause there before running --
+-- or run the file, read the staff list it prints, and fix it with:
 --
 --   update ops.staff set role = 'super_admin' where username = 'theirusername';
 --
--- An office with nobody holding this role cannot hand it out again, so check
+-- An office with nobody holding that role cannot hand it out again, so check
 -- the printed list before closing the editor.
+
+-- ===== 1 of 2 =============================================================
 
 -- The super administrator, and the stages as data.
 --
@@ -146,3 +150,87 @@ update ops.staff
 select name_en as staff, role, status
   from ops.staff
  order by (role = 'super_admin') desc, name_en;
+
+
+-- ===== 2 of 2 =============================================================
+
+-- Two halves of the caseload, and deleting as its own right.
+--
+-- "The caseload" was one thing to this database: the four directories the
+-- office keeps -- workers, employers, partner offices, agents -- and the
+-- recruitment itself, the requests and their stage log. Data entry could write
+-- all of it, and delete all of it.
+--
+-- The office wanted those apart. Data entry keeps the directories: they add
+-- somebody and correct what is on file. They do not open placements, and they
+-- delete nothing at all -- a wrong entry is corrected, not removed. So:
+--
+--   directories  insert and update by data entry, an administrator or a super
+--                administrator; delete by the administrators.
+--   placements   administrators only, in and out.
+--
+-- Reading is untouched: everybody signed in still reads both, which is what
+-- lets a worker's file show the placement she is on.
+--
+-- Re-runnable, like every migration here. Nothing is moved or deleted.
+
+create or replace function ops.can_write_directory() returns boolean
+language sql stable as $$ select ops.current_role() in ('admin', 'super_admin', 'data_entry') $$;
+
+create or replace function ops.can_write_placements() returns boolean
+language sql stable as $$ select ops.current_role() in ('admin', 'super_admin') $$;
+
+-- Removing a record is not part of changing one. This is the whole difference
+-- between the two roles on the pages they share.
+create or replace function ops.can_delete_caseload() returns boolean
+language sql stable as $$ select ops.current_role() in ('admin', 'super_admin') $$;
+
+-- ------------------------------------------------------- the directories ---
+
+do $$
+declare t text;
+begin
+  foreach t in array array[
+    'employers', 'agencies', 'agents', 'applicants', 'applicant_experience',
+    'applicant_education', 'applicant_documents', 'applicant_notes'
+  ]
+  loop
+    execute format('drop policy if exists read_all_staff on ops.%I', t);
+    execute format('drop policy if exists write_operations on ops.%I', t);
+    execute format('drop policy if exists update_operations on ops.%I', t);
+    execute format('drop policy if exists delete_operations on ops.%I', t);
+    execute format('create policy read_all_staff on ops.%I for select to authenticated using (ops.is_staff())', t);
+    execute format('create policy write_operations on ops.%I for insert to authenticated with check (ops.can_write_directory())', t);
+    execute format('create policy update_operations on ops.%I for update to authenticated using (ops.can_write_directory()) with check (ops.can_write_directory())', t);
+    execute format('create policy delete_operations on ops.%I for delete to authenticated using (ops.can_delete_caseload())', t);
+  end loop;
+end
+$$;
+
+-- -------------------------------------------------------- the placements ---
+
+do $$
+declare t text;
+begin
+  foreach t in array array['requests', 'request_status_history']
+  loop
+    execute format('drop policy if exists read_all_staff on ops.%I', t);
+    execute format('drop policy if exists write_operations on ops.%I', t);
+    execute format('drop policy if exists update_operations on ops.%I', t);
+    execute format('drop policy if exists delete_operations on ops.%I', t);
+    execute format('create policy read_all_staff on ops.%I for select to authenticated using (ops.is_staff())', t);
+    execute format('create policy write_operations on ops.%I for insert to authenticated with check (ops.can_write_placements())', t);
+    execute format('create policy update_operations on ops.%I for update to authenticated using (ops.can_write_placements()) with check (ops.can_write_placements())', t);
+    execute format('create policy delete_operations on ops.%I for delete to authenticated using (ops.can_write_placements())', t);
+  end loop;
+end
+$$;
+
+-- What this file leaves behind, as the last thing on screen.
+select tablename as table_name,
+       policyname as policy,
+       cmd as applies_to
+  from pg_policies
+ where schemaname = 'ops'
+   and tablename in ('applicants', 'requests')
+ order by tablename, cmd, policyname;

@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { FileText, Trash2, Upload } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
 import { useTranslation } from '../../../i18n/useTranslation'
+import { useCurrentUser } from '../../../lib/useCurrentUser'
 import { SelectInput } from '../../../components/form'
 import type { Applicant } from '../../../types'
 
@@ -9,6 +10,7 @@ export default function DocumentsTab({ applicant }: { applicant: Applicant }) {
   const addApplicantDocument = useAppStore((s) => s.addApplicantDocument)
   const deleteApplicantDocument = useAppStore((s) => s.deleteApplicantDocument)
   const { t, language } = useTranslation()
+  const { canRemove } = useCurrentUser()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const CATEGORIES = [
@@ -69,7 +71,13 @@ export default function DocumentsTab({ applicant }: { applicant: Applicant }) {
                 </p>
               </div>
             </div>
-            <button type="button" onClick={() => handleDelete(doc.id, doc.name)} className="text-ink-3 hover:text-neg">
+            <button
+              type="button"
+              aria-label={t('action_delete')}
+              hidden={!canRemove('directory')}
+              onClick={() => handleDelete(doc.id, doc.name)}
+              className="text-ink-3 hover:text-neg"
+            >
               <Trash2 className="size-3.5" />
             </button>
           </div>

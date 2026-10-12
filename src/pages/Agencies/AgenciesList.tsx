@@ -47,7 +47,7 @@ export default function AgenciesList() {
   const setAgencyChargeStatus = useAppStore((s) => s.setAgencyChargeStatus)
   const paymentSources = useAppStore((s) => s.paymentSources)
   const { t, tb, language } = useTranslation()
-  const { canEdit, canView } = useCurrentUser()
+  const { canEdit, canRemove, canView } = useCurrentUser()
   const seesMoney = canView('finance')
 
   const [addOpen, setAddOpen] = useState(false)
@@ -92,7 +92,7 @@ export default function AgenciesList() {
         title={t('nav_agencies')}
         subtitle={t('page_agencies_subtitle')}
         actions={
-          canEdit('operations') && (
+          canEdit('directory') && (
             <PrimaryButton onClick={() => setAddOpen(true)}>
               <Plus className="size-3.5" /> {language === 'ar' ? 'إضافة مكتب' : 'Add Agency'}
             </PrimaryButton>
@@ -150,7 +150,7 @@ export default function AgenciesList() {
                     <button
                       type="button"
                       aria-label={t('action_delete')}
-                      hidden={!canEdit('operations')}
+                      hidden={!canRemove('directory')}
                       onClick={(e) => {
                         e.stopPropagation()
                         handleDelete(agency)

@@ -32,7 +32,7 @@ await db.exec(`
   end $$;
 `)
 
-for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql', 'db/migrations/0009_managers_and_categories.sql', 'db/migrations/0010_cv_and_bonus.sql', 'db/migrations/0011_cv_images.sql', 'db/migrations/0012_caller_identity.sql', 'db/migrations/0013_company_contact.sql', 'db/migrations/0014_experience_span.sql', 'db/migrations/0015_super_admin.sql']) {
+for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql', 'db/migrations/0009_managers_and_categories.sql', 'db/migrations/0010_cv_and_bonus.sql', 'db/migrations/0011_cv_images.sql', 'db/migrations/0012_caller_identity.sql', 'db/migrations/0013_company_contact.sql', 'db/migrations/0014_experience_span.sql', 'db/migrations/0015_super_admin.sql', 'db/migrations/0016_directory_and_placements.sql']) {
   try {
     await db.exec(readFileSync(file, 'utf8'))
     console.log(`applied  ${file}`)
@@ -56,7 +56,7 @@ const shape = async () => JSON.stringify((await db.query(`
 const before = await shape()
 let rerunError = null
 try {
-  for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql', 'db/migrations/0009_managers_and_categories.sql', 'db/migrations/0010_cv_and_bonus.sql', 'db/migrations/0011_cv_images.sql', 'db/migrations/0012_caller_identity.sql', 'db/migrations/0013_company_contact.sql', 'db/migrations/0014_experience_span.sql', 'db/migrations/0015_super_admin.sql']) {
+  for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql', 'db/migrations/0009_managers_and_categories.sql', 'db/migrations/0010_cv_and_bonus.sql', 'db/migrations/0011_cv_images.sql', 'db/migrations/0012_caller_identity.sql', 'db/migrations/0013_company_contact.sql', 'db/migrations/0014_experience_span.sql', 'db/migrations/0015_super_admin.sql', 'db/migrations/0016_directory_and_placements.sql']) {
     await db.exec(readFileSync(file, 'utf8'))
   }
 } catch (error) {
@@ -154,12 +154,14 @@ for (const [label, sql, expected] of reads) {
 
 console.log()
 const writes = [
-  ['operations', `insert into ops.employers (english_name) values ('New One')`, { super_admin: true, admin: true, accountant: false, data_entry: true }],
+  ['a directory record', `insert into ops.employers (english_name) values ('New One')`, { super_admin: true, admin: true, accountant: false, data_entry: true }],
+  ['correcting one', `update ops.applicants set phone = '+966 55 000 0000' where english_name = 'Maricel S. Dela Cruz'`, { super_admin: true, admin: true, accountant: false, data_entry: true }],
+  ['a placement', `insert into ops.requests (type, applicant_id, employer_id) values ('Domestic', 'bbbbbbbb-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001')`, { super_admin: true, admin: true, data_entry: false }],
   ['finance', `insert into ops.office_expenses (item_en, amount, spent_on) values ('Courier', 25, '2026-09-20')`, { super_admin: true, admin: true, accountant: true, data_entry: false }],
   ['system', `insert into ops.professions (name_en) values ('Gardener')`, { super_admin: true, admin: false, accountant: false, data_entry: false }],
   ['a stage', `insert into ops.status_definitions (label, pipeline, step_order) values ('Fingerprints', 'Domestic', 11)`, { super_admin: true, admin: false, accountant: false, data_entry: false }],
   ['a manager', `insert into ops.managers (name_en) values ('A Third Partner')`, { super_admin: true, admin: false, data_entry: false }],
-  ['deleting a worker', `delete from ops.applicants where english_name = 'Not Published'`, { super_admin: true, admin: true, accountant: false, data_entry: true }],
+  ['deleting a worker', `delete from ops.applicants where english_name = 'Not Published'`, { super_admin: true, admin: true, accountant: false, data_entry: false }],
 ]
 for (const [label, sql, expected] of writes) {
   for (const [who, allowed] of Object.entries(expected)) {

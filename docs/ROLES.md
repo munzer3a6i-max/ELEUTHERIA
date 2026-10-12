@@ -2,12 +2,29 @@
 
 Four roles, set per member of staff in Settings -> Users.
 
-| Role | Finance pages | Caseload | System pages |
-| --- | --- | --- | --- |
-| **Super administrator** | read and change | read and change | read and change |
-| **Administrator** | read and change | read and change | not shown |
-| **Accountant** | read and change | read only | not shown |
-| **Data entry** | not shown | read and change | not shown |
+| Role | Directories | Placements | Finance pages | System pages |
+| --- | --- | --- | --- | --- |
+| **Super administrator** | add, edit, delete | add, edit, delete | add, edit, delete | add, edit, delete |
+| **Administrator** | add, edit, delete | add, edit, delete | add, edit, delete | not shown |
+| **Accountant** | read only | read only | add, edit, delete | not shown |
+| **Data entry** | **add and edit only** | not shown | not shown | not shown |
+
+The **directories** are the four lists the office keeps -- workers, employers,
+partner offices and agents -- and the records behind them. **Placements** are
+the recruitment itself: the requests, their stage log, and the dashboard that
+reports on them.
+
+Data entry gets the directories and nothing else. No dashboard, no
+recruitments, no invoices, no reports: those pages are not in their sidebar and
+typing the address in says so plainly. On the pages they do have, they add and
+correct records but delete nothing -- a wrong entry is corrected, not removed --
+and that holds down to the small bins beside an experience entry, a document or
+a CV. Their applicant profiles show the information and the files, without the
+stages tab or the financial one.
+
+Deleting is its own right, not part of editing. Every store action whose name
+begins with `delete` is checked against that right rather than against editing,
+so a new one is covered the day it is written.
 
 The **System pages** are Staff, Addons, Notifications and Settings: who may
 sign in and with what role, the lists the office runs on (countries, cities,

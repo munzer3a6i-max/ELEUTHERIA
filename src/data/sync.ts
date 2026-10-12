@@ -21,7 +21,7 @@ import { requireSupabase, isSupabaseConfigured } from '../lib/supabase'
 import { assemble, type Assembled, type Tables } from './assemble'
 import { diff, project, TABLE_ORDER, type Change, type Projection, type TableName } from './project'
 import { useAppStore } from '../store/useAppStore'
-import { canEdit } from '../lib/permissions'
+import { canEdit, canRemove, type Area } from '../lib/permissions'
 import { setServerOwnsBilling } from './ownership'
 import { allStatusDefinitions } from './stageSeeds'
 import type { StaffRole } from '../types'
@@ -33,7 +33,7 @@ const DERIVED: TableName[] = ['agent_commissions', 'agency_charges', 'backouts']
 const MOVES_MONEY: TableName[] = ['request_status_history', 'applicants', 'agents', 'agency_contracts']
 
 /** Which area a table belongs to, so a role is not asked to write what it cannot. */
-const AREA: Record<TableName, 'finance' | 'operations' | 'system'> = {
+const AREA: Record<TableName, Area> = {
   settings: 'system',
   countries: 'system',
   cities: 'system',
@@ -41,16 +41,16 @@ const AREA: Record<TableName, 'finance' | 'operations' | 'system'> = {
   payment_sources: 'system',
   status_definitions: 'system',
   staff: 'system',
-  agencies: 'operations',
-  agents: 'operations',
-  employers: 'operations',
-  applicants: 'operations',
-  applicant_experience: 'operations',
-  applicant_education: 'operations',
-  applicant_documents: 'operations',
-  applicant_notes: 'operations',
-  requests: 'operations',
-  request_status_history: 'operations',
+  agencies: 'directory',
+  agents: 'directory',
+  employers: 'directory',
+  applicants: 'directory',
+  applicant_experience: 'directory',
+  applicant_education: 'directory',
+  applicant_documents: 'directory',
+  applicant_notes: 'directory',
+  requests: 'placements',
+  request_status_history: 'placements',
   invoices: 'finance',
   invoice_payments: 'finance',
   payroll_entries: 'finance',
@@ -60,7 +60,7 @@ const AREA: Record<TableName, 'finance' | 'operations' | 'system'> = {
   agent_commissions: 'finance',
   backouts: 'finance',
   backout_costs: 'finance',
-  notifications: 'operations',
+  notifications: 'system',
 }
 
 export type SyncState =
@@ -194,7 +194,9 @@ async function flush(): Promise<void> {
     // Children go before their parents, which is this list backwards.
     for (const change of [...batch].reverse()) {
       if (change.deletes.length === 0) continue
-      if (!canEdit(role, AREA[change.table]) || DERIVED.includes(change.table)) continue
+      // Removing a row is its own right, and a role that may correct a record
+      // is not always allowed to take it away.
+      if (!canRemove(role, AREA[change.table]) || DERIVED.includes(change.table)) continue
       const { data, error } = await client.from(change.table).delete().in('id', change.deletes).select('id')
       if (error) throw new Error(`${change.table}: ${error.message}`)
       // A delete the rules forbid removes nothing and reports success, so the

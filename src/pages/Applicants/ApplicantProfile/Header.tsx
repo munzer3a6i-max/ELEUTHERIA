@@ -127,7 +127,7 @@ export default function Header({
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
           <button
             type="button"
-            hidden={!canEdit('operations')}
+            hidden={!canEdit('directory')}
             onClick={() => fileInputRef.current?.click()}
             className="mt-2 flex items-center gap-1 rounded-control border border-line-strong bg-raised px-2.5 py-1 text-[10px] text-ink-2 shadow-sm hover:border-accent-line"
           >
@@ -142,7 +142,7 @@ export default function Header({
             </h1>
             <select
               value={applicant.status}
-              disabled={!canEdit('operations')}
+              disabled={!canEdit('directory')}
               onChange={(e) => handleStatusChange(e.target.value as ApplicantStatus)}
               aria-label={language === 'ar' ? 'حالة العاملة' : 'Worker status'}
               className={`rounded-control border px-2 py-0.5 text-[10px] font-bold focus:outline-none ${STATUS_TONE[applicant.status]}`}
@@ -160,13 +160,13 @@ export default function Header({
                 applicant.cvLinkedToWebsite
                   ? 'border-info/40 bg-info-soft text-info'
                   : 'border-line-strong bg-raised text-ink-3'
-              } ${canEdit('operations') ? '' : 'pointer-events-none opacity-60'}`}
+              } ${canEdit('directory') ? '' : 'pointer-events-none opacity-60'}`}
             >
               <input
                 type="checkbox"
                 className="sr-only"
                 checked={applicant.cvLinkedToWebsite}
-                disabled={!canEdit('operations')}
+                disabled={!canEdit('directory')}
                 onChange={(e) => handlePublish(e.target.checked)}
               />
               <Globe className="size-3" />

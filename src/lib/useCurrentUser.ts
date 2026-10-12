@@ -1,5 +1,5 @@
 import { useAppStore } from '../store/useAppStore'
-import { canEdit, canView, type Area } from './permissions'
+import { canEdit, canRemove, canView, type Area } from './permissions'
 import type { StaffMember, StaffRole } from '../types'
 
 export interface CurrentUser {
@@ -9,6 +9,8 @@ export interface CurrentUser {
   canView: (area: Area) => boolean
   /** May this person change things in this area? */
   canEdit: (area: Area) => boolean
+  /** May this person delete a record here? Narrower than editing. */
+  canRemove: (area: Area) => boolean
 }
 
 /**
@@ -28,5 +30,6 @@ export function useCurrentUser(): CurrentUser {
     role,
     canView: (area) => canView(role, area),
     canEdit: (area) => canEdit(role, area),
+    canRemove: (area) => canRemove(role, area),
   }
 }

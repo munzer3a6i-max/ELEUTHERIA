@@ -112,7 +112,7 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
               </div>
               <button
                 type="button"
-                hidden={!canEdit('operations')}
+                hidden={!canEdit('placements')}
                 onClick={() => setStatusModal('add')}
                 className="flex items-center gap-1.5 rounded-control bg-accent px-3 py-1.5 text-[11px] font-bold text-accent-ink hover:bg-accent"
               >
@@ -140,7 +140,7 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
                     </div>
                     <div className="flex shrink-0 items-center gap-3">
                       <span className="font-bold text-accent-text">{formatMoney(h.cost)}</span>
-                      {canEdit('operations') && (
+                      {canEdit('placements') && (
                         <>
                           <button type="button" onClick={() => setStatusModal(h)} className="text-ink-3 hover:text-accent-text">
                             <Pencil className="size-3.5" />

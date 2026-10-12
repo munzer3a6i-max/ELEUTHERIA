@@ -60,7 +60,7 @@ import { allStatusDefinitions } from '../data/stageSeeds'
 import { syncDerivedBilling } from '../lib/derivedBilling'
 import { BACKOUT_STAGE, SELECTION_STAGE, milestoneCost, movesForward, statusFromStages } from '../data/businessRules'
 import { serverOwnsBilling } from '../data/ownership'
-import { canEdit, type Area } from '../lib/permissions'
+import { canEdit, canRemove, type Area } from '../lib/permissions'
 import { DEFAULT_PASSWORD, makeCredentials, normaliseUsername, verifyPassword } from '../lib/passwords'
 
 /*
@@ -80,32 +80,32 @@ const ACTION_AREA: Record<string, Area> = {
   markAllNotificationsRead: 'personal',
   addNotification: 'personal',
 
-  addApplicant: 'operations',
-  updateApplicant: 'operations',
-  setApplicantStatus: 'operations',
-  deleteApplicant: 'operations',
-  addExperience: 'operations',
-  deleteExperience: 'operations',
-  addEducation: 'operations',
-  deleteEducation: 'operations',
-  addApplicantDocument: 'operations',
-  deleteApplicantDocument: 'operations',
-  addApplicantNote: 'operations',
-  addEmployer: 'operations',
-  updateEmployer: 'operations',
-  deleteEmployer: 'operations',
-  addAgency: 'operations',
-  updateAgency: 'operations',
-  deleteAgency: 'operations',
-  addAgent: 'operations',
-  updateAgent: 'operations',
-  deleteAgent: 'operations',
-  addRequest: 'operations',
-  updateRequest: 'operations',
-  deleteRequest: 'operations',
-  addStatusUpdate: 'operations',
-  updateStatusUpdate: 'operations',
-  deleteStatusUpdate: 'operations',
+  addApplicant: 'directory',
+  updateApplicant: 'directory',
+  setApplicantStatus: 'directory',
+  deleteApplicant: 'directory',
+  addExperience: 'directory',
+  deleteExperience: 'directory',
+  addEducation: 'directory',
+  deleteEducation: 'directory',
+  addApplicantDocument: 'directory',
+  deleteApplicantDocument: 'directory',
+  addApplicantNote: 'directory',
+  addEmployer: 'directory',
+  updateEmployer: 'directory',
+  deleteEmployer: 'directory',
+  addAgency: 'directory',
+  updateAgency: 'directory',
+  deleteAgency: 'directory',
+  addAgent: 'directory',
+  updateAgent: 'directory',
+  deleteAgent: 'directory',
+  addRequest: 'placements',
+  updateRequest: 'placements',
+  deleteRequest: 'placements',
+  addStatusUpdate: 'placements',
+  updateStatusUpdate: 'placements',
+  deleteStatusUpdate: 'placements',
 
   addInvoice: 'finance',
   updateInvoiceStatus: 'finance',
@@ -171,9 +171,18 @@ function guarded<T extends object>(slice: T, role: () => StaffRole): T {
       continue
     }
     const area = ACTION_AREA[name] ?? 'system'
+    // Anything called delete... takes a record away, which is a narrower right
+    // than changing one: a role may be trusted to correct a file without being
+    // trusted to remove it. Naming the action is enough to be covered by this,
+    // so a new one is not quietly left open.
+    const removes = name.startsWith('delete')
     out[name] = (...args: unknown[]) => {
-      if (!canEdit(role(), area)) {
-        console.warn(`${name} is a ${area} action and this role cannot make ${area} changes.`)
+      if (removes ? !canRemove(role(), area) : !canEdit(role(), area)) {
+        console.warn(
+          removes
+            ? `${name} removes a ${area} record and this role may not do that.`
+            : `${name} is a ${area} action and this role cannot make ${area} changes.`,
+        )
         return undefined
       }
       return (value as (...a: unknown[]) => unknown)(...args)

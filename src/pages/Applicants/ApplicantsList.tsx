@@ -28,7 +28,7 @@ export default function ApplicantsList() {
   const addApplicant = useAppStore((s) => s.addApplicant)
   const addRequest = useAppStore((s) => s.addRequest)
   const { t, tb, language } = useTranslation()
-  const { canEdit, member } = useCurrentUser()
+  const { canEdit, canRemove, member } = useCurrentUser()
   const navigate = useNavigate()
 
   const [searchParams, setSearchParams] = useSearchParams()
@@ -85,7 +85,7 @@ export default function ApplicantsList() {
         title={t('nav_applicants')}
         subtitle={`${applicants.length} ${language === 'ar' ? 'متقدم' : 'applicants'}`}
         actions={
-          canEdit('operations') && (
+          canEdit('directory') && (
             <PrimaryButton onClick={() => setAddOpen(true)} className="flex items-center gap-1.5">
               <Plus className="size-3.5" /> {language === 'ar' ? 'إضافة متقدم' : 'Add Applicant'}
             </PrimaryButton>
@@ -224,7 +224,7 @@ export default function ApplicantsList() {
                     <button
                       type="button"
                       aria-label={t('action_delete')}
-                      hidden={!canEdit('operations')}
+                      hidden={!canRemove('directory')}
                       onClick={() => askToDelete(a)}
                       className="text-ink-3 hover:text-neg"
                     >
