@@ -51,6 +51,7 @@ import type {
   RecruitmentAgency,
   RecruitmentRequest,
   StaffMember,
+  StatusDefinition,
   StatusHistoryEntry,
 } from '../types'
 
@@ -140,6 +141,30 @@ export const expenseCategoryRows = {
   table: 'expense_categories',
   out: (c: ExpenseCategory): Row => ({ id: c.id, name_en: c.name.en, name_ar: c.name.ar }),
   in: (r: Row): ExpenseCategory => ({ id: text(r.id), name: { en: text(r.name_en), ar: text(r.name_ar) } }),
+}
+
+export const statusDefinitionRows = {
+  table: 'status_definitions',
+  out: (d: StatusDefinition): Row => ({
+    id: d.id,
+    label: d.label,
+    pipeline: d.pipeline,
+    step_order: d.order,
+    default_cost: d.defaultCost,
+    cost_note: d.costNote,
+    is_terminal: d.isTerminal,
+    is_exception: d.isException,
+  }),
+  in: (r: Row): StatusDefinition => ({
+    id: text(r.id),
+    label: text(r.label),
+    pipeline: text(r.pipeline) as StatusDefinition['pipeline'],
+    order: Number(r.step_order ?? 0),
+    defaultCost: money(r.default_cost),
+    costNote: text(r.cost_note),
+    isTerminal: Boolean(r.is_terminal),
+    isException: Boolean(r.is_exception),
+  }),
 }
 
 export const paymentSourceRows = {

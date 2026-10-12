@@ -21,7 +21,7 @@
 // path, so nothing is lost and it is obvious what still needs uploading.
 
 import { createHash, randomUUID } from 'node:crypto'
-import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, rmSync, readdirSync } from 'node:fs'
 import { createRequire } from 'node:module'
 
 const [, , path, ...flags] = process.argv
@@ -122,19 +122,23 @@ if (toSql) {
   const db = new PGlite('db/.pglite-dryrun')
   await db.waitReady
   const fresh = (await db.query(`select to_regclass('ops.staff') as t`)).rows[0].t === null
-  if (fresh) {
-    await db.exec(`
-      create schema if not exists auth;
-      create or replace function auth.uid() returns uuid language sql stable as $$ select null::uuid $$;
-      do $$ begin
-        if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if;
-        if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if;
-      end $$;
-    `)
-    for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql',
-                        'db/migrations/0004_derived_billing.sql']) {
-      await db.exec(readFileSync(file, 'utf8'))
-    }
+  await db.exec(`
+    create schema if not exists auth;
+    create or replace function auth.uid() returns uuid language sql stable as $$ select null::uuid $$;
+    do $$ begin
+      if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if;
+      if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if;
+    end $$;
+  `)
+  // Everything a plain Postgres can take, in order: the storage migrations
+  // (0003, 0005, 0006) belong to Supabase and are applied only there. They run
+  // on every pass, not just the first, so a dry-run database left over from
+  // before a migration is brought up to date rather than failing against it --
+  // which is exactly what re-runnable migrations are for.
+  for (const file of readdirSync('db/migrations')
+    .filter((name) => name.endsWith('.sql') && !/^(0003|0005|0006)/.test(name))
+    .sort()) {
+    await db.exec(readFileSync(`db/migrations/${file}`, 'utf8'))
   }
   query = (sql, params = []) => db.query(sql, params)
   close = () => db.close()

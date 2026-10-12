@@ -1,127 +1,148 @@
 -- Run this whole file once in the Supabase SQL editor.
 --
--- It is the three migrations the dashboard is waiting for, in order. All of it
--- is additive: it adds columns and replaces two functions, and it does not
--- change, move or delete a single row you already have. Running it twice is
--- safe.
+-- It is the one migration the dashboard is waiting for. It is additive: it
+-- widens the list of roles a staff row may hold, adds one table for the stages
+-- of the recruitment, and moves the right to write the System tables from the
+-- administrator to the new super administrator. It does not change, move or
+-- delete a single row of your data. Running it twice is safe.
 --
---   1. Who the database thinks is signed in   (fixes the refused uploads)
---   2. The office's website, phones and email (the CV letterhead)
---   3. The years a job ran, from and to       (the experience entries)
+-- The last statement promotes Maan and Elmunzer Abdelkarim by name and prints
+-- the staff list, so the last thing on screen is who holds what. If a name
+-- there is spelled differently in your staff list, edit the WHERE clause at the
+-- bottom before running -- or run the file, read the list, and fix it with:
 --
--- Nothing else here needs doing afterwards. The catch-up file is separate on
--- purpose, because that one wants reading before it is run.
-
--- ===== 1 of 3 — who the database thinks is signed in -----------------------------
-
--- Who is signed in, however the question is asked.
+--   update ops.staff set role = 'super_admin' where username = 'theirusername';
 --
--- Every rule in this database turns on ops.is_staff(), which turns on
--- auth.uid(), which reads the signed-in account out of a setting the server
--- puts on the connection before it runs anything.
+-- An office with nobody holding this role cannot hand it out again, so check
+-- the printed list before closing the editor.
+
+-- The super administrator, and the stages as data.
 --
--- The catch is that there is more than one server. PostgREST, which the
--- dashboard's queries go through, sets request.jwt.claims. Storage, which
--- uploads go through, has set request.jwt.claim.sub as well, and older
--- projects' auth.uid() reads only one of the two. When the one it reads is
--- the one that service did not set, auth.uid() is null, the caller looks like
--- a stranger, and the upload is refused with a row level security error --
--- while every other screen in the dashboard works, because its queries come
--- in through the service that does set the setting auth.uid() reads.
+-- Two offices had grown into one role. Running the office -- the caseload and
+-- the money -- is one job; deciding who may sign in, what the lists hold and
+-- what the stages of a recruitment are is another, and it is the one that can
+-- hand itself out. They are separate roles now:
 --
--- So the identity is resolved here instead, from whichever of the two is
--- present. It is still the signed-in account and nothing else: both settings
--- are put there by the server out of a verified token, and neither can be set
--- by anybody calling in.
-
-create or replace function ops.caller_uid() returns uuid
-language plpgsql stable as $$
-declare sub text;
-begin
-  -- Whatever the project's own auth.uid() manages first, since that is what
-  -- the rest of Supabase agrees on.
-  begin
-    sub := auth.uid()::text;
-  exception when others then
-    sub := null;
-  end;
-  if sub is not null then return sub::uuid; end if;
-
-  sub := nullif(current_setting('request.jwt.claim.sub', true), '');
-  if sub is null then
-    begin
-      sub := nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub';
-    exception when others then
-      sub := null;
-    end;
-  end if;
-
-  begin
-    return sub::uuid;
-  exception when others then
-    return null;
-  end;
-end
-$$;
-
--- The one line that changes: the caller's id now comes from the function
--- above rather than from auth.uid() alone.
-create or replace function ops.current_role() returns text
-language sql stable security definer set search_path = ops, pg_temp as $$
-  select role from ops.staff where user_id = ops.caller_uid() and status = 'Active';
-$$;
-
-
--- ===== 2 of 3 — the office on the CV letterhead ----------------------------------
-
--- How to reach the office, on the document itself.
+--   super_admin  everything, and the only one who may write the System tables.
+--   admin        the whole caseload and the whole of the money, nothing more.
 --
--- The CV's letterhead prints the licence number and, under it, the line
--- somebody holding the document rings: the website and the agency's numbers.
--- They were part of the template from the start and had no home in the
--- database, so they are three columns on the one settings row rather than
--- something typed into the page by hand each time.
-
-alter table ops.settings add column if not exists website text not null default 'eleutheria.agency';
-alter table ops.settings add column if not exists phones  text not null default 'PH +63 961 278 0038 · PH +63 960 401 4714';
-alter table ops.settings add column if not exists email   text not null default 'info@eleutheria.agency';
-
-comment on column ops.settings.phones is
-  'Printed on the CV letterhead as written, so the separators and country prefixes are the office''s choice.';
-
-
--- ===== 3 of 3 — the years a job ran ----------------------------------------------
-
--- The years she was there.
+-- Nothing already stored changes meaning: an existing administrator keeps
+-- every power they had except the System pages, and the promotion to
+-- super_admin is a one-line update at the bottom of this file.
 --
--- The office types a range -- 2021 to 2023 -- because that is what her
--- passport, her contract and her own memory say. The count of years is worked
--- out from it rather than typed a second time and disagreed with, so `years`
--- stays exactly what it was and everything reading it, the website's cards
--- included, is untouched.
---
--- Null on an entry recorded before the range existed, which is why neither
--- column is required: a job somebody logged as "4 years" and nothing else is
--- still a job she did.
+-- Re-runnable, like every migration here.
 
-alter table ops.applicant_experience add column if not exists from_year smallint;
-alter table ops.applicant_experience add column if not exists to_year   smallint;
+-- ------------------------------------------------------------- the role ---
 
+alter table ops.staff drop constraint if exists staff_role_check;
+alter table ops.staff add constraint staff_role_check
+  check (role in ('super_admin', 'admin', 'accountant', 'data_entry'));
+
+create or replace function ops.is_super_admin() returns boolean
+language sql stable as $$ select ops.current_role() = 'super_admin' $$;
+
+-- Everywhere that already said "administrator" keeps meaning it, with the
+-- super administrator counted in: they can do anything an administrator can.
+create or replace function ops.is_admin() returns boolean
+language sql stable as $$ select ops.current_role() in ('admin', 'super_admin') $$;
+
+create or replace function ops.can_read_finance() returns boolean
+language sql stable as $$ select ops.current_role() in ('admin', 'super_admin', 'accountant') $$;
+
+create or replace function ops.can_write_finance() returns boolean
+language sql stable as $$ select ops.current_role() in ('admin', 'super_admin', 'accountant') $$;
+
+create or replace function ops.can_write_operations() returns boolean
+language sql stable as $$ select ops.current_role() in ('admin', 'super_admin', 'data_entry') $$;
+
+-- --------------------------------------------------------- the stages -----
+
+-- The stages of each pipeline. They were compiled into the app, which meant
+-- adding one needed a developer; they are rows now, and the Statuses page
+-- writes them. A stage already logged against a placement keeps its label in
+-- that log whatever happens here: the log records what was done, not what the
+-- list says today.
+create table if not exists ops.status_definitions (
+  id            uuid primary key default gen_random_uuid(),
+  label         text not null,
+  pipeline      text not null check (pipeline in ('Domestic', 'Profession', 'Invoice')),
+  step_order    smallint not null default 0,
+  default_cost  numeric(12,2) not null default 0 check (default_cost >= 0),
+  cost_note     text not null default '',
+  is_terminal   boolean not null default false,
+  is_exception  boolean not null default false,
+  created_at    timestamptz not null default now()
+);
+
+create index if not exists ops_status_definitions_pipeline_order_idx
+  on ops.status_definitions (pipeline, step_order);
+
+-- ------------------------------------------------- who writes the system ---
+
+-- Reading stays as it was: everyone signed in needs these to fill a dropdown
+-- or name a stage. Writing is the super administrator's alone -- hiding the
+-- page stops an honest mistake, refusing the write stops the rest.
 do $$
+declare t text;
 begin
-  if not exists (
-    select 1 from pg_constraint where conname = 'applicant_experience_span_sane'
-  ) then
-    alter table ops.applicant_experience add constraint applicant_experience_span_sane
-      check (
-        (from_year is null or from_year between 1950 and 2100)
-        and (to_year is null or to_year between 1950 and 2100)
-        and (from_year is null or to_year is null or to_year >= from_year)
-      );
-  end if;
+  foreach t in array array['countries', 'cities', 'professions', 'managers', 'expense_categories',
+                           'payment_sources', 'staff', 'settings', 'status_definitions']
+  loop
+    execute format('alter table ops.%I enable row level security', t);
+    execute format('alter table ops.%I force row level security', t);
+    execute format('drop policy if exists read_all_staff on ops.%I', t);
+    execute format('drop policy if exists write_admin on ops.%I', t);
+    execute format('drop policy if exists update_admin on ops.%I', t);
+    execute format('drop policy if exists delete_admin on ops.%I', t);
+    execute format('drop policy if exists write_super on ops.%I', t);
+    execute format('drop policy if exists update_super on ops.%I', t);
+    execute format('drop policy if exists delete_super on ops.%I', t);
+    execute format('create policy read_all_staff on ops.%I for select to authenticated using (ops.is_staff())', t);
+    execute format('create policy write_super on ops.%I for insert to authenticated with check (ops.is_super_admin())', t);
+    execute format('create policy update_super on ops.%I for update to authenticated using (ops.is_super_admin()) with check (ops.is_super_admin())', t);
+    execute format('create policy delete_super on ops.%I for delete to authenticated using (ops.is_super_admin())', t);
+  end loop;
 end
 $$;
 
-comment on column ops.applicant_experience.from_year is
-  'The year the job started. Null on an entry recorded before the range existed.';
+grant select, insert, update, delete on ops.status_definitions to authenticated;
 
+-- ------------------------------------------- nobody is the unknown user ----
+
+-- The guard that stops somebody handing themselves a role compared the row
+-- being written with the signed-in account using "is not distinct from", which
+-- treats two unknowns as the same person: a staff row with no account linked to
+-- it yet matched a caller with no account -- the SQL editor, among others --
+-- and so its role could never be changed at all. A caller who is nobody is not
+-- the person on the row; the rule is otherwise exactly as it was.
+create or replace function ops.guard_own_account() returns trigger
+language plpgsql security definer set search_path = ops, pg_temp as $$
+begin
+  if auth.uid() is not null
+     and new.user_id = auth.uid()
+     and (new.role is distinct from old.role or new.status is distinct from old.status) then
+    raise exception 'You cannot change your own role or status.';
+  end if;
+  return new;
+end;
+$$;
+
+-- ------------------------------------------------------ the two of them ----
+
+-- Promote by name, and only where the account is real: an office with nobody
+-- holding this role can never hand it out again. Edit the names if yours are
+-- spelled differently, or run it again after adding the person.
+update ops.staff
+   set role = 'super_admin'
+ where status = 'Active'
+   and (
+     lower(name_en) like '%maan%'
+     or lower(name_en) like '%munzer%'
+     or lower(name_en) like '%abdelkarim%'
+     or lower(coalesce(email, '')) like '%munzer%'
+   );
+
+-- What this file did, as the last thing on screen.
+select name_en as staff, role, status
+  from ops.staff
+ order by (role = 'super_admin') desc, name_en;

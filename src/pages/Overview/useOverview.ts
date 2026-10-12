@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
-import { useAppStore, currentStatus, formatMoney, invoiceBalance, payrollTotal } from '../../store/useAppStore'
+import { useAppStore, currentStatus, formatMoney, invoiceBalance, payrollTotal, useStatusDefinitions } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
 import { pipelineForType } from '../../data/statusPipelines'
-import type { Applicant, Bilingual, RecruitmentRequest } from '../../types'
+import type { Applicant, Bilingual, RecruitmentRequest, StatusDefinition } from '../../types'
 
 /** Days a request can sit on the same stage before the desk should look at it. */
 const STALLED_AFTER_DAYS = 21
@@ -52,10 +52,10 @@ function daysBetween(from: string, to: Date): number {
   return Math.floor((to.getTime() - start.getTime()) / 86_400_000)
 }
 
-function isActive(request: RecruitmentRequest): boolean {
+function isActive(request: RecruitmentRequest, definitions: StatusDefinition[]): boolean {
   const status = currentStatus(request)
   if (!status) return true
-  const definition = pipelineForType(request.type).find((step) => step.label === status)
+  const definition = pipelineForType(request.type, definitions).find((step) => step.label === status)
   return !definition?.isTerminal
 }
 
@@ -72,6 +72,7 @@ export function useOverview() {
   const agencyCharges = useAppStore((s) => s.agencyCharges)
   const backouts = useAppStore((s) => s.backouts)
   const currency = useAppStore((s) => s.settings.currency)
+  const definitions = useStatusDefinitions()
   const { language } = useTranslation()
 
   return useMemo(() => {
@@ -80,7 +81,7 @@ export function useOverview() {
     const nameOf = (applicant: Applicant | undefined) =>
       applicant ? pick({ en: applicant.englishName, ar: applicant.arabicName }) : '-'
 
-    const activeRequests = requests.filter(isActive)
+    const activeRequests = requests.filter((request) => isActive(request, definitions))
 
     // Where the active caseload actually sits, in pipeline order.
     const stageCounts = new Map<string, number>()
@@ -89,7 +90,7 @@ export function useOverview() {
       if (!status) continue
       stageCounts.set(status, (stageCounts.get(status) ?? 0) + 1)
     }
-    const order = new Map(pipelineForType('Domestic').map((step) => [step.label, step.order]))
+    const order = new Map(pipelineForType('Domestic', definitions).map((step) => [step.label, step.order]))
     const stages: StageCount[] = [...stageCounts.entries()]
       .map(([label, count]) => ({ label, count }))
       .sort((a, b) => (order.get(a.label) ?? 99) - (order.get(b.label) ?? 99))
@@ -286,6 +287,7 @@ export function useOverview() {
     agencyCharges,
     backouts,
     currency,
+    definitions,
     language,
   ])
 }

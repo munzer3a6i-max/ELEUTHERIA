@@ -320,7 +320,7 @@ export const translations = {
   users_suspend: { en: 'Suspend', ar: 'إيقاف' },
   users_restore: { en: 'Restore', ar: 'إعادة تفعيل' },
   users_delete_confirm: { en: 'Remove this account? They will not be able to sign in again.', ar: 'حذف هذا الحساب؟ لن يتمكن من الدخول مرة أخرى.' },
-  users_last_admin: { en: 'This is the only administrator left. Give someone else the role first.', ar: 'هذا هو المسؤول الوحيد المتبقي. امنح الدور لشخص آخر أولًا.' },
+  users_last_admin: { en: 'This is the only super administrator left. Give someone else the role first.', ar: 'هذا هو المسؤول الأعلى الوحيد المتبقي. امنح الدور لشخص آخر أولًا.' },
   users_demote_self: { en: 'This takes your own administrator access away, and this page with it. Continue?', ar: 'سيؤدي هذا إلى سحب صلاحية المسؤول منك وإغلاق هذه الصفحة. هل تريد المتابعة؟' },
   users_self: { en: 'You cannot suspend or remove the account you are signed in as.', ar: 'لا يمكنك إيقاف أو حذف الحساب الذي تستخدمه الآن.' },
   users_username_taken: { en: 'Somebody already has that username.', ar: 'اسم المستخدم مستخدم بالفعل.' },
@@ -375,6 +375,23 @@ export const translations = {
   agency_workers_none: {
     en: 'No worker on file came through this office yet. The office is named on her own record, under Recruitment Agency.',
     ar: 'لا توجد عاملة مسجلة قادمة عبر هذا المكتب بعد. يُحدَّد المكتب في سجل العاملة نفسها ضمن مكتب الاستقدام.',
+  },
+  stage_add: { en: 'Add stage', ar: 'إضافة مرحلة' },
+  stage_edit: { en: 'Edit stage', ar: 'تعديل مرحلة' },
+  stage_none: { en: 'No stage on this pipeline yet.', ar: 'لا توجد مراحل في هذا المسار بعد.' },
+  stage_hint: {
+    en: 'These are the stages the office logs against a placement. Changing one changes the forms and the stepper; a stage already logged keeps the wording it was logged under, because the log records what was done.',
+    ar: 'هذه هي المراحل التي تُسجَّل على كل توظيف. تعديل أي منها ينعكس على النماذج ومؤشر المراحل، أما المرحلة المسجَّلة سابقًا فتبقى بنصّها وقت تسجيلها، لأن السجل يوثّق ما جرى فعلًا.',
+  },
+  stage_note_hint: {
+    en: 'Shown under the amount when this stage is logged \u2014 say whether the figure is fixed or typed each time.',
+    ar: 'تظهر أسفل المبلغ عند تسجيل هذه المرحلة \u2014 وضّح ما إذا كان المبلغ ثابتًا أم يُدخل في كل مرة.',
+  },
+  stage_terminal: { en: 'Reaching this stage ends the placement', ar: 'الوصول إلى هذه المرحلة ينهي التوظيف' },
+  stage_exception: { en: 'An exception \u2014 it can happen at any point', ar: 'استثناء \u2014 يمكن أن يقع في أي وقت' },
+  stage_delete_confirm: {
+    en: 'Remove this stage from the pipeline?',
+    ar: 'إزالة هذه المرحلة من المسار؟',
   },
   addons_managers: { en: 'Managers', ar: 'المسؤولون' },
   addons_expense_categories: { en: 'Expense Categories', ar: 'بنود المصروفات' },

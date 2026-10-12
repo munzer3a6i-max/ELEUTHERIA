@@ -1,12 +1,29 @@
 # Who can do what
 
-Three roles, set per member of staff on the Staff page.
+Four roles, set per member of staff in Settings -> Users.
 
-| Role | Finance pages | Caseload | Staff, addons, settings |
+| Role | Finance pages | Caseload | System pages |
 | --- | --- | --- | --- |
-| **Administrator** | read and change | read and change | read and change |
+| **Super administrator** | read and change | read and change | read and change |
+| **Administrator** | read and change | read and change | not shown |
 | **Accountant** | read and change | read only | not shown |
 | **Data entry** | not shown | read and change | not shown |
+
+The **System pages** are Staff, Addons, Notifications and Settings: who may
+sign in and with what role, the lists the office runs on (countries, cities,
+professions, managers, expense categories, payment sources), the stages of the
+recruitment itself, and the company's own details. That group is the super
+administrator's; nobody else is shown that it exists, and typing the address in
+does not get them there either.
+
+Running the office and deciding how the system works are different jobs, and
+the second one can hand itself out -- a super administrator can make anybody
+else a super administrator -- which is why it is held by the owners rather than
+by whoever runs the desk that week.
+
+The app refuses to leave itself without one: the last active super
+administrator cannot be demoted, suspended or deleted, because nobody would be
+left who could hand the role back out.
 
 "Finance pages" means Accounting and everything under it — the Financial
 Center, payroll, agency accounts, office expenses, backouts and the accounting
@@ -19,8 +36,22 @@ but cannot change it. Data entry never sees the finance pages at all; on the
 dashboard they get the caseload figures and the alerts about stalled files and
 expiring passports, not the ones about money.
 
-A few things everyone can do regardless of role: read their notifications,
+A few things everyone can do regardless of role: open their own account page,
 switch language and theme.
+
+## The stages are data
+
+The stages of each pipeline live in `ops.status_definitions`, and **Addons ->
+Statuses** is where they are added, reworded and removed, with the details the
+rest of the system reads: where the stage sits in the order, what it costs by
+default, the note shown under the amount when it is logged, and whether
+reaching it ends the placement (terminal) or interrupts it (an exception, which
+can happen at any point and so carries no place in the order).
+
+A stage already logged against a placement keeps its label in that log whatever
+happens to the list afterwards: the log records what was done, not what the
+list says today. Removing a stage therefore loses nothing that was recorded --
+it only stops the stage being offered again.
 
 ## Two layers, on purpose
 
@@ -43,7 +74,7 @@ rather than being open by default.
 
 ## Accounts
 
-Administrators manage accounts in **Settings → Users**: add someone with a
+Super administrators manage accounts in **Settings → Users**: add someone with a
 username, a starting password and a role; change any of those later; reset a
 forgotten password; suspend an account so it cannot sign in; or remove it
 entirely. Everyone else reaches **My Account** from the profile menu, where

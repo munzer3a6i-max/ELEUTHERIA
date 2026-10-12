@@ -1,9 +1,14 @@
 /*
   Who may see what, and who may change it.
 
-  Three roles, and one rule each:
+  Four roles, and one rule each:
 
-    admin        - everything.
+    super admin  - everything, and the only one who may open the System pages:
+                   the people, the lists the office runs on, the stages of the
+                   recruitment itself, and the settings. Whoever holds this can
+                   hand it to somebody else, so it is the keys to the building.
+    admin        - runs the office: the whole caseload and the whole of the
+                   money, and nothing that changes how the system itself works.
     accountant   - reads the whole office, changes only the money.
     data entry   - works the caseload, and the money pages are not there.
 
@@ -23,9 +28,13 @@ interface Rule {
 }
 
 const RULES: Record<StaffRole, Rule> = {
-  admin: {
+  super_admin: {
     view: ['finance', 'operations', 'system', 'personal'],
     edit: ['finance', 'operations', 'system', 'personal'],
+  },
+  admin: {
+    view: ['finance', 'operations', 'personal'],
+    edit: ['finance', 'operations', 'personal'],
   },
   accountant: {
     // Sees the caseload because the money only makes sense beside it, but the
@@ -49,18 +58,23 @@ export function canEdit(role: StaffRole, area: Area): boolean {
 
 /** The label a person sees for their own role. */
 export const ROLE_LABEL: Record<StaffRole, { en: string; ar: string }> = {
+  super_admin: { en: 'Super Administrator', ar: 'مسؤول أعلى' },
   admin: { en: 'Administrator', ar: 'مسؤول' },
   accountant: { en: 'Accountant', ar: 'محاسب' },
   data_entry: { en: 'Data Entry', ar: 'إدخال بيانات' },
 }
 
 export const ROLE_SUMMARY: Record<StaffRole, { en: string; ar: string }> = {
-  admin: { en: 'Full access to everything', ar: 'صلاحية كاملة على كل شيء' },
+  super_admin: {
+    en: 'Everything, plus the System pages: people, permissions, the stages and the settings',
+    ar: 'كل شيء، إضافة إلى صفحات النظام: المستخدمون والصلاحيات والمراحل والإعدادات',
+  },
+  admin: { en: 'The whole caseload and the whole of the money', ar: 'كل الملفات وكل الحسابات' },
   accountant: { en: 'Changes the finance pages, reads the rest', ar: 'يعدّل الصفحات المالية ويطّلع على الباقي' },
   data_entry: { en: 'Works the caseload, no finance pages', ar: 'يعمل على الملفات دون الصفحات المالية' },
 }
 
-export const ROLES: StaffRole[] = ['admin', 'accountant', 'data_entry']
+export const ROLES: StaffRole[] = ['super_admin', 'admin', 'accountant', 'data_entry']
 
 /**
  * The area a path belongs to. Longest prefix wins, so /accounting/payroll is
@@ -78,7 +92,7 @@ const ROUTE_AREAS: [string, Area][] = [
   ['/staff', 'system'],
   ['/addons', 'system'],
   ['/settings', 'system'],
-  ['/notifications', 'personal'],
+  ['/notifications', 'system'],
   ['/account', 'personal'],
   ['/', 'operations'],
 ]

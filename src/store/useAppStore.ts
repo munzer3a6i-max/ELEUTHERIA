@@ -16,6 +16,7 @@ import type {
   ExpenseCategory,
   PaymentSource,
   AppNotification,
+  StatusDefinition,
   StatusHistoryEntry,
   ApplicantStatus,
   Language,
@@ -55,6 +56,7 @@ import {
   seedAgencyCharges,
   seedBackouts,
 } from '../data/seed'
+import { allStatusDefinitions } from '../data/stageSeeds'
 import { syncDerivedBilling } from '../lib/derivedBilling'
 import { BACKOUT_STAGE, SELECTION_STAGE, milestoneCost, movesForward, statusFromStages } from '../data/businessRules'
 import { serverOwnsBilling } from '../data/ownership'
@@ -209,14 +211,15 @@ function usernameTaken(staff: StaffMember[], username: string, exceptId?: string
 }
 
 /**
- * True when this account is the only active administrator left. Removing,
- * suspending or demoting that one would lock everybody out of the settings,
- * and nothing in a browser-only app can undo it.
+ * True when this account is the only active super administrator left. Removing,
+ * suspending or demoting that one would leave nobody who can open the System
+ * pages -- and so nobody who can hand the role back out. Nothing in the app can
+ * undo that.
  */
 function isLastActiveAdmin(staff: StaffMember[], id: string): boolean {
   const member = staff.find((m) => m.id === id)
-  if (!member || member.role !== 'admin' || member.status !== 'Active') return false
-  return staff.filter((m) => m.role === 'admin' && m.status === 'Active').length <= 1
+  if (!member || member.role !== 'super_admin' || member.status !== 'Active') return false
+  return staff.filter((m) => m.role === 'super_admin' && m.status === 'Active').length <= 1
 }
 
 /** The request a worker's own status change should be written against. */
@@ -325,6 +328,8 @@ export interface AppState {
   cities: City[]
   professions: Profession[]
   managers: Manager[]
+  /** The stages of each pipeline, as the office has them now. */
+  statusDefinitions: StatusDefinition[]
   expenseCategories: ExpenseCategory[]
   paymentSources: PaymentSource[]
   payroll: PayrollEntry[]
@@ -408,6 +413,10 @@ export interface AppState {
   deleteCity: (id: string) => void
   addProfession: (name: Profession['name']) => void
   deleteProfession: (id: string) => void
+  addStatusDefinition: (data: Omit<StatusDefinition, 'id'>) => void
+  updateStatusDefinition: (id: string, patch: Partial<Omit<StatusDefinition, 'id'>>) => void
+  deleteStatusDefinition: (id: string) => void
+
   addManager: (name: Manager['name']) => void
   deleteManager: (id: string) => void
   addExpenseCategory: (name: ExpenseCategory['name']) => void
@@ -463,6 +472,7 @@ export const useAppStore = create<AppState>()(
       cities: seedCities,
       professions: seedProfessions,
       managers: seedManagers,
+      statusDefinitions: allStatusDefinitions,
       expenseCategories: seedExpenseCategories,
       paymentSources: seedPaymentSources,
       payroll: seedPayroll,
@@ -796,7 +806,7 @@ export const useAppStore = create<AppState>()(
         const state = get()
         if (patch.username && usernameTaken(state.staff, patch.username, id)) return 'username-taken'
         // Somebody has to be able to get back into the settings.
-        if (patch.role && patch.role !== 'admin' && isLastActiveAdmin(state.staff, id)) return 'last-admin'
+        if (patch.role && patch.role !== 'super_admin' && isLastActiveAdmin(state.staff, id)) return 'last-admin'
         set((s) => ({
           staff: s.staff.map((m) =>
             m.id === id
@@ -839,6 +849,19 @@ export const useAppStore = create<AppState>()(
       deleteCity: (id) => set((s) => ({ cities: s.cities.filter((c) => c.id !== id) })),
       addProfession: (name) => set((s) => ({ professions: [...s.professions, { id: newId(), name }] })),
       deleteProfession: (id) => set((s) => ({ professions: s.professions.filter((p) => p.id !== id) })),
+      // Stages are the shape of the work itself, so they are the super
+      // administrator's to change. A stage already logged against a request
+      // keeps its label in that log whatever happens here -- the log records
+      // what was done, not what the list says today.
+      addStatusDefinition: (data) =>
+        set((s) => ({ statusDefinitions: [...s.statusDefinitions, { ...data, id: newId() }] })),
+      updateStatusDefinition: (id, patch) =>
+        set((s) => ({
+          statusDefinitions: s.statusDefinitions.map((d) => (d.id === id ? { ...d, ...patch } : d)),
+        })),
+      deleteStatusDefinition: (id) =>
+        set((s) => ({ statusDefinitions: s.statusDefinitions.filter((d) => d.id !== id) })),
+
       addManager: (name) => set((s) => ({ managers: [...s.managers, { id: newId(), name }] })),
       // Her record keeps pointing at a manager who has been removed only until
       // the next edit; the column is nulled here so nothing reads a ghost.
@@ -1016,6 +1039,10 @@ export const useAppStore = create<AppState>()(
           currentStaffId: '',
           agents: state.agents ?? seedAgents,
           managers: state.managers ?? seedManagers,
+          statusDefinitions:
+            state.statusDefinitions && state.statusDefinitions.length > 0
+              ? state.statusDefinitions
+              : allStatusDefinitions,
           expenseCategories: state.expenseCategories ?? seedExpenseCategories,
           agentCommissions: state.agentCommissions ?? [],
           agencyContracts: state.agencyContracts ?? seedAgencyContracts,
@@ -1093,6 +1120,15 @@ export function stageCost(request: RecruitmentRequest): number {
 export function requestCost(request: RecruitmentRequest, commissions: AgentCommission[]): number {
   const fees = commissions.reduce((sum, c) => (c.requestId === request.id ? sum + c.amount : sum), 0)
   return stageCost(request) + fees
+}
+
+/**
+ * The stages, as the screens should read them: what the office has saved, or
+ * the list the app ships with while the database has never been given one.
+ */
+export function useStatusDefinitions(): StatusDefinition[] {
+  const stored = useAppStore((s) => s.statusDefinitions)
+  return stored.length > 0 ? stored : allStatusDefinitions
 }
 
 export function invoiceTotalPaid(invoice: Invoice): number {

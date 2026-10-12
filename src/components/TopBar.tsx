@@ -72,19 +72,23 @@ export default function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
           {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
         </button>
 
-        <button
-          type="button"
-          onClick={() => navigate('/notifications')}
-          aria-label={`${t('nav_notifications')}${unreadCount > 0 ? ` (${unreadCount})` : ''}`}
-          className="btn btn-ghost relative size-8 p-0"
-        >
-          <Bell className="size-4" />
-          {unreadCount > 0 && (
-            <span className="num absolute end-1 top-1 flex size-3.5 items-center justify-center rounded-pill bg-accent text-[9px] font-semibold text-accent-ink">
-              {unreadCount}
-            </span>
-          )}
-        </button>
+        {/* Notifications sit in the System group, so the bell is shown to the
+            people who can open that page and to nobody else. */}
+        {canView('system') && (
+          <button
+            type="button"
+            onClick={() => navigate('/notifications')}
+            aria-label={`${t('nav_notifications')}${unreadCount > 0 ? ` (${unreadCount})` : ''}`}
+            className="btn btn-ghost relative size-8 p-0"
+          >
+            <Bell className="size-4" />
+            {unreadCount > 0 && (
+              <span className="num absolute end-1 top-1 flex size-3.5 items-center justify-center rounded-pill bg-accent text-[9px] font-semibold text-accent-ink">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+        )}
 
         <div className="relative ms-0.5 border-s border-line ps-1.5 sm:ms-1.5 sm:ps-2.5">
           <button

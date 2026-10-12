@@ -93,7 +93,7 @@ export default function PayrollPanel({ currency }: { currency: string }) {
                     {member ? tb(member.name) : entry.staffId}
                   </span>
                   <span className="block text-[10px] text-ink-3">
-                    {member?.role === 'admin'
+                    {member?.role === 'admin' || member?.role === 'super_admin'
                       ? language === 'ar'
                         ? 'مدير'
                         : 'Admin'

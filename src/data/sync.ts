@@ -23,6 +23,7 @@ import { diff, project, TABLE_ORDER, type Change, type Projection, type TableNam
 import { useAppStore } from '../store/useAppStore'
 import { canEdit } from '../lib/permissions'
 import { setServerOwnsBilling } from './ownership'
+import { allStatusDefinitions } from './stageSeeds'
 import type { StaffRole } from '../types'
 
 /** Rows the database derives for itself. The client settles, never creates. */
@@ -38,6 +39,7 @@ const AREA: Record<TableName, 'finance' | 'operations' | 'system'> = {
   cities: 'system',
   professions: 'system',
   payment_sources: 'system',
+  status_definitions: 'system',
   staff: 'system',
   agencies: 'operations',
   agents: 'operations',
@@ -255,6 +257,12 @@ export async function connect(): Promise<void> {
   setServerOwnsBilling(true)
   status({ kind: 'ready', savedAt: null })
 
+  // A database that has never been given the stages gets the ones the app
+  // ships with, written by the first super administrator to sign in. Until
+  // somebody who may write them does, every screen falls back to the same
+  // list locally, so nobody is left looking at an empty pipeline.
+  const seedStages = loaded.statusDefinitions.length === 0
+
   watching?.()
   watching = useAppStore.subscribe((state) => {
     if (applying) {
@@ -268,6 +276,8 @@ export async function connect(): Promise<void> {
     queue.push(...changes)
     void flush()
   })
+
+  if (seedStages) useAppStore.setState({ statusDefinitions: allStatusDefinitions })
 }
 
 export function disconnect(): void {

@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Plus, Trash2 } from 'lucide-react'
-import { useAppStore } from '../../store/useAppStore'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { useAppStore, useStatusDefinitions } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
-import { allStatusDefinitions } from '../../data/statusPipelines'
 import PageHeader from '../../components/PageHeader'
 import Modal from '../../components/Modal'
 import { BilingualField, Field, SelectInput, TextInput, PrimaryButton, SecondaryButton } from '../../components/form'
-import type { PaymentSourceScope } from '../../types'
+import type { PaymentSourceScope, StatusDefinition } from '../../types'
 
 const TABS = ['countries', 'cities', 'professions', 'managers', 'expense-categories', 'payment-sources', 'statuses'] as const
 type Tab = (typeof TABS)[number]
@@ -392,18 +391,45 @@ function PaymentSourcesTab() {
 }
 
 function StatusesTab() {
-  const { language } = useTranslation()
+  const definitions = useStatusDefinitions()
+  const addStatusDefinition = useAppStore((s) => s.addStatusDefinition)
+  const updateStatusDefinition = useAppStore((s) => s.updateStatusDefinition)
+  const deleteStatusDefinition = useAppStore((s) => s.deleteStatusDefinition)
+  const requests = useAppStore((s) => s.requests)
+  const { t, language } = useTranslation()
   const [pipelineFilter, setPipelineFilter] = useState<'Domestic' | 'Profession' | 'Invoice'>('Domestic')
-  const filtered = allStatusDefinitions.filter((s) => s.pipeline === pipelineFilter).sort((a, b) => a.order - b.order)
+  const [editing, setEditing] = useState<StatusDefinition | 'new' | null>(null)
+
+  const filtered = definitions
+    .filter((d) => d.pipeline === pipelineFilter)
+    // Same order the rest of the system walks them in: the exceptions, which
+    // can happen at any point, after the stages that have a place.
+    .sort((a, b) => Number(a.isException) - Number(b.isException) || a.order - b.order)
   const counts = {
-    Domestic: allStatusDefinitions.filter((s) => s.pipeline === 'Domestic').length,
-    Profession: allStatusDefinitions.filter((s) => s.pipeline === 'Profession').length,
-    Invoice: allStatusDefinitions.filter((s) => s.pipeline === 'Invoice').length,
+    Domestic: definitions.filter((d) => d.pipeline === 'Domestic').length,
+    Profession: definitions.filter((d) => d.pipeline === 'Profession').length,
+    Invoice: definitions.filter((d) => d.pipeline === 'Invoice').length,
+  }
+
+  /** How many placements have this stage in their log, which a delete leaves behind. */
+  function loggedCount(label: string): number {
+    return requests.filter((r) => r.statusHistory.some((h) => h.status === label)).length
+  }
+
+  function handleDelete(definition: StatusDefinition) {
+    const logged = loggedCount(definition.label)
+    const warning =
+      logged === 0
+        ? t('stage_delete_confirm')
+        : language === 'ar'
+          ? `${t('stage_delete_confirm')}\n\n${logged} طلبًا سجّل هذه المرحلة بالفعل، وتبقى في سجلّه كما هي.`
+          : `${t('stage_delete_confirm')}\n\n${logged} request(s) already logged it; those logs keep the stage exactly as it was.`
+    if (window.confirm(warning)) deleteStatusDefinition(definition.id)
   }
 
   return (
     <div className="rounded-panel border border-line bg-surface p-4">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <p className="text-[11px] text-ink-3">
           {language === 'ar' ? 'ثلاثة مسارات منفصلة' : 'Three separate pipelines'} - {counts.Domestic} {language === 'ar' ? 'منزلي' : 'Domestic'} + {counts.Profession} {language === 'ar' ? 'مهني' : 'Profession'} + {counts.Invoice} {language === 'ar' ? 'فواتير' : 'Invoice'} = {counts.Domestic + counts.Profession + counts.Invoice} {language === 'ar' ? 'إجمالي' : 'total'}
         </p>
@@ -420,8 +446,12 @@ function StatusesTab() {
               {p === 'Domestic' ? (language === 'ar' ? 'منزلي' : 'Domestic') : p === 'Profession' ? (language === 'ar' ? 'مهني' : 'Profession') : (language === 'ar' ? 'فواتير' : 'Invoice')}
             </button>
           ))}
+          <PrimaryButton onClick={() => setEditing('new')} className="ms-1 flex items-center gap-1.5">
+            <Plus className="size-3.5" /> {t('stage_add')}
+          </PrimaryButton>
         </div>
       </div>
+      <p className="mb-3 text-[10.5px] leading-relaxed text-ink-3">{t('stage_hint')}</p>
       <div className="overflow-x-auto">
         <table className="data-table">
         <thead>
@@ -430,24 +460,168 @@ function StatusesTab() {
             <th className="py-2 pe-3">{language === 'ar' ? 'الحالة' : 'Status'}</th>
             <th className="py-2 pe-3">{language === 'ar' ? 'التكلفة الافتراضية' : 'Default Cost'}</th>
             <th className="py-2">{language === 'ar' ? 'ملاحظة' : 'Note'}</th>
+            <th className="py-2 text-end">{t('label_action')}</th>
           </tr>
         </thead>
         <tbody>
-          {filtered.map((s) => (
-            <tr key={s.id} className="text-xs">
-              <td className="py-2 pe-3 text-ink-3">{s.order || '-'}</td>
+          {filtered.map((d) => (
+            <tr key={d.id} className="text-xs">
+              <td className="py-2 pe-3 text-ink-3">{d.order || '-'}</td>
               <td className="py-2 pe-3 text-ink">
-                {s.label}
-                {s.isException && <span className="ms-1.5 rounded-control bg-accent/20 px-1.5 py-0.5 text-[9px] text-accent-text">exception</span>}
-                {s.isTerminal && !s.isException && <span className="ms-1.5 rounded-control bg-pos/20 px-1.5 py-0.5 text-[9px] text-pos">terminal</span>}
+                {d.label}
+                {d.isException && <span className="ms-1.5 rounded-control bg-accent/20 px-1.5 py-0.5 text-[9px] text-accent-text">exception</span>}
+                {d.isTerminal && !d.isException && <span className="ms-1.5 rounded-control bg-pos/20 px-1.5 py-0.5 text-[9px] text-pos">terminal</span>}
               </td>
-              <td className="py-2 pe-3 text-ink-2">{s.defaultCost > 0 ? `$${s.defaultCost.toFixed(2)}` : '-'}</td>
-              <td className="py-2 text-ink-3">{s.costNote}</td>
+              <td className="py-2 pe-3 text-ink-2">{d.defaultCost > 0 ? `$${d.defaultCost.toFixed(2)}` : '-'}</td>
+              <td className="py-2 text-ink-3">{d.costNote}</td>
+              <td className="py-2 text-end">
+                <span className="flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    aria-label={t('action_edit')}
+                    onClick={() => setEditing(d)}
+                    className="text-ink-3 hover:text-accent-text"
+                  >
+                    <Pencil className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t('action_delete')}
+                    onClick={() => handleDelete(d)}
+                    className="text-ink-3 hover:text-neg"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </span>
+              </td>
             </tr>
           ))}
+          {filtered.length === 0 && (
+            <tr>
+              <td colSpan={5} className="py-8 text-center text-[11px] text-ink-3">
+                {t('stage_none')}
+              </td>
+            </tr>
+          )}
         </tbody>
         </table>
       </div>
+
+      {editing && (
+        <StageModal
+          definition={editing === 'new' ? null : editing}
+          pipeline={pipelineFilter}
+          nextOrder={Math.max(0, ...filtered.map((d) => d.order)) + 1}
+          onClose={() => setEditing(null)}
+          onSubmit={(data) => {
+            if (editing === 'new') addStatusDefinition(data)
+            else updateStatusDefinition(editing.id, data)
+            setEditing(null)
+          }}
+        />
+      )}
     </div>
+  )
+}
+
+/**
+ * One stage, with the details the rest of the system reads: where it sits in
+ * the order, what it costs by default, the note shown when it is logged, and
+ * whether reaching it ends the placement or interrupts it.
+ */
+function StageModal({
+  definition,
+  pipeline,
+  nextOrder,
+  onClose,
+  onSubmit,
+}: {
+  definition: StatusDefinition | null
+  pipeline: 'Domestic' | 'Profession' | 'Invoice'
+  nextOrder: number
+  onClose: () => void
+  onSubmit: (data: Omit<StatusDefinition, 'id'>) => void
+}) {
+  const { t, language } = useTranslation()
+  const [label, setLabel] = useState(definition?.label ?? '')
+  const [where, setWhere] = useState(definition?.pipeline ?? pipeline)
+  const [order, setOrder] = useState(String(definition?.order ?? nextOrder))
+  const [defaultCost, setDefaultCost] = useState(String(definition?.defaultCost ?? 0))
+  const [costNote, setCostNote] = useState(definition?.costNote ?? '')
+  const [isTerminal, setIsTerminal] = useState(definition?.isTerminal ?? false)
+  const [isException, setIsException] = useState(definition?.isException ?? false)
+  const [problem, setProblem] = useState<string | null>(null)
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!label.trim()) {
+      setProblem(language === 'ar' ? 'اسم المرحلة مطلوب.' : 'The stage needs a name.')
+      return
+    }
+    onSubmit({
+      label: label.trim(),
+      pipeline: where,
+      // An exception can happen at any point, so it carries no place in the walk.
+      order: isException ? 0 : Number(order) || 0,
+      defaultCost: Number(defaultCost) || 0,
+      costNote: costNote.trim(),
+      isTerminal,
+      isException,
+    })
+  }
+
+  return (
+    <Modal title={definition ? t('stage_edit') : t('stage_add')} onClose={onClose}>
+      <form onSubmit={handleSubmit}>
+        <Field label={language === 'ar' ? 'اسم المرحلة' : 'Stage name'}>
+          <TextInput value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Medical" />
+        </Field>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label={language === 'ar' ? 'المسار' : 'Pipeline'}>
+            <SelectInput value={where} onChange={(e) => setWhere(e.target.value as typeof where)}>
+              <option value="Domestic">{language === 'ar' ? 'منزلي' : 'Domestic'}</option>
+              <option value="Profession">{language === 'ar' ? 'مهني' : 'Profession'}</option>
+              <option value="Invoice">{language === 'ar' ? 'فواتير' : 'Invoice'}</option>
+            </SelectInput>
+          </Field>
+          <Field label={language === 'ar' ? 'الترتيب' : 'Order'}>
+            <TextInput
+              type="number"
+              min={0}
+              value={isException ? '0' : order}
+              disabled={isException}
+              onChange={(e) => setOrder(e.target.value)}
+            />
+          </Field>
+        </div>
+        <Field label={`${language === 'ar' ? 'التكلفة الافتراضية' : 'Default cost'} (USD)`}>
+          <TextInput type="number" min={0} step="0.01" value={defaultCost} onChange={(e) => setDefaultCost(e.target.value)} />
+        </Field>
+        <Field label={language === 'ar' ? 'ملاحظة التكلفة' : 'Cost note'}>
+          <TextInput value={costNote} onChange={(e) => setCostNote(e.target.value)} />
+          <p className="mt-1 text-[10px] text-ink-3">{t('stage_note_hint')}</p>
+        </Field>
+        <label className="mb-2 flex items-center gap-2 text-[11px] text-ink-2">
+          <input type="checkbox" checked={isTerminal} onChange={(e) => setIsTerminal(e.target.checked)} />
+          {t('stage_terminal')}
+        </label>
+        <label className="mb-2 flex items-center gap-2 text-[11px] text-ink-2">
+          <input
+            type="checkbox"
+            checked={isException}
+            onChange={(e) => {
+              setIsException(e.target.checked)
+              if (e.target.checked) setIsTerminal(true)
+            }}
+          />
+          {t('stage_exception')}
+        </label>
+        {problem && <p className="mt-1 text-[11px] font-medium text-neg">{problem}</p>}
+        <div className="mt-4 flex justify-end gap-2">
+          <SecondaryButton onClick={onClose}>{t('action_cancel')}</SecondaryButton>
+          <PrimaryButton type="submit">{t('action_save')}</PrimaryButton>
+        </div>
+      </form>
+    </Modal>
   )
 }

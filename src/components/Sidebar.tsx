@@ -214,9 +214,12 @@ export default function Sidebar({
             </>
           )}
 
-          <GroupLabel>{language === 'ar' ? 'النظام' : 'System'}</GroupLabel>
+          {/* The System group is the super administrator's: the people, the
+              lists the office runs on, the stages themselves and the settings.
+              Nobody else is shown that it exists. */}
           {canView('system') && (
             <>
+              <GroupLabel>{language === 'ar' ? 'النظام' : 'System'}</GroupLabel>
               <NavItem to="/staff" icon={<UserCog className="size-4" />} label={t('nav_staff')} />
               <NavGroup icon={<Wallet className="size-4" />} label={t('nav_addons')} active={addonsActive}>
             <NavItem to="/addons/countries" icon={<Globe2 className="size-3.5" />} label={language === 'ar' ? 'الدول' : 'Countries'} />
@@ -225,11 +228,9 @@ export default function Sidebar({
             <NavItem to="/addons/payment-sources" icon={<Wallet className="size-3.5" />} label={language === 'ar' ? 'مصادر الدفع' : 'Payment Sources'} />
                 <NavItem to="/addons/statuses" icon={<ListChecks className="size-3.5" />} label={language === 'ar' ? 'الحالات' : 'Statuses'} />
               </NavGroup>
+              <NavItem to="/notifications" icon={<Bell className="size-4" />} label={t('nav_notifications')} badge={unreadCount} />
+              <NavItem to="/settings" icon={<Settings className="size-4" />} label={t('nav_settings')} />
             </>
-          )}
-          <NavItem to="/notifications" icon={<Bell className="size-4" />} label={t('nav_notifications')} badge={unreadCount} />
-          {canView('system') && (
-            <NavItem to="/settings" icon={<Settings className="size-4" />} label={t('nav_settings')} />
           )}
         </nav>
       </div>

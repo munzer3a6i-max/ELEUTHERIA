@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useAppStore } from '../store/useAppStore'
+import { useAppStore, useStatusDefinitions } from '../store/useAppStore'
 import { useTranslation } from '../i18n/useTranslation'
 import { pipelineForType, nextStatus } from '../data/statusPipelines'
 import { milestoneCost } from '../data/businessRules'
@@ -25,11 +25,12 @@ export default function StatusUpdateModal({
   onSubmit: (entry: Omit<StatusHistoryEntry, 'id'>) => void
 }) {
   const staff = useAppStore((s) => s.staff)
+  const definitions = useStatusDefinitions()
   const allPaymentSources = useAppStore((s) => s.paymentSources)
   const paymentSources = allPaymentSources.filter((p) => p.scopes.includes('Request Status'))
   const { t, language } = useTranslation()
-  const pipeline = pipelineForType(requestType)
-  const suggested = nextStatus(requestType, currentStatusLabel)
+  const pipeline = pipelineForType(requestType, definitions)
+  const suggested = nextStatus(requestType, currentStatusLabel, definitions)
 
   const [status, setStatus] = useState(initial?.status ?? suggested?.label ?? pipeline[0]?.label ?? '')
   const [date, setDate] = useState(initial?.date ?? new Date().toISOString().slice(0, 10))

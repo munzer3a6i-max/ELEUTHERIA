@@ -1,6 +1,7 @@
 import { Check, AlertTriangle } from 'lucide-react'
 import { computeStageProgress } from '../../../data/statusPipelines'
 import { useTranslation } from '../../../i18n/useTranslation'
+import { useStatusDefinitions } from '../../../store/useAppStore'
 import type { RecruitmentRequest, RequestType } from '../../../types'
 
 export default function StageStepper({
@@ -15,7 +16,8 @@ export default function StageStepper({
   compact?: boolean
 }) {
   const { language } = useTranslation()
-  const { steps, exception } = computeStageProgress(requestType, request?.statusHistory ?? [])
+  const definitions = useStatusDefinitions()
+  const { steps, exception } = computeStageProgress(requestType, request?.statusHistory ?? [], definitions)
 
   return (
     <div className="flex flex-col items-end gap-3.5 rounded-panel border border-line bg-surface p-[15px]">

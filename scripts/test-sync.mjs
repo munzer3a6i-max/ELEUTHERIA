@@ -28,7 +28,7 @@ const results = await page.evaluate(async () => {
 
   const store = useAppStore.getState()
   // Sign in locally so the role permits the edits below.
-  const admin = store.staff.find((m) => m.role === 'admin')
+  const admin = store.staff.find((m) => m.role === 'super_admin')
   useAppStore.setState({ currentStaffId: admin.id })
 
   const out = {}
