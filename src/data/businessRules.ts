@@ -5,7 +5,7 @@
   owes and is owed.
 */
 
-import type { ApplicantStatus } from '../types'
+import type { ApplicantStatus, RequestType } from '../types'
 
 /** A worker who leaves before this many months is brought home at our expense. */
 export const GUARANTEE_MONTHS = 3
@@ -69,6 +69,22 @@ export const CASH_ASSISTANCE = 150
 export function milestoneCost(label: string, hasAgent: boolean): number | null {
   if (label !== SELECTION_STAGE && label !== DEPLOYMENT_STAGE) return null
   return hasAgent ? 0 : CASH_ASSISTANCE
+}
+
+/**
+ * Who a placement belongs to, which is the line the month is split on.
+ *
+ * A domestic worker is the office's own: the office raises her, carries her
+ * costs and keeps what she earns, so no partner is named against her. A
+ * tradesman is the other way round -- he belongs to the partner who brought him
+ * in, and that partner's name is chosen when the request is raised.
+ *
+ * Null means the office. Her own record keeps whatever manager was set on it;
+ * this rule decides what the books do with it, so nothing is rewritten to
+ * follow a policy that may change again.
+ */
+export function placementOwnerId(type: RequestType, managerId: string | null): string | null {
+  return type === 'Domestic' ? null : managerId
 }
 
 /** Months between two dates, used to decide who carries a backout. */

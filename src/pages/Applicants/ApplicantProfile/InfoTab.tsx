@@ -79,15 +79,20 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
             <MetaField label={language === 'ar' ? 'رقم الهوية' : 'ID Number'} value={applicant.idNumber} onSave={(v) => updateApplicant(applicant.id, { idNumber: v })} />
             <MetaField label={t('label_phone')} value={applicant.phone} onSave={(v) => updateApplicant(applicant.id, { phone: v })} />
             <MetaField label={language === 'ar' ? 'الهاتف الأرضي' : 'Telephone'} value={applicant.telephone} onSave={(v) => updateApplicant(applicant.id, { telephone: v })} />
-            <SelectField
-              label={t('label_manager')}
-              value={applicant.managerId ?? ''}
-              onSave={(v) => updateApplicant(applicant.id, { managerId: v || null })}
-              options={[
-                { value: '', label: t('label_manager_none') },
-                ...managers.map((m) => ({ value: m.id, label: tb(m.name) })),
-              ]}
-            />
+            {applicant.type === 'Domestic' ? (
+              // A domestic worker is the office's own, so there is nothing to choose.
+              <MetaField label={t('label_owner')} value={t('label_owner_office')} readOnly />
+            ) : (
+              <SelectField
+                label={t('label_owner')}
+                value={applicant.managerId ?? ''}
+                onSave={(v) => updateApplicant(applicant.id, { managerId: v || null })}
+                options={[
+                  { value: '', label: t('label_owner_office') },
+                  ...managers.map((m) => ({ value: m.id, label: tb(m.name) })),
+                ]}
+              />
+            )}
           </div>
         </div>
 

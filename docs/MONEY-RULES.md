@@ -64,6 +64,24 @@ worker whose status never moved went on advertising herself after she had
 already flown. It only ever moves her forward: deleting a stage does not undo a
 status somebody set on purpose.
 
+## Who the placement belongs to
+
+The month is split on one line: **a domestic worker is the office's own, and a
+tradesman belongs to the partner who brought him in.** The office raises the
+domestic workers, carries their costs and keeps what they earn, so no partner
+is named against them -- the request form says "The office" and gives nothing to
+choose. A professional request asks which partner, and the answer is kept on
+his own record, because it is a fact about him rather than about one placement.
+
+The Reports page splits on exactly that rule (`placementOwnerId`), so a worker's
+old manager tag cannot quietly send a domestic placement to a partner. The tag
+itself is left alone: nothing is rewritten to follow a policy that may change
+again, and the split is one function away from changing with it.
+
+Who *raised* a request is a different question, and is not a choice: it is
+whoever was signed in. It shows on the request as "Raised by", and it is the
+staff member credited on the Selected stage that opens the request.
+
 ## The partner office
 
 A domestic worker is only placed through an office holding a **contract**,

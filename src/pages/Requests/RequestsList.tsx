@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Trash2 } from 'lucide-react'
 import { useAppStore, currentStatus } from '../../store/useAppStore'
+import { placementOwnerId } from '../../data/businessRules'
 import { useTranslation } from '../../i18n/useTranslation'
 import { useCurrentUser } from '../../lib/useCurrentUser'
 import PageHeader from '../../components/PageHeader'
@@ -15,9 +16,10 @@ export default function RequestsList() {
   const applicants = useAppStore((s) => s.applicants)
   const employers = useAppStore((s) => s.employers)
   const agencies = useAppStore((s) => s.agencies)
-  const staff = useAppStore((s) => s.staff)
   const deleteRequest = useAppStore((s) => s.deleteRequest)
   const addRequest = useAppStore((s) => s.addRequest)
+  const updateApplicant = useAppStore((s) => s.updateApplicant)
+  const managers = useAppStore((s) => s.managers)
   const { t, tb, language } = useTranslation()
   const { canEdit } = useCurrentUser()
   const navigate = useNavigate()
@@ -82,7 +84,7 @@ export default function RequestsList() {
               <th className="px-4 py-3">{language === 'ar' ? 'صاحب العمل' : 'Employer'}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'النوع' : 'Type'}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'الحالة الحالية' : 'Current Status'}</th>
-              <th className="px-4 py-3">{language === 'ar' ? 'الموظف المسؤول' : 'Officer'}</th>
+              <th className="px-4 py-3">{t('label_owner')}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'مكتب الاستقدام' : 'Agency'}</th>
               <th className="sticky end-0 bg-surface px-4 py-3 text-end">{t('label_action')}</th>
             </tr>
@@ -92,7 +94,7 @@ export default function RequestsList() {
               const applicant = applicants.find((a) => a.id === r.applicantId)
               const employer = employers.find((e) => e.id === r.employerId)
               const agency = agencies.find((a) => a.id === r.recruitmentAgencyId)
-              const officer = staff.find((s) => s.id === r.responsibleEmployeeId)
+              const owner = managers.find((m) => m.id === placementOwnerId(r.type, applicant?.managerId ?? null))
               const status = currentStatus(r)
               return (
                 <tr key={r.id} className="text-xs">
@@ -116,7 +118,7 @@ export default function RequestsList() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-ink-2">{officer ? tb(officer.name) : '-'}</td>
+                  <td className="px-4 py-3 text-ink-2">{owner ? tb(owner.name) : t('label_owner_office')}</td>
                   <td className="px-4 py-3 text-ink-2">{agency ? tb({ en: agency.englishName, ar: agency.arabicName }) : '-'}</td>
                   <td className="sticky end-0 bg-surface px-4 py-3 text-end">
                     <button
@@ -145,8 +147,15 @@ export default function RequestsList() {
       {addOpen && (
         <NewRequestModal
           onClose={() => setAddOpen(false)}
-          onSubmit={(data) => {
+          onSubmit={({ managerId, ...data }) => {
             const id = addRequest(data)
+            // A tradesman's partner is a fact about him, not about this one
+            // placement, so it is kept on his record -- which is where the
+            // month-end split reads it from.
+            const applicant = applicants.find((a) => a.id === data.applicantId)
+            if (data.type === 'Profession' && applicant && (applicant.managerId ?? '') !== managerId) {
+              updateApplicant(data.applicantId, { managerId: managerId || null })
+            }
             setAddOpen(false)
             navigate(`/recruitments/${id}`)
           }}
@@ -169,20 +178,26 @@ function NewRequestModal({
     responsibleEmployeeId: string
     recruitmentAgencyId: string
     mosanedNumber: string
+    /** The partner this placement belongs to; empty is the office. */
+    managerId: string
   }) => void
 }) {
   const applicants = useAppStore((s) => s.applicants)
   const employers = useAppStore((s) => s.employers)
   const agencies = useAppStore((s) => s.agencies)
+  const managers = useAppStore((s) => s.managers)
   const staff = useAppStore((s) => s.staff)
-  const { t, language } = useTranslation()
+  const { member } = useCurrentUser()
+  const { t, tb, language } = useTranslation()
 
   const [type, setType] = useState<RequestType>('Domestic')
   const [onlyAvailable, setOnlyAvailable] = useState(true)
   const [onlyActive, setOnlyActive] = useState(true)
   const [applicantId, setApplicantId] = useState('')
   const [employerId, setEmployerId] = useState('')
-  const [responsibleEmployeeId, setResponsibleEmployeeId] = useState(staff[0]?.id ?? '')
+  const [managerId, setManagerId] = useState('')
+  // Whoever is signed in is the one raising it; nobody picks that from a list.
+  const responsibleEmployeeId = member?.id ?? staff[0]?.id ?? ''
   const [recruitmentAgencyId, setRecruitmentAgencyId] = useState('')
   const [contractDurationMonths, setContractDurationMonths] = useState(24)
   const [mosanedNumber, setMosanedNumber] = useState('')
@@ -191,7 +206,9 @@ function NewRequestModal({
   /** Her own record already names the office she came through, so picking her fills it in. */
   function chooseApplicant(id: string) {
     setApplicantId(id)
-    setRecruitmentAgencyId(applicants.find((a) => a.id === id)?.recruitmentAgencyId ?? '')
+    const applicant = applicants.find((a) => a.id === id)
+    setRecruitmentAgencyId(applicant?.recruitmentAgencyId ?? '')
+    setManagerId(applicant?.managerId ?? '')
   }
 
   const applicantOptions = applicants
@@ -213,7 +230,6 @@ function NewRequestModal({
     const missing = [
       !applicantId && (language === 'ar' ? 'المتقدم' : 'the applicant'),
       !employerId && (language === 'ar' ? 'صاحب العمل' : 'the employer'),
-      !responsibleEmployeeId && (language === 'ar' ? 'الموظف المسؤول' : 'the responsible officer'),
     ].filter(Boolean) as string[]
     if (missing.length > 0) {
       setProblem(
@@ -224,7 +240,16 @@ function NewRequestModal({
       return
     }
     setProblem(null)
-    onSubmit({ type, contractDurationMonths, applicantId, employerId, responsibleEmployeeId, recruitmentAgencyId, mosanedNumber: mosanedNumber.trim() })
+    onSubmit({
+      type,
+      contractDurationMonths,
+      applicantId,
+      employerId,
+      responsibleEmployeeId,
+      recruitmentAgencyId,
+      mosanedNumber: mosanedNumber.trim(),
+      managerId: type === 'Domestic' ? '' : managerId,
+    })
   }
 
   return (
@@ -275,14 +300,24 @@ function NewRequestModal({
         </Field>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label={language === 'ar' ? 'الموظف المسؤول' : 'Responsible Officer'}>
-            <SelectInput value={responsibleEmployeeId} onChange={(e) => setResponsibleEmployeeId(e.target.value)}>
-              {staff.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name.en}
-                </option>
-              ))}
-            </SelectInput>
+          <Field label={t('label_owner')}>
+            {type === 'Domestic' ? (
+              <p className="rounded-control border border-line bg-sunken px-3 py-2 text-xs text-ink">
+                {t('label_owner_office')}
+              </p>
+            ) : (
+              <SelectInput value={managerId} onChange={(e) => setManagerId(e.target.value)}>
+                <option value="">{t('label_owner_office')}</option>
+                {managers.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {tb(m.name)}
+                  </option>
+                ))}
+              </SelectInput>
+            )}
+            <p className="mt-1 text-[10px] text-ink-3">
+              {type === 'Domestic' ? t('label_owner_office_note') : t('label_owner_partner_note')}
+            </p>
           </Field>
           <Field label={language === 'ar' ? 'مكتب الاستقدام' : 'Recruitment Agency'}>
             <SelectInput value={recruitmentAgencyId} onChange={(e) => setRecruitmentAgencyId(e.target.value)}>

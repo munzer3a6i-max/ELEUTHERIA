@@ -3,6 +3,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { Globe, Plus, Search, Trash2, User } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
+import { placementOwnerId } from '../../data/businessRules'
 import { useCurrentUser } from '../../lib/useCurrentUser'
 import PageHeader from '../../components/PageHeader'
 import StatusBadge from '../../components/StatusBadge'
@@ -125,7 +126,7 @@ export default function ApplicantsList() {
           <select
             value={managerFilter}
             onChange={(e) => setManagerFilter(e.target.value)}
-            aria-label={t('label_manager')}
+            aria-label={t('label_owner')}
             className="rounded-control border border-line bg-sunken px-2 py-1.5 text-[11px] text-ink focus:outline-none"
           >
             <option value="all">{t('label_manager_all')}</option>
@@ -134,7 +135,7 @@ export default function ApplicantsList() {
                 {tb(m.name)}
               </option>
             ))}
-            <option value="none">{t('label_manager_none')}</option>
+            <option value="none">{t('label_owner_office')}</option>
           </select>
         )}
         <div className="flex flex-wrap items-center gap-1">
@@ -161,7 +162,7 @@ export default function ApplicantsList() {
               <th className="px-4 py-3">{language === 'ar' ? 'المهنة' : 'Profession'}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'النوع' : 'Type'}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'مكتب الاستقدام' : 'Agency'}</th>
-              <th className="px-4 py-3">{t('label_manager')}</th>
+              <th className="px-4 py-3">{t('label_owner')}</th>
               <th className="px-4 py-3">{t('label_status')}</th>
               <th className="sticky end-0 bg-surface px-4 py-3 text-end">{t('label_action')}</th>
             </tr>
@@ -169,7 +170,7 @@ export default function ApplicantsList() {
           <tbody>
             {filtered.map((a) => {
               const agency = agencies.find((ag) => ag.id === a.recruitmentAgencyId)
-              const manager = managers.find((m) => m.id === a.managerId)
+              const owner = managers.find((m) => m.id === placementOwnerId(a.type, a.managerId))
               return (
                 <tr key={a.id} className="text-xs">
                   <td className="px-4 py-3">
@@ -187,7 +188,7 @@ export default function ApplicantsList() {
                     {a.type === 'Domestic' ? t('type_domestic') : t('type_profession')}
                   </td>
                   <td className="px-4 py-3 text-ink-2">{agency ? tb({ en: agency.englishName, ar: agency.arabicName }) : '-'}</td>
-                  <td className="px-4 py-3 text-ink-2">{manager ? tb(manager.name) : '-'}</td>
+                  <td className="px-4 py-3 text-ink-2">{owner ? tb(owner.name) : t('label_owner_office')}</td>
                   <td className="px-4 py-3">
                     <span className="flex items-center gap-1.5">
                       <StatusBadge status={a.status} />
@@ -362,7 +363,7 @@ function AddApplicantModal({
       telephone: '',
       recruitmentAgencyId: agencyId || null,
       agentId: agentId || null,
-      managerId: managerId || null,
+      managerId: type === 'Domestic' ? null : managerId || null,
       employerId,
     })
   }
@@ -458,16 +459,24 @@ function AddApplicantModal({
               : 'An agent earns half their fee at selection and the other half at deployment.'}
           </p>
         </Field>
-        <Field label={t('label_manager')}>
-          <SelectInput value={managerId} onChange={(e) => setManagerId(e.target.value)}>
-            <option value="">{t('label_manager_none')}</option>
-            {managers.map((m) => (
-              <option key={m.id} value={m.id}>
-                {tb(m.name)}
-              </option>
-            ))}
-          </SelectInput>
-          <p className="mt-1 text-[10.5px] text-ink-3">{t('label_manager_hint')}</p>
+        <Field label={t('label_owner')}>
+          {type === 'Domestic' ? (
+            <p className="rounded-control border border-line bg-sunken px-3 py-2 text-xs text-ink">
+              {t('label_owner_office')}
+            </p>
+          ) : (
+            <SelectInput value={managerId} onChange={(e) => setManagerId(e.target.value)}>
+              <option value="">{t('label_owner_office')}</option>
+              {managers.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {tb(m.name)}
+                </option>
+              ))}
+            </SelectInput>
+          )}
+          <p className="mt-1 text-[10.5px] text-ink-3">
+            {type === 'Domestic' ? t('label_owner_office_note') : t('label_owner_partner_note')}
+          </p>
         </Field>
         <Field label={language === 'ar' ? 'صاحب العمل (اختياري)' : 'Employer (optional)'}>
           <SelectInput value={employerId} onChange={(e) => setEmployerId(e.target.value)}>

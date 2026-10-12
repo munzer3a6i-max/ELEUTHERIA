@@ -344,17 +344,28 @@ export const translations = {
   label_manager_all: { en: 'All managers', ar: 'كل المسؤولين' },
   label_manager_none: { en: 'No manager', ar: 'بدون مسؤول' },
   label_manager_hint: {
-    en: 'Whose worker she is. The month is split along this line.',
-    ar: 'لمن تتبع هذه العاملة. تُقسَّم حسابات الشهر على هذا الأساس.',
+    en: 'The partner a tradesman belongs to. Domestic workers belong to the office.',
+    ar: 'الشريك الذي يتبع له العامل المهني. أما العاملات المنزليات فيتبعن المكتب.',
   },
+  label_owner: { en: 'Belongs to', ar: 'تتبع لـ' },
+  label_owner_office: { en: 'The office', ar: 'المكتب' },
+  label_owner_office_note: {
+    en: 'A domestic worker is the office\u2019s own, so the placement is counted to the office.',
+    ar: 'العاملة المنزلية تتبع المكتب نفسه، فتُحتسب نتيجة التوظيف للمكتب.',
+  },
+  label_owner_partner_note: {
+    en: 'A tradesman belongs to the partner who brought him in; leave it on the office if nobody did.',
+    ar: 'العامل المهني يتبع الشريك الذي أحضره؛ اتركه على المكتب إن لم يأتِ عن طريق أحد.',
+  },
+  label_raised_by: { en: 'Raised by', ar: 'أنشأ الطلب' },
   addons_managers: { en: 'Managers', ar: 'المسؤولون' },
   addons_expense_categories: { en: 'Expense Categories', ar: 'بنود المصروفات' },
   addons_add_manager: { en: 'Add Manager', ar: 'إضافة مسؤول' },
   addons_add_category: { en: 'Add Category', ar: 'إضافة بند' },
-  reports_by_manager: { en: 'By manager', ar: 'حسب المسؤول' },
+  reports_by_manager: { en: 'The office and the partners', ar: 'المكتب والشركاء' },
   reports_by_manager_sub: {
-    en: 'What each manager\u2019s workers brought in and cost over the period',
-    ar: 'ما حققته عاملات كل مسؤول وما كلّفته خلال الفترة',
+    en: 'What each side brought in and cost over the period \u2014 domestic workers count to the office, tradesmen to the partner who brought them',
+    ar: 'ما حققه كل طرف وما كلّفه خلال الفترة \u2014 العاملات المنزليات تُحتسب للمكتب، والعمال المهنيون للشريك الذي أحضرهم',
   },
   cv_import_title: { en: 'Read a CV she arrived with', ar: 'قراءة سيرة ذاتية جاهزة' },
   cv_import_subtitle: {

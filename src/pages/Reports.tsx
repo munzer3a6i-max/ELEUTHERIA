@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { useAppStore, requestCost, invoiceTotalPaid, formatMoney } from '../store/useAppStore'
 import { useTranslation } from '../i18n/useTranslation'
 import PageHeader from '../components/PageHeader'
+import { placementOwnerId } from '../data/businessRules'
+import type { RequestType } from '../types'
 
 type RangeOption = 'all' | '30' | '90' | 'year'
 
@@ -55,21 +57,22 @@ export default function Reports() {
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
   }, [scopedRequests, agencies, tb])
 
-  // What each manager's workers brought in and cost, which is the number the
-  // month is split on. A request's cost and an invoice's payments are counted
-  // against whoever the worker on it belongs to; a worker nobody has claimed
-  // is its own row rather than being quietly dropped.
+  // What each side brought in and cost, which is the number the month is split
+  // on. A domestic placement counts to the office whatever tag her own record
+  // carries; a tradesman counts to the partner who brought him in. A request's
+  // cost and an invoice's payments both follow that line.
   const byManager = useMemo(() => {
     const blank = () => ({ workers: new Set<string>(), requests: 0, cost: 0, collected: 0 })
     const map = new Map<string, ReturnType<typeof blank>>()
-    const nameFor = (applicantId: string | undefined) => {
-      const applicant = applicants.find((a) => a.id === applicantId)
-      const manager = managers.find((m) => m.id === applicant?.managerId)
-      return manager ? tb(manager.name) : t('label_manager_none')
+    const nameFor = (request: { type: RequestType; applicantId: string } | undefined) => {
+      const applicant = applicants.find((a) => a.id === request?.applicantId)
+      const owner = request ? placementOwnerId(request.type, applicant?.managerId ?? null) : null
+      const manager = managers.find((m) => m.id === owner)
+      return manager ? tb(manager.name) : t('label_owner_office')
     }
 
     for (const request of scopedRequests) {
-      const key = nameFor(request.applicantId)
+      const key = nameFor(request)
       const entry = map.get(key) ?? blank()
       entry.requests += 1
       entry.cost += requestCost(request, commissions)
@@ -78,7 +81,7 @@ export default function Reports() {
     }
     for (const invoice of scopedInvoices) {
       const request = requests.find((r) => r.id === invoice.recruitmentRequestId)
-      const key = nameFor(request?.applicantId)
+      const key = nameFor(request)
       const entry = map.get(key) ?? blank()
       entry.collected += invoiceTotalPaid(invoice)
       map.set(key, entry)
@@ -155,7 +158,7 @@ export default function Reports() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th className="py-2">{t('label_manager')}</th>
+                  <th className="py-2">{t('label_owner')}</th>
                   <th className="py-2 text-end">{language === 'ar' ? 'العاملات' : 'Workers'}</th>
                   <th className="py-2 text-end">{language === 'ar' ? 'الطلبات' : 'Requests'}</th>
                   <th className="py-2 text-end">{language === 'ar' ? 'المحصّل' : 'Collected'}</th>

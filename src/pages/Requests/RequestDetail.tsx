@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Receipt } from 'lucide-react'
 import { useAppStore, currentStatus, requestCost, formatMoney } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
+import { placementOwnerId } from '../../data/businessRules'
 import { useCurrentUser } from '../../lib/useCurrentUser'
 import NewInvoiceModal from '../Invoices/NewInvoiceModal'
 import StatusUpdateModal from '../../components/StatusUpdateModal'
@@ -36,6 +37,7 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
   const employers = useAppStore((s) => s.employers)
   const agencies = useAppStore((s) => s.agencies)
   const staff = useAppStore((s) => s.staff)
+  const managers = useAppStore((s) => s.managers)
   const paymentSources = useAppStore((s) => s.paymentSources)
   const invoices = useAppStore((s) => s.invoices)
   const commissions = useAppStore((s) => s.agentCommissions)
@@ -58,6 +60,7 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
   const employer = employers.find((e) => e.id === request.employerId)
   const agency = agencies.find((a) => a.id === request.recruitmentAgencyId)
   const officer = staff.find((s) => s.id === request.responsibleEmployeeId)
+  const owner = managers.find((m) => m.id === placementOwnerId(request.type, applicant?.managerId ?? null))
   const invoice = invoices.find((i) => i.recruitmentRequestId === requestId)
   const status = currentStatus(request)
   const totalCost = requestCost(request, commissions)
@@ -90,7 +93,7 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
         <SummaryCard label={language === 'ar' ? 'المتقدم' : 'Applicant'} value={applicant ? (language === 'ar' ? applicant.arabicName || applicant.englishName : applicant.englishName) : '-'} to={applicant ? `/applicants/${applicant.id}` : undefined} />
         <SummaryCard label={language === 'ar' ? 'صاحب العمل' : 'Employer'} value={employer ? tb({ en: employer.englishName, ar: employer.arabicName }) : '-'} />
         <SummaryCard label={language === 'ar' ? 'مكتب الاستقدام' : 'Agency'} value={agency ? tb({ en: agency.englishName, ar: agency.arabicName }) : '-'} />
-        <SummaryCard label={language === 'ar' ? 'الموظف المسؤول' : 'Officer'} value={officer ? tb(officer.name) : '-'} />
+        <SummaryCard label={t('label_owner')} value={owner ? tb(owner.name) : t('label_owner_office')} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -196,6 +199,7 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
               <DetailRow label="Mosaned #" value={request.mosanedNumber || '-'} />
               <DetailRow label={language === 'ar' ? 'تاريخ الإنشاء' : 'Created'} value={request.createdOn} />
               <DetailRow label={language === 'ar' ? 'آخر تحديث' : 'Last Updated'} value={request.updatedOn} />
+              <DetailRow label={t('label_raised_by')} value={officer ? tb(officer.name) : '-'} />
             </div>
           </div>
 
