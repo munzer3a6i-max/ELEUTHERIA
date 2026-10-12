@@ -337,15 +337,11 @@ function AddApplicantModal({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setProblem(null)
-    if (!englishName.trim() || !passportNo.trim()) return
-    // A domestic worker is only placed through an office holding a contract,
-    // which is what prices the placement. The Requests form refuses a request
-    // without one, and opening a request from here cannot be the way round it.
-    if (employerId && type === 'Domestic' && !agencyId) {
+    if (!englishName.trim() || !passportNo.trim()) {
       setProblem(
         language === 'ar'
-          ? 'العاملة المنزلية تُستقدم عبر مكتب شريك: اختر مكتب الاستقدام أو اترك صاحب العمل فارغًا الآن.'
-          : 'A domestic worker is placed through a partner office: choose the recruitment agency, or leave the employer empty for now.',
+          ? 'الاسم بالإنجليزية ورقم الجواز مطلوبان.'
+          : 'The English name and the passport number are both needed.',
       )
       return
     }

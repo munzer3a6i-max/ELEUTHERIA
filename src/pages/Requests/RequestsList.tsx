@@ -186,6 +186,13 @@ function NewRequestModal({
   const [recruitmentAgencyId, setRecruitmentAgencyId] = useState('')
   const [contractDurationMonths, setContractDurationMonths] = useState(24)
   const [mosanedNumber, setMosanedNumber] = useState('')
+  const [problem, setProblem] = useState<string | null>(null)
+
+  /** Her own record already names the office she came through, so picking her fills it in. */
+  function chooseApplicant(id: string) {
+    setApplicantId(id)
+    setRecruitmentAgencyId(applicants.find((a) => a.id === id)?.recruitmentAgencyId ?? '')
+  }
 
   const applicantOptions = applicants
     .filter((a) => a.type === type)
@@ -196,9 +203,27 @@ function NewRequestModal({
     .filter((e) => !onlyActive || e.status === 'Active')
     .map((e) => ({ value: e.id, label: e.englishName, sublabel: e.nationalAddressShortCode }))
 
+  // A request needs the three parties it is between. The partner office is not
+  // one of them: plenty of workers are sourced by the office itself, and a
+  // placement without one is a real placement -- it simply bills nobody. What
+  // is missing is said out loud either way, because a button that quietly does
+  // nothing looks like a broken system.
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!applicantId || !employerId || !responsibleEmployeeId || !recruitmentAgencyId) return
+    const missing = [
+      !applicantId && (language === 'ar' ? 'المتقدم' : 'the applicant'),
+      !employerId && (language === 'ar' ? 'صاحب العمل' : 'the employer'),
+      !responsibleEmployeeId && (language === 'ar' ? 'الموظف المسؤول' : 'the responsible officer'),
+    ].filter(Boolean) as string[]
+    if (missing.length > 0) {
+      setProblem(
+        language === 'ar'
+          ? `يلزم اختيار ${missing.join(' و')} قبل إنشاء الطلب.`
+          : `Choose ${missing.join(' and ')} before creating the request.`,
+      )
+      return
+    }
+    setProblem(null)
     onSubmit({ type, contractDurationMonths, applicantId, employerId, responsibleEmployeeId, recruitmentAgencyId, mosanedNumber: mosanedNumber.trim() })
   }
 
@@ -207,7 +232,7 @@ function NewRequestModal({
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={language === 'ar' ? 'النوع' : 'Type'}>
-            <SelectInput value={type} onChange={(e) => { setType(e.target.value as RequestType); setApplicantId('') }}>
+            <SelectInput value={type} onChange={(e) => { setType(e.target.value as RequestType); chooseApplicant('') }}>
               <option value="Domestic">{t('type_domestic')}</option>
               <option value="Profession">{t('type_profession')}</option>
             </SelectInput>
@@ -231,7 +256,7 @@ function NewRequestModal({
           <SearchableSelect
             options={applicantOptions}
             value={applicantId}
-            onChange={setApplicantId}
+            onChange={chooseApplicant}
             placeholder={language === 'ar' ? 'ابحث عن متقدم...' : 'Search applicant...'}
           />
         </Field>
@@ -268,6 +293,13 @@ function NewRequestModal({
                 </option>
               ))}
             </SelectInput>
+            {!recruitmentAgencyId && (
+              <p className="mt-1 text-[10px] text-ink-3">
+                {language === 'ar'
+                  ? 'اختياري. بدون مكتب شريك لا تُحتسب عليه أي مستحقات لهذا التوظيف.'
+                  : 'Optional. With no partner office, nothing is billed to one for this placement.'}
+              </p>
+            )}
           </Field>
         </div>
         <Field label="Mosaned #">
@@ -278,6 +310,8 @@ function NewRequestModal({
             className="w-full rounded-control border border-line bg-sunken px-3 py-2 text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-focus"
           />
         </Field>
+
+        {problem && <p className="mt-2 text-[11px] font-medium text-neg">{problem}</p>}
 
         <div className="mt-4 flex justify-end gap-2">
           <SecondaryButton onClick={onClose}>{t('action_cancel')}</SecondaryButton>
