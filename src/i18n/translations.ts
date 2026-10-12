@@ -355,6 +355,16 @@ export const translations = {
     en: 'The partner a tradesman belongs to. Domestic workers belong to the office.',
     ar: 'الشريك الذي يتبع له العامل المهني. أما العاملات المنزليات فيتبعن المكتب.',
   },
+  label_employer: { en: 'Employer', ar: 'صاحب العمل' },
+  label_employer_none: { en: 'No employer yet', ar: 'بدون صاحب عمل بعد' },
+  label_employer_moves: {
+    en: 'Changes the employer on her placement.',
+    ar: 'يغيّر صاحب العمل في طلب التوظيف الخاص بها.',
+  },
+  label_employer_opens: {
+    en: 'Choosing one opens her recruitment request, which is what marks her Selected.',
+    ar: 'اختيار صاحب عمل يفتح طلب الاستقدام، وهو ما يجعل حالتها «مختارة».',
+  },
   label_owner: { en: 'Belongs to', ar: 'تتبع لـ' },
   label_owner_office: { en: 'The office', ar: 'المكتب' },
   label_owner_office_note: {

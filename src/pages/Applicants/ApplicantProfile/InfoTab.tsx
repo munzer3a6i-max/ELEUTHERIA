@@ -15,6 +15,8 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
   const addExperience = useAppStore((s) => s.addExperience)
   const deleteExperience = useAppStore((s) => s.deleteExperience)
   const addEducation = useAppStore((s) => s.addEducation)
+  const addRequest = useAppStore((s) => s.addRequest)
+  const updateRequest = useAppStore((s) => s.updateRequest)
   const deleteEducation = useAppStore((s) => s.deleteEducation)
   const agencies = useAppStore((s) => s.agencies)
   const agents = useAppStore((s) => s.agents)
@@ -26,7 +28,32 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
   const allRequests = useAppStore((s) => s.requests)
   const requests = allRequests.filter((r) => r.applicantId === applicant.id)
   const { t, tb, language } = useTranslation()
-  const { canRemove } = useCurrentUser()
+  const { canEdit, canRemove, member } = useCurrentUser()
+
+  // The placement her employer is read from and written to: the newest one.
+  const placement = [...requests].sort((a, b) => (a.createdOn < b.createdOn ? 1 : -1))[0] ?? null
+
+  /**
+   * Moving her to another employer is an edit to the placement. Choosing one
+   * when she has no placement opens it, which is what makes her Selected and
+   * books the agent's first half -- the same thing the Add Applicant form does.
+   */
+  function chooseEmployer(employerId: string) {
+    if (placement) {
+      if (employerId) updateRequest(placement.id, { employerId })
+      return
+    }
+    if (!employerId) return
+    addRequest({
+      type: applicant.type,
+      contractDurationMonths: 24,
+      applicantId: applicant.id,
+      employerId,
+      responsibleEmployeeId: member?.id ?? '',
+      recruitmentAgencyId: applicant.type === 'Domestic' ? (applicant.recruitmentAgencyId ?? '') : '',
+      mosanedNumber: '',
+    })
+  }
 
   const [expOpen, setExpOpen] = useState(false)
   const [eduOpen, setEduOpen] = useState(false)
@@ -304,6 +331,30 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
               <p className="text-[11px] text-ink-3">
                 {language === 'ar' ? 'لا توجد طلبات استقدام مرتبطة بعد.' : 'No recruitment requests yet.'}
               </p>
+            )}
+
+            {/* The employer is a fact about the placement, not about her, so
+                this writes to the placement -- and opens one when she has none,
+                which is the same thing the Add Applicant form does when an
+                employer is chosen there. */}
+            {canEdit('placements') && (
+              <div className="border-t border-line pt-3">
+                <SelectField
+                  label={t('label_employer')}
+                  value={placement?.employerId ?? ''}
+                  onSave={chooseEmployer}
+                  options={[
+                    { value: '', label: t('label_employer_none') },
+                    ...employers.map((e) => ({
+                      value: e.id,
+                      label: tb({ en: e.englishName, ar: e.arabicName }),
+                    })),
+                  ]}
+                />
+                <p className="mt-1 text-[10px] leading-relaxed text-ink-3">
+                  {placement ? t('label_employer_moves') : t('label_employer_opens')}
+                </p>
+              </div>
             )}
           </div>
         </div>
