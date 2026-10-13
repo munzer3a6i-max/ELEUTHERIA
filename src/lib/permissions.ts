@@ -66,6 +66,9 @@ const RULES: Record<StaffRole, Rule> = {
     edit: ['directory', 'personal'],
     remove: [],
   },
+  // On the payroll, not in the dashboard. Nothing is open to them, which is the
+  // point: the row exists so the office can pay them.
+  none: { view: [], edit: [], remove: [] },
 }
 
 export function canView(role: StaffRole, area: Area): boolean {
@@ -87,6 +90,7 @@ export const ROLE_LABEL: Record<StaffRole, { en: string; ar: string }> = {
   admin: { en: 'Administrator', ar: 'مسؤول' },
   accountant: { en: 'Accountant', ar: 'محاسب' },
   data_entry: { en: 'Data Entry', ar: 'إدخال بيانات' },
+  none: { en: 'No sign-in', ar: 'بدون دخول' },
 }
 
 export const ROLE_SUMMARY: Record<StaffRole, { en: string; ar: string }> = {
@@ -100,9 +104,13 @@ export const ROLE_SUMMARY: Record<StaffRole, { en: string; ar: string }> = {
     en: 'Adds and corrects workers, employers, offices and agents \u2014 nothing else, and deletes nothing',
     ar: 'يضيف ويعدّل العاملات وأصحاب العمل والمكاتب والوكلاء فقط، ولا يحذف شيئًا',
   },
+  none: {
+    en: 'On the payroll, with no way into the dashboard',
+    ar: 'على كشف الرواتب، دون أي صلاحية للدخول إلى النظام',
+  },
 }
 
-export const ROLES: StaffRole[] = ['super_admin', 'admin', 'accountant', 'data_entry']
+export const ROLES: StaffRole[] = ['super_admin', 'admin', 'accountant', 'data_entry', 'none']
 
 /**
  * The area a path belongs to. Longest prefix wins, so /accounting/payroll is

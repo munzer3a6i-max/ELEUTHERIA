@@ -230,7 +230,9 @@ export const staffRows = {
   out: (m: StaffMember): Row => ({
     id: m.id,
     user_id: m.userId,
-    username: m.username.toLowerCase(),
+    // No username at all for somebody who does not sign in: an empty string is
+    // a name nobody can type, and only one person could have it.
+    username: m.username.trim() ? m.username.toLowerCase() : null,
     name_en: m.name.en,
     name_ar: m.name.ar,
     phone: m.phone,

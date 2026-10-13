@@ -331,10 +331,13 @@ export interface NewStaff {
   phone: string
   email: string
   role: StaffRole
+  /** Both empty for somebody on the payroll who does not sign in. */
   username: string
   password: string
   /** The Supabase auth account this staff row belongs to, once there is one. */
   userId?: string | null
+  /** Opens this month's payroll row at this salary; left out, at nothing. */
+  monthlySalary?: number
 }
 
 export type StaffPatch = Partial<Pick<StaffMember, 'name' | 'phone' | 'email' | 'role' | 'username'>>
@@ -828,19 +831,34 @@ export const useAppStore = create<AppState>()(
         })),
       deleteInvoice: (id) => set((s) => ({ invoices: s.invoices.filter((i) => i.id !== id) })),
 
-      addStaff: async ({ password, username, userId = null, ...rest }) => {
-        if (usernameTaken(get().staff, username)) return 'username-taken'
+      addStaff: async ({ password, username, userId = null, monthlySalary, ...rest }) => {
+        // Somebody on the payroll who does not sign in has no username to
+        // collide with, so the check only applies when one was given.
+        if (username.trim() && usernameTaken(get().staff, username)) return 'username-taken'
         const member: StaffMember = {
           ...rest,
           // Connected, this is the auth account they sign in with; without one
           // the row is a name in a list and nobody can get in as them.
           userId,
           username: normaliseUsername(username),
-          credentials: await makeCredentials(password, true),
+          credentials: password ? await makeCredentials(password, true) : null,
           id: newId(),
           status: 'Active',
         }
-        set((s) => ({ staff: [member, ...s.staff] }))
+        // Whoever is added to the roster is on this month's payroll, because
+        // that is what adding them is for; the amount is theirs to set and is
+        // nothing until somebody does.
+        const entry: PayrollEntry = {
+          id: newId(),
+          staffId: member.id,
+          month: todayIso().slice(0, 7),
+          basicSalary: monthlySalary ?? 0,
+          bonus: 0,
+          allowances: 0,
+          status: 'Pending',
+          attachment: null,
+        }
+        set((s) => ({ staff: [member, ...s.staff], payroll: [entry, ...s.payroll] }))
         return 'ok'
       },
       updateStaff: (id, patch) => {

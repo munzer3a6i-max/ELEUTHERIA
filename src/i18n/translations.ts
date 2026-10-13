@@ -325,6 +325,17 @@ export const translations = {
   users_suspend: { en: 'Suspend', ar: 'إيقاف' },
   users_restore: { en: 'Restore', ar: 'إعادة تفعيل' },
   users_delete_confirm: { en: 'Remove this account? They will not be able to sign in again.', ar: 'حذف هذا الحساب؟ لن يتمكن من الدخول مرة أخرى.' },
+  staff_add: { en: 'Add staff member', ar: 'إضافة موظف' },
+  staff_this_month: { en: 'This month\u2019s pay', ar: 'راتب هذا الشهر' },
+  staff_salary: { en: 'Monthly salary (USD)', ar: 'الراتب الشهري (دولار)' },
+  staff_salary_hint: {
+    en: 'Opens their payroll row for this month at this amount. It can be changed on the Payroll page like any other.',
+    ar: 'يفتح سطر الرواتب لهذا الشهر بهذا المبلغ، ويمكن تعديله من صفحة الرواتب كأي سطر آخر.',
+  },
+  staff_no_signin_hint: {
+    en: 'This adds them to the roster and the payroll, with no way into the dashboard. To give them one, open Settings \u2192 Users and set a username, a password and a role.',
+    ar: 'يضيفه هذا إلى قائمة الموظفين وكشف الرواتب دون أي صلاحية دخول. لمنحه صلاحية، افتح الإعدادات \u2190 المستخدمون وحدد اسم مستخدم وكلمة مرور ودورًا.',
+  },
   users_last_admin: { en: 'This is the only super administrator left. Give someone else the role first.', ar: 'هذا هو المسؤول الأعلى الوحيد المتبقي. امنح الدور لشخص آخر أولًا.' },
   users_demote_self: { en: 'This takes your own administrator access away, and this page with it. Continue?', ar: 'سيؤدي هذا إلى سحب صلاحية المسؤول منك وإغلاق هذه الصفحة. هل تريد المتابعة؟' },
   users_self: { en: 'You cannot suspend or remove the account you are signed in as.', ar: 'لا يمكنك إيقاف أو حذف الحساب الذي تستخدمه الآن.' },

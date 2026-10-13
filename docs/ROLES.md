@@ -8,6 +8,14 @@ Four roles, set per member of staff in Settings -> Users.
 | **Administrator** | add, edit, delete | add, edit, delete | add, edit, delete | not shown |
 | **Accountant** | read only | read only | add, edit, delete | not shown |
 | **Data entry** | **add and edit only** | not shown | not shown | not shown |
+| **No sign-in** | nothing | nothing | nothing | nothing |
+
+**No sign-in** is somebody on the payroll who has no business in the dashboard:
+a driver, a cleaner, anybody the office pays monthly. They hold no username and
+no password, so there is nothing to sign in with, and every area is closed to
+them. Add them on the Staff page, which opens their payroll row for the current
+month at the salary you give; granting them a way in later is a separate
+decision, made in Settings → Users by setting a username, a password and a role.
 
 The **directories** are the four lists the office keeps -- workers, employers,
 partner offices and agents -- and the records behind them. **Placements** are

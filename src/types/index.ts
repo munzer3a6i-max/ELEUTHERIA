@@ -10,7 +10,13 @@ export type Theme = 'dark' | 'light'
  * What a member of staff may do. `accountant` changes the money and reads the
  * rest; `data_entry` works the caseload and never sees the finance pages.
  */
-export type StaffRole = 'super_admin' | 'admin' | 'accountant' | 'data_entry'
+/**
+ * `none` is somebody on the payroll who does not sign in at all: a driver, a
+ * cleaner, anybody whose pay the office runs but who has no business in the
+ * dashboard. They hold no username and no password, and every area is closed
+ * to them, so the row is a name on the roster and nothing more.
+ */
+export type StaffRole = 'super_admin' | 'admin' | 'accountant' | 'data_entry' | 'none'
 export type StaffStatus = 'Active' | 'Inactive' | 'Suspended'
 
 /**

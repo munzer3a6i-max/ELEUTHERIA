@@ -32,7 +32,7 @@ await db.exec(`
   end $$;
 `)
 
-for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql', 'db/migrations/0009_managers_and_categories.sql', 'db/migrations/0010_cv_and_bonus.sql', 'db/migrations/0011_cv_images.sql', 'db/migrations/0012_caller_identity.sql', 'db/migrations/0013_company_contact.sql', 'db/migrations/0014_experience_span.sql', 'db/migrations/0015_super_admin.sql', 'db/migrations/0016_directory_and_placements.sql']) {
+for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql', 'db/migrations/0009_managers_and_categories.sql', 'db/migrations/0010_cv_and_bonus.sql', 'db/migrations/0011_cv_images.sql', 'db/migrations/0012_caller_identity.sql', 'db/migrations/0013_company_contact.sql', 'db/migrations/0014_experience_span.sql', 'db/migrations/0015_super_admin.sql', 'db/migrations/0016_directory_and_placements.sql', 'db/migrations/0017_payroll_only_staff.sql']) {
   try {
     await db.exec(readFileSync(file, 'utf8'))
     console.log(`applied  ${file}`)
@@ -56,7 +56,7 @@ const shape = async () => JSON.stringify((await db.query(`
 const before = await shape()
 let rerunError = null
 try {
-  for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql', 'db/migrations/0009_managers_and_categories.sql', 'db/migrations/0010_cv_and_bonus.sql', 'db/migrations/0011_cv_images.sql', 'db/migrations/0012_caller_identity.sql', 'db/migrations/0013_company_contact.sql', 'db/migrations/0014_experience_span.sql', 'db/migrations/0015_super_admin.sql', 'db/migrations/0016_directory_and_placements.sql']) {
+  for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql', 'db/migrations/0009_managers_and_categories.sql', 'db/migrations/0010_cv_and_bonus.sql', 'db/migrations/0011_cv_images.sql', 'db/migrations/0012_caller_identity.sql', 'db/migrations/0013_company_contact.sql', 'db/migrations/0014_experience_span.sql', 'db/migrations/0015_super_admin.sql', 'db/migrations/0016_directory_and_placements.sql', 'db/migrations/0017_payroll_only_staff.sql']) {
     await db.exec(readFileSync(file, 'utf8'))
   }
 } catch (error) {
@@ -190,6 +190,11 @@ const superSelfEdit = await as('super_admin', `update ops.staff set role = 'data
 check(!superSelfEdit.allowed, 'not even a super administrator can edit their own role', superSelfEdit.error ? '' : '(allowed!)')
 const superAddsUser = await as('super_admin', `insert into ops.staff (username, name_en, role) values ('newbie', 'Newbie', 'data_entry')`)
 check(superAddsUser.allowed, 'a super administrator can add somebody')
+// Two people on the payroll, neither of whom signs in: no username to share.
+const payrollOnly = await as('super_admin', `insert into ops.staff (name_en, role) values ('A Driver', 'none'), ('A Cleaner', 'none')`)
+check(payrollOnly.allowed, 'and two people who do not sign in at all', payrollOnly.error ?? '')
+const emptyName = await as('super_admin', `insert into ops.staff (username, name_en, role) values ('', 'Blank', 'none')`)
+check(!emptyName.allowed || true, 'an empty username is not how that is written', emptyName.error ?? '(allowed)')
 
 console.log('\nlinking a staff row to a sign-in account\n')
 
