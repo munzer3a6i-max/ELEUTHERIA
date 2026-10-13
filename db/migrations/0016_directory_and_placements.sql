@@ -70,6 +70,10 @@ begin
 end
 $$;
 
+-- New policies are read straight from the catalogue, but the API's picture of
+-- the schema is reloaded on request only.
+notify pgrst, 'reload schema';
+
 -- What this file leaves behind, as the last thing on screen.
 select tablename as table_name,
        policyname as policy,

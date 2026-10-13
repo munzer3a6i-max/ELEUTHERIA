@@ -249,6 +249,11 @@ export const translations = {
   sync_saving: { en: 'Saving…', ar: 'جارٍ الحفظ…' },
   sync_saved: { en: 'Saved at', ar: 'حُفظ في' },
   sync_failed: { en: 'Not saved', ar: 'لم يُحفظ' },
+  sync_retry: { en: 'Try saving again', ar: 'إعادة محاولة الحفظ' },
+  sync_failed_hint: {
+    en: 'Nothing on the screen is lost \u2014 it is waiting to be sent. If this keeps happening, read the line above: it is the database\u2019s own answer.',
+    ar: 'لا شيء مما على الشاشة قد ضاع \u2014 ما زال بانتظار الإرسال. إذا تكرر هذا، فاقرأ السطر أعلاه: فهو جواب قاعدة البيانات نفسها.',
+  },
   sync_connected: { en: 'Connected to the database', ar: 'متصل بقاعدة البيانات' },
   sync_connecting: { en: 'Connecting to the database…', ar: 'جارٍ الاتصال بقاعدة البيانات…' },
   auth_unlinked: { en: 'That account exists, but no staff record points at it yet. An administrator can join the two from Settings, Users, with Link sign-in accounts.', ar: 'الحساب موجود لكن لا يوجد سجل موظف مرتبط به بعد. يمكن للمسؤول ربطهما من الإعدادات ثم المستخدمون عبر «ربط حسابات الدخول».' },

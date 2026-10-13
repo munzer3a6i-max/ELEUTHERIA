@@ -72,3 +72,7 @@ begin
   end loop;
 end
 $$;
+
+-- New policies are read straight from the catalogue, but the API's picture of
+-- the schema is reloaded on request only.
+notify pgrst, 'reload schema';

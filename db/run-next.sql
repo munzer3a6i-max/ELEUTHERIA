@@ -81,6 +81,12 @@ create table if not exists ops.status_definitions (
 create index if not exists ops_status_definitions_pipeline_order_idx
   on ops.status_definitions (pipeline, step_order);
 
+-- PostgREST keeps its own picture of the schema and only reloads it when told.
+-- A table it has not heard of is "not found in the schema cache", which reaches
+-- the dashboard as a save that will not go through, so say it out loud here
+-- rather than leaving somebody to wonder.
+notify pgrst, 'reload schema';
+
 -- ------------------------------------------------- who writes the system ---
 
 -- Reading stays as it was: everyone signed in needs these to fill a dropdown
@@ -225,6 +231,10 @@ begin
   end loop;
 end
 $$;
+
+-- New policies are read straight from the catalogue, but the API's picture of
+-- the schema is reloaded on request only.
+notify pgrst, 'reload schema';
 
 -- What this file leaves behind, as the last thing on screen.
 select tablename as table_name,
