@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Trash2 } from 'lucide-react'
-import { useAppStore, currentStatus } from '../../store/useAppStore'
+import { useAppStore, currentStatus, useStatusDefinitions } from '../../store/useAppStore'
 import { placementOwnerId } from '../../data/businessRules'
+import { openPlacements } from '../../data/statusPipelines'
 import { useTranslation } from '../../i18n/useTranslation'
 import { useCurrentUser } from '../../lib/useCurrentUser'
 import PageHeader from '../../components/PageHeader'
@@ -198,6 +199,8 @@ function NewRequestModal({
   const agencies = useAppStore((s) => s.agencies)
   const managers = useAppStore((s) => s.managers)
   const staff = useAppStore((s) => s.staff)
+  const requests = useAppStore((s) => s.requests)
+  const definitions = useStatusDefinitions()
   const { member } = useCurrentUser()
   const { t, tb, language } = useTranslation()
 
@@ -225,9 +228,13 @@ function NewRequestModal({
     setManagerId(applicant?.managerId ?? '')
   }
 
+  // Who can be placed: everyone of this type who is not already on a running
+  // placement. It used to go by her status field, which left out anybody whose
+  // status had been set to something else by hand -- or by a placement that
+  // has since ended -- even though nothing was pending for her.
   const applicantOptions = applicants
     .filter((a) => a.type === type)
-    .filter((a) => !onlyAvailable || a.status === 'Available')
+    .filter((a) => !onlyAvailable || openPlacements(a.id, requests, definitions).length === 0)
     .map((a) => ({ value: a.id, label: a.englishName, sublabel: a.profession }))
 
   const employerOptions = employers
@@ -245,6 +252,16 @@ function NewRequestModal({
       !applicantId && (language === 'ar' ? 'المتقدم' : 'the applicant'),
       !employerId && (language === 'ar' ? 'صاحب العمل' : 'the employer'),
     ].filter(Boolean) as string[]
+    // One running placement per worker. A second request for somebody already
+    // on one would be the same placement typed twice.
+    if (applicantId && openPlacements(applicantId, requests, definitions).length > 0) {
+      setProblem(
+        language === 'ar'
+          ? 'هذه المرشحة على طلب استقدام جارٍ بالفعل. افتح ذلك الطلب بدلًا من إنشاء آخر.'
+          : 'This worker is already on a running placement. Open that one instead of raising a second.',
+      )
+      return
+    }
     if (missing.length > 0) {
       setProblem(
         language === 'ar'
@@ -289,7 +306,7 @@ function NewRequestModal({
 
         <label className="mb-1.5 flex items-center gap-2 text-[11px] text-ink-2">
           <input type="checkbox" checked={onlyAvailable} onChange={(e) => setOnlyAvailable(e.target.checked)} />
-          {language === 'ar' ? 'عرض المتقدمين المتاحين فقط' : 'Show only Available applicants'}
+          {language === 'ar' ? 'إخفاء من هم على طلب استقدام جارٍ' : 'Hide applicants already on a placement'}
         </label>
         <Field label={language === 'ar' ? 'المتقدم' : 'Applicant'}>
           <SearchableSelect

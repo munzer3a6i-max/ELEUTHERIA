@@ -523,3 +523,22 @@ adding a second source of truth beside it. To see it:
 node scripts/inspect-schema.mjs                      # what the anon key can see
 SUPABASE_DB_URL='postgresql://...' node scripts/inspect-schema.mjs   # everything
 ```
+
+
+## The peso rate
+
+The books are kept in dollars. The `₱` switch in the top bar shows every dollar
+amount with its peso equivalent beside it (`$1,400 · ₱79,100`), at the rate in
+Settings → Company → *Pesos per dollar*, which is kept in `ops.settings.peso_rate`
+(migration 0018). Whether a given machine shows the pesos is that machine's
+choice, like its language, and is not stored in the database.
+
+## Reading a CV
+
+Uploading a CV on the Applicant Information tab stores the file as hers and
+reads it in the same act: every field it recognises is offered for review,
+editable, ticked by default only where her record is empty, and the jobs it
+finds by the years they ran are offered as experience entries. Nothing is
+written until *Apply* is pressed. A scanned CV is a picture with no text in it
+and is reported as such; the reader uses patterns only, nothing leaves the
+browser. `src/lib/cvImport.ts` holds the labels it knows.

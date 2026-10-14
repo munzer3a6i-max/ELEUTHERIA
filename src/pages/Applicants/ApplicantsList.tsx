@@ -359,12 +359,11 @@ function AddApplicantModal({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setProblem(null)
-    if (!englishName.trim() || !passportNo.trim()) {
-      setProblem(
-        language === 'ar'
-          ? 'الاسم بالإنجليزية ورقم الجواز مطلوبان.'
-          : 'The English name and the passport number are both needed.',
-      )
+    // The name is the one thing a record cannot do without. A passport is not:
+    // plenty arrive before they hold one, and Passporting is a stage of the
+    // process for exactly that reason.
+    if (!englishName.trim()) {
+      setProblem(language === 'ar' ? 'الاسم بالإنجليزية مطلوب.' : 'The English name is needed.')
       return
     }
     onSubmit({
@@ -435,7 +434,7 @@ function AddApplicantModal({
           </SelectInput>
         </Field>
         <Field label={language === 'ar' ? 'رقم الجواز' : 'Passport No.'}>
-          <TextInput value={passportNo} onChange={(e) => setPassportNo(e.target.value)} required />
+          <TextInput value={passportNo} onChange={(e) => setPassportNo(e.target.value)} placeholder={language === 'ar' ? 'اختياري' : 'Optional'} />
         </Field>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={language === 'ar' ? 'بداية الجواز' : 'Passport Start'}>

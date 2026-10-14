@@ -2,14 +2,16 @@
 --
 -- It is the migrations the dashboard is waiting for, in order. All of it is
 -- additive: it widens the list of roles a staff row may hold, adds one table
--- for the stages of the recruitment, rewrites who may write what, and makes a
--- username optional so somebody can be on the payroll without signing in. Not a
--- single row of your data is changed, moved or deleted. Running it twice is
--- safe, and running it again after part of it is safe too.
+-- for the stages of the recruitment, rewrites who may write what, makes a
+-- username optional so somebody can be on the payroll without signing in, and
+-- gives the office a peso rate. Not a single row of your data is changed,
+-- moved or deleted. Running it twice is safe, and running it again after part
+-- of it is safe too.
 --
 --   1. The super administrator, and the stages as data
 --   2. The directories and the placements, told apart
 --   3. Somebody on the payroll who does not sign in
+--   4. The office's peso rate
 --
 -- Part 1 promotes Maan and Elmunzer Abdelkarim by name. If a name is spelled
 -- differently in your staff list, edit the WHERE clause there before running --
@@ -20,7 +22,7 @@
 -- An office with nobody holding that role cannot hand it out again, so check
 -- the printed list before closing the editor.
 
--- ===== 1 of 3 =============================================================
+-- ===== 1 of 4 =============================================================
 
 -- The super administrator, and the stages as data.
 --
@@ -160,7 +162,7 @@ select name_en as staff, role, status
  order by (role = 'super_admin') desc, name_en;
 
 
--- ===== 2 of 3 =============================================================
+-- ===== 2 of 4 =============================================================
 
 -- Two halves of the caseload, and deleting as its own right.
 --
@@ -248,7 +250,7 @@ select tablename as table_name,
  order by tablename, cmd, policyname;
 
 
--- ===== 3 of 3 =============================================================
+-- ===== 3 of 4 =============================================================
 
 -- Somebody on the payroll who does not sign in.
 --
@@ -285,4 +287,24 @@ select name_en as staff,
        status
   from ops.staff
  order by (role = 'none'), name_en;
+
+
+-- ===== 4 of 4 =============================================================
+
+-- The office's peso rate.
+--
+-- The books are kept in dollars and the office lives in pesos, so the
+-- dashboard can show every amount in both, side by side, at a rate the office
+-- sets itself. The rate is a fact about the books, not about one screen, so it
+-- is kept with the company's details here; whether a given machine shows the
+-- pesos at all is that machine's choice, like its language, and stays local.
+--
+-- Additive and re-runnable.
+
+alter table ops.settings add column if not exists peso_rate numeric(10,4) not null default 56.5
+  check (peso_rate > 0);
+
+notify pgrst, 'reload schema';
+
+select peso_rate as pesos_per_dollar from ops.settings;
 

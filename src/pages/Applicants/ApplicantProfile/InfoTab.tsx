@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Trash2, Globe, FileText, Upload, ExternalLink } from 'lucide-react'
-import { useAppStore } from '../../../store/useAppStore'
+import { useAppStore, useStatusDefinitions } from '../../../store/useAppStore'
+import { openPlacements } from '../../../data/statusPipelines'
 import { useTranslation } from '../../../i18n/useTranslation'
 import { useCurrentUser } from '../../../lib/useCurrentUser'
 import Modal from '../../../components/Modal'
 import { Field, TextInput, PrimaryButton, SecondaryButton } from '../../../components/form'
 import { clearWorkerCv, setWorkerCv, useCvUrl } from '../../../lib/cvs'
+import CvImport from './CvImport'
 import { experiencePeriod, isYear, spanYears } from '../../../lib/experience'
 import type { Applicant, ExperienceEntry } from '../../../types'
 
@@ -26,12 +28,17 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
   const employers = useAppStore((s) => s.employers)
   const staff = useAppStore((s) => s.staff)
   const allRequests = useAppStore((s) => s.requests)
+  const definitions = useStatusDefinitions()
   const requests = allRequests.filter((r) => r.applicantId === applicant.id)
   const { t, tb, language } = useTranslation()
   const { canEdit, canRemove, member } = useCurrentUser()
 
-  // The placement her employer is read from and written to: the newest one.
-  const placement = [...requests].sort((a, b) => (a.createdOn < b.createdOn ? 1 : -1))[0] ?? null
+  // The placement her employer is read from and written to: the one still
+  // running. A placement that ended is history; choosing an employer then
+  // opens a new one rather than rewriting the old.
+  const placement =
+    [...openPlacements(applicant.id, allRequests, definitions)].sort((a, b) => (a.createdOn < b.createdOn ? 1 : -1))[0] ??
+    null
 
   /**
    * Moving her to another employer is an edit to the placement. Choosing one
@@ -72,11 +79,17 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
   const countryOptions = withCurrent(countries.map((c) => c.name.en), applicant.country)
   const professionOptions = withCurrent(professions.map((p) => p.name.en), applicant.profession)
 
+  // Uploading a CV and reading it are one act: the file is stored as hers,
+  // then handed to the reader, which offers what it found for review below.
+  const [reading, setReading] = useState<File | null>(null)
+
   function handleCv(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
-    setWorkerCv(applicant, file).catch((problem: Error) => window.alert(problem.message))
+    setWorkerCv(applicant, file)
+      .then(() => setReading(file))
+      .catch((problem: Error) => window.alert(problem.message))
   }
 
   function handleCvRemove() {
@@ -197,6 +210,8 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
           </div>
           <CvRow applicant={applicant} onRemove={canRemove('directory') ? handleCvRemove : null} />
         </div>
+
+        {reading && <CvImport applicant={applicant} file={reading} fileKept onDone={() => setReading(null)} />}
 
         <div className="rounded-panel border border-line bg-surface p-4">
           <div className="mb-2 flex items-center justify-between">

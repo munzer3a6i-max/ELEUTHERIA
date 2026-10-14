@@ -1,6 +1,6 @@
 import { useAppStore } from '../store/useAppStore'
 import { allStatusDefinitions } from './stageSeeds'
-import type { StatusDefinition } from '../types'
+import type { RecruitmentRequest, StatusDefinition } from '../types'
 
 export { domesticPipeline, professionPipeline, invoiceStatusDefs, allStatusDefinitions } from './stageSeeds'
 
@@ -30,6 +30,27 @@ export function pipelineForType(
 function storedDefinitions(): StatusDefinition[] {
   const stored = useAppStore.getState().statusDefinitions
   return stored.length > 0 ? stored : allStatusDefinitions
+}
+
+/**
+ * Her placements that are still running: nothing logged yet, or a latest stage
+ * that does not end the placement. A worker on one of these is spoken for --
+ * she cannot be put on a second -- and a worker whose last placement ended
+ * (repatriated, transferred, guarantee served, backed out) can be placed again
+ * whatever her status field happens to say.
+ */
+export function openPlacements(
+  applicantId: string,
+  requests: RecruitmentRequest[],
+  definitions?: StatusDefinition[],
+): RecruitmentRequest[] {
+  return requests.filter((request) => {
+    if (request.applicantId !== applicantId) return false
+    const last = request.statusHistory[request.statusHistory.length - 1]
+    if (!last) return true
+    const stage = pipelineForType(request.type, definitions).find((d) => d.label === last.status)
+    return !stage?.isTerminal
+  })
 }
 
 // Ordered walk excluding exception states, used to suggest "next status".

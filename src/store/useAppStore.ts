@@ -73,6 +73,7 @@ import { DEFAULT_PASSWORD, makeCredentials, normaliseUsername, verifyPassword } 
 const ACTION_AREA: Record<string, Area> = {
   setLanguage: 'personal',
   setTheme: 'personal',
+  setShowPeso: 'personal',
   signIn: 'personal',
   signOut: 'personal',
   changeOwnPassword: 'personal',
@@ -354,6 +355,13 @@ interface AppSettings {
   phones: string
   email: string
   currency: string
+  /**
+   * Pesos to one dollar. Kept with the company's details, because it is a fact
+   * about the office's books rather than about this screen.
+   */
+  pesoRate: number
+  /** Shows every amount in pesos beside the dollars. This machine's choice, like the language. */
+  showPeso: boolean
   language: Language
   theme: Theme
 }
@@ -399,6 +407,7 @@ export interface AppState {
 
   setLanguage: (lang: Language) => void
   setTheme: (theme: Theme) => void
+  setShowPeso: (showPeso: boolean) => void
   updateSettings: (patch: Partial<Omit<AppSettings, 'language' | 'theme'>>) => void
 
   addApplicant: (data: Omit<Applicant, 'id' | 'createdOn' | 'updatedOn' | 'updatedBy' | 'status' | 'experience' | 'education' | 'documents' | 'notes' | 'photoDataUrl' | 'photoPath' | 'cvFileName' | 'cvPath' | 'cvDetails' | 'fullBodyPath' | 'fullBodyDataUrl' | 'passportCopyFileName' | 'passportCopyPath' | 'passportCopyDataUrl' | 'cvLinkedToWebsite'>) => string
@@ -539,6 +548,8 @@ export const useAppStore = create<AppState>()(
         phones: 'PH +63 961 278 0038 · PH +63 960 401 4714',
         email: 'info@eleutheria.agency',
         currency: 'USD',
+        pesoRate: 56.5,
+        showPeso: false,
         language: 'en',
         theme: 'dark',
       },
@@ -563,6 +574,7 @@ export const useAppStore = create<AppState>()(
 
       setLanguage: (language) => set((s) => ({ settings: { ...s.settings, language } })),
       setTheme: (theme) => set((s) => ({ settings: { ...s.settings, theme } })),
+      setShowPeso: (showPeso) => set((s) => ({ settings: { ...s.settings, showPeso } })),
       updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
 
       addApplicant: (data) => {
@@ -1261,7 +1273,16 @@ export function formatMoney(amount: number, currency = 'USD', fractionDigits = 2
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   })
-  return `${amount < 0 ? '−' : ''}${symbol}${value}`
+  const dollars = `${amount < 0 ? '−' : ''}${symbol}${value}`
+
+  // With the peso switch on, every dollar figure carries its peso equivalent
+  // beside it, at the office's rate. Pesos are never shown with cents: nobody
+  // reads a peso figure to the centavo, and it keeps the pair short enough for
+  // a table cell.
+  const { showPeso, pesoRate } = useAppStore.getState().settings
+  if (!showPeso || currency !== 'USD' || !(pesoRate > 0)) return dollars
+  const pesos = Math.abs(amount * pesoRate).toLocaleString('en-US', { maximumFractionDigits: 0 })
+  return `${dollars} \u00b7 \u20b1${pesos}`
 }
 
 export function payrollTotal(entry: PayrollEntry): number {

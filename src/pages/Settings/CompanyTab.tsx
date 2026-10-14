@@ -9,7 +9,7 @@ export default function CompanyTab() {
   const updateSettings = useAppStore((s) => s.updateSettings)
   const setLanguage = useAppStore((s) => s.setLanguage)
   const setTheme = useAppStore((s) => s.setTheme)
-  const { language } = useTranslation()
+  const { t, language } = useTranslation()
   const [form, setForm] = useState({
     companyName: settings.companyName,
     companyTagline: settings.companyTagline,
@@ -18,12 +18,13 @@ export default function CompanyTab() {
     website: settings.website,
     phones: settings.phones,
     email: settings.email,
+    pesoRate: String(settings.pesoRate),
   })
   const [saved, setSaved] = useState(false)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    updateSettings(form)
+    updateSettings({ ...form, pesoRate: Number(form.pesoRate) || settings.pesoRate })
     setSaved(true)
   }
 
@@ -105,6 +106,19 @@ export default function CompanyTab() {
                 setSaved(false)
               }}
             />
+          </Field>
+          <Field label={t('settings_peso_rate')}>
+            <TextInput
+              type="number"
+              min={0.0001}
+              step="0.01"
+              value={form.pesoRate}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, pesoRate: e.target.value }))
+                setSaved(false)
+              }}
+            />
+            <p className="mt-1 text-[10px] leading-relaxed text-ink-3">{t('settings_peso_rate_hint')}</p>
           </Field>
           <Field label={language === 'ar' ? 'أرقام التواصل' : 'Contact Numbers'}>
             <TextInput

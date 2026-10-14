@@ -249,6 +249,14 @@ export const translations = {
   sync_saving: { en: 'Saving…', ar: 'جارٍ الحفظ…' },
   sync_saved: { en: 'Saved at', ar: 'حُفظ في' },
   sync_failed: { en: 'Not saved', ar: 'لم يُحفظ' },
+  toggle_peso: { en: 'Show amounts in pesos as well', ar: 'إظهار المبالغ بالبيزو أيضًا' },
+  toggle_peso_on: { en: 'USD \u00b7 PHP', ar: 'دولار \u00b7 بيزو' },
+  toggle_peso_off: { en: 'USD', ar: 'دولار' },
+  settings_peso_rate: { en: 'Pesos per dollar', ar: 'بيزو لكل دولار' },
+  settings_peso_rate_hint: {
+    en: 'Used when the \u20b1 switch in the top bar is on: every dollar amount is shown with its peso equivalent beside it.',
+    ar: 'يُستخدم عند تشغيل زر \u20b1 في الشريط العلوي: يُعرض كل مبلغ بالدولار مع ما يعادله بالبيزو بجانبه.',
+  },
   sync_retry: { en: 'Try saving again', ar: 'إعادة محاولة الحفظ' },
   sync_failed_hint: {
     en: 'Nothing on the screen is lost \u2014 it is waiting to be sent. If this keeps happening, read the line above: it is the database\u2019s own answer.',
@@ -451,7 +459,7 @@ export const translations = {
   },
   cv_import_title: { en: 'Read a CV she arrived with', ar: 'قراءة سيرة ذاتية جاهزة' },
   cv_import_subtitle: {
-    en: 'Pick a PDF and the fields it holds are offered below. Nothing is written until you say so, and whatever it cannot read stays for you to type.',
+    en: 'The fields the file holds are offered below, each one editable. Nothing is written until you say so, and whatever it cannot read stays for you to type.',
     ar: 'اختر ملف PDF وستظهر الحقول التي أمكن قراءتها أدناه. لا يُكتب شيء قبل موافقتك، وما تعذّرت قراءته تملؤه بنفسك.',
   },
   cv_import_choose: { en: 'Choose a CV file', ar: 'اختيار ملف' },
@@ -461,6 +469,11 @@ export const translations = {
   cv_import_in_file: { en: 'In the file', ar: 'في الملف' },
   cv_import_keep_file: { en: 'Also keep this file as her CV', ar: 'اعتماد هذا الملف أيضًا كسيرتها الذاتية' },
   cv_import_apply: { en: 'Apply the ticked fields', ar: 'تطبيق الحقول المحددة' },
+  cv_import_jobs: { en: 'Jobs it found, each one an experience entry', ar: 'الوظائف التي عثر عليها، كلٌّ منها خبرة' },
+  cv_import_rest: {
+    en: 'Correct anything above before applying. Whatever the file did not say, or said in a way it could not read, is typed on the Applicant Information tab, where every field can be edited.',
+    ar: 'صحّح ما تشاء أعلاه قبل التطبيق. وما لم يذكره الملف، أو ذكره بطريقة تعذّرت قراءتها، يُدخل من تبويب معلومات المتقدم حيث يمكن تعديل كل الحقول.',
+  },
   cv_import_applied: { en: 'Fields taken from the file:', ar: 'الحقول المأخوذة من الملف:' },
   cv_import_nothing: {
     en: 'The file was read but none of the usual labels were found. The text may be laid out in a way these patterns do not recognise.',

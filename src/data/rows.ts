@@ -194,6 +194,7 @@ export const settingsRows = {
     phones: s.phones,
     email: s.email,
     currency: s.currency,
+    peso_rate: s.pesoRate,
   }),
   in: (r: Row): CompanySettings => ({
     companyName: text(r.company_name),
@@ -204,10 +205,12 @@ export const settingsRows = {
     phones: text(r.phones),
     email: text(r.email),
     currency: text(r.currency) || 'USD',
+    pesoRate: Number(r.peso_rate ?? 56.5) || 56.5,
   }),
 }
 
 export interface CompanySettings {
+  pesoRate: number
   companyName: string
   companyTagline: string
   licenseNumber: string

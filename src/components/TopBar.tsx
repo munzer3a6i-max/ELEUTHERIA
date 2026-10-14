@@ -14,6 +14,8 @@ export default function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const unreadCount = useAppStore((s) => s.notifications.filter((n) => !n.read).length)
   const setLanguage = useAppStore((s) => s.setLanguage)
+  const showPeso = useAppStore((s) => s.settings.showPeso)
+  const setShowPeso = useAppStore((s) => s.setShowPeso)
   const setTheme = useAppStore((s) => s.setTheme)
   const theme = useAppStore((s) => s.settings.theme)
   const { t, tb, language } = useTranslation()
@@ -60,6 +62,18 @@ export default function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
         >
           <Languages className="size-3.5" />
           <span className="hidden sm:inline">{t('toggle_language')}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setShowPeso(!showPeso)}
+          title={t('toggle_peso')}
+          aria-label={t('toggle_peso')}
+          aria-pressed={showPeso}
+          className={`btn btn-ghost px-2 sm:px-3 ${showPeso ? 'bg-accent-soft text-accent-text' : ''}`}
+        >
+          <span className="text-[13px] font-semibold leading-none">\u20b1</span>
+          <span className="hidden sm:inline">{showPeso ? t('toggle_peso_on') : t('toggle_peso_off')}</span>
         </button>
 
         <button
