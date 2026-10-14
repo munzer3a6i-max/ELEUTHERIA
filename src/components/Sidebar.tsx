@@ -187,14 +187,20 @@ export default function Sidebar({
         </div>
 
         <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2.5">
-          <NavItem to="/" end icon={<LayoutDashboard className="size-4" />} label={t('nav_dashboard')} />
+          {/* The dashboard reports on the placements, so it is shown to the
+              people who may open them. */}
+          {canView('placements') && (
+            <NavItem to="/" end icon={<LayoutDashboard className="size-4" />} label={t('nav_dashboard')} />
+          )}
 
           <GroupLabel>{language === 'ar' ? 'العمليات' : 'Operations'}</GroupLabel>
           <NavItem to="/applicants" icon={<Users className="size-4" />} label={t('nav_applicants')} />
           <NavItem to="/employers" icon={<Building2 className="size-4" />} label={t('nav_employers')} />
           <NavItem to="/agencies" icon={<Handshake className="size-4" />} label={t('nav_agencies')} />
           <NavItem to="/agents" icon={<UserPlus className="size-4" />} label={t('nav_agents')} />
-          <NavItem to="/recruitments" icon={<ClipboardList className="size-4" />} label={t('nav_recruitments')} />
+          {canView('placements') && (
+            <NavItem to="/recruitments" icon={<ClipboardList className="size-4" />} label={t('nav_recruitments')} />
+          )}
           {canView('finance') && (
             <NavItem to="/invoices" icon={<Receipt className="size-4" />} label={t('nav_invoices')} />
           )}
@@ -206,7 +212,7 @@ export default function Sidebar({
             <NavItem to="/accounting" end icon={<Landmark className="size-3.5" />} label={t('fin_title')} />
             <NavItem to="/accounting/payroll" icon={<Banknote className="size-3.5" />} label={t('acc_payroll_title')} />
             <NavItem to="/accounting/agency-accounts" icon={<Building2 className="size-3.5" />} label={t('acc_agency_accounts_title')} />
-            <NavItem to="/accounting/office-expenses" icon={<Building className="size-3.5" />} label={t('acc_office_expenses_title')} />
+            <NavItem to="/accounting/expenses" icon={<Building className="size-3.5" />} label={t('acc_office_expenses_title')} />
             <NavItem to="/accounting/backouts" icon={<PlaneLanding className="size-3.5" />} label={t('backout_title')} />
             <NavItem to="/accounting/reports" icon={<FileSpreadsheet className="size-3.5" />} label={t('acc_reports_title')} />
               </NavGroup>
@@ -214,9 +220,12 @@ export default function Sidebar({
             </>
           )}
 
-          <GroupLabel>{language === 'ar' ? 'النظام' : 'System'}</GroupLabel>
+          {/* The System group is the super administrator's: the people, the
+              lists the office runs on, the stages themselves and the settings.
+              Nobody else is shown that it exists. */}
           {canView('system') && (
             <>
+              <GroupLabel>{language === 'ar' ? 'النظام' : 'System'}</GroupLabel>
               <NavItem to="/staff" icon={<UserCog className="size-4" />} label={t('nav_staff')} />
               <NavGroup icon={<Wallet className="size-4" />} label={t('nav_addons')} active={addonsActive}>
             <NavItem to="/addons/countries" icon={<Globe2 className="size-3.5" />} label={language === 'ar' ? 'الدول' : 'Countries'} />
@@ -225,11 +234,9 @@ export default function Sidebar({
             <NavItem to="/addons/payment-sources" icon={<Wallet className="size-3.5" />} label={language === 'ar' ? 'مصادر الدفع' : 'Payment Sources'} />
                 <NavItem to="/addons/statuses" icon={<ListChecks className="size-3.5" />} label={language === 'ar' ? 'الحالات' : 'Statuses'} />
               </NavGroup>
+              <NavItem to="/notifications" icon={<Bell className="size-4" />} label={t('nav_notifications')} badge={unreadCount} />
+              <NavItem to="/settings" icon={<Settings className="size-4" />} label={t('nav_settings')} />
             </>
-          )}
-          <NavItem to="/notifications" icon={<Bell className="size-4" />} label={t('nav_notifications')} badge={unreadCount} />
-          {canView('system') && (
-            <NavItem to="/settings" icon={<Settings className="size-4" />} label={t('nav_settings')} />
           )}
         </nav>
       </div>

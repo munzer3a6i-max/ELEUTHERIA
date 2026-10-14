@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { Lock } from 'lucide-react'
 import { useCurrentUser } from '../lib/useCurrentUser'
-import { areaForPath, ROLE_LABEL } from '../lib/permissions'
+import { areaForPath, homeFor, ROLE_LABEL } from '../lib/permissions'
 import { useTranslation } from '../i18n/useTranslation'
 
 /**
@@ -27,8 +27,8 @@ export default function RequireArea({ children }: { children: React.ReactNode })
           ? `هذه الصفحة خارج صلاحيات دور ${ROLE_LABEL[role].ar}. تحدث إلى المسؤول إذا كنت بحاجة إليها.`
           : `This page is outside what a ${ROLE_LABEL[role].en} account may open. Ask an administrator if you need it.`}
       </p>
-      <Link to="/" className="btn btn-secondary">
-        {t('nav_dashboard')}
+      <Link to={homeFor(role)} className="btn btn-secondary">
+        {canView('placements') ? t('nav_dashboard') : t('nav_applicants')}
       </Link>
     </div>
   )

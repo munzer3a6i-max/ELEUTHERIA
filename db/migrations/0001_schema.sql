@@ -65,6 +65,9 @@ create table if not exists ops.settings (
   company_tagline text not null default 'International Placement Services',
   license_number  text not null default '',
   address         text not null default '',
+  website         text not null default 'eleutheria.agency',
+  phones          text not null default 'PH +63 961 278 0038 · PH +63 960 401 4714',
+  email           text not null default 'info@eleutheria.agency',
   currency        text not null default 'USD',
   updated_at      timestamptz not null default now()
 );
@@ -210,6 +213,11 @@ create table if not exists ops.applicant_experience (
   applicant_id  uuid not null references ops.applicants (id) on delete cascade,
   title         text not null,
   employer      text not null default '',
+  -- The years she was there, as the office types them. Null together on an
+  -- entry recorded before the range existed.
+  from_year     smallint,
+  to_year       smallint,
+  -- How long that comes to, worked out from the range rather than typed.
   years         smallint not null default 0,
   -- What she actually did there, and where. Both are columns in the CV.
   duties        text not null default '',

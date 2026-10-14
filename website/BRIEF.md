@@ -130,8 +130,22 @@ Published the same way, in a public bucket of its own:
 ```
 
 `cv_path` is null when no CV has been uploaded, so the link belongs behind a
-check rather than on every card. It is usually a PDF: link to it and let the
-browser do the rest, opening in a new tab.
+check rather than on every card.
+
+The file is one of two things, and the key's extension says which: a PDF the
+office uploaded, or an `.html` page the dashboard built from her details. Both
+want the same treatment -- a plain link that opens in a new tab, and nothing
+else:
+
+```jsx
+<a href={cvUrl} target="_blank" rel="noopener noreferrer">Download CV</a>
+```
+
+Do not fetch the file and render what comes back, and do not force a download
+with the `download` attribute. The built CV is a full page with its own fonts
+and a "Save as PDF" button; fetching it and printing the response shows the
+markup instead of the page, and saving it under a name the browser picked can
+lose the `.html` that tells a computer what it is.
 
 ## What the page should do
 

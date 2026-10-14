@@ -43,8 +43,13 @@ export default function SearchableSelect({
     return o.label.toLowerCase().includes(q) || o.sublabel?.toLowerCase().includes(q)
   })
 
+  // Every field on these forms is a <label>, and a click anywhere inside a
+  // label is handed on to the control it labels -- here, the button that opens
+  // this list. So choosing a name re-opened the list over the next field, and
+  // clicking into the search box shut it. Cancelling the click's default action
+  // stops the label passing it on; the buttons below still do their own work.
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="relative" onClick={(e) => e.preventDefault()}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

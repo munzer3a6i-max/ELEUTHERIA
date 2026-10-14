@@ -11,7 +11,7 @@
 import { PGlite } from '@electric-sql/pglite'
 import { chromium } from 'playwright'
 import { execFileSync } from 'node:child_process'
-import { readFileSync, writeFileSync, rmSync, mkdtempSync } from 'node:fs'
+import { readFileSync, writeFileSync, rmSync, mkdtempSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -54,8 +54,12 @@ async function freshDatabase() {
       if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if;
     end $$;
   `)
-  for (const migration of ['0001_schema', '0002_security', '0004_derived_billing']) {
-    await db.exec(readFileSync(`db/migrations/${migration}.sql`, 'utf8'))
+  // Every migration a plain Postgres can take: the storage ones (0003, 0005,
+  // 0006) belong to Supabase and are applied only against the real project.
+  for (const file of readdirSync('db/migrations')
+    .filter((name) => name.endsWith('.sql') && !/^(0003|0005|0006)/.test(name))
+    .sort()) {
+    await db.exec(readFileSync(`db/migrations/${file}`, 'utf8'))
   }
   return db
 }
@@ -106,7 +110,6 @@ check(orphans.rows[0].n === 0, "a backout's bills are attached to the row the tr
 // --- and the same import in pieces ------------------------------------------
 // A piece that is cut in the wrong place would still run and build a different
 // database, so the pieces are applied to a third Postgres and compared.
-const { readdirSync } = await import('node:fs')
 const pieces = readdirSync('db/import-parts').filter((f) => f.endsWith('.sql')).sort()
 const piecemeal = await freshDatabase()
 let cutBadly = null

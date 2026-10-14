@@ -48,6 +48,8 @@ function App() {
           <Route path="/accounting" element={<FinancialCenter />} />
           <Route path="/accounting/payroll" element={<PayrollPage />} />
           <Route path="/accounting/agency-accounts" element={<AgencyAccountsPage />} />
+          <Route path="/accounting/expenses" element={<OfficeExpensesPage />} />
+          {/* What the page used to be called, so an old link still lands. */}
           <Route path="/accounting/office-expenses" element={<OfficeExpensesPage />} />
           <Route path="/accounting/backouts" element={<BackoutsPage />} />
           <Route path="/accounting/reports" element={<AccountingReports />} />

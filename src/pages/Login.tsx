@@ -6,6 +6,7 @@ import { signIn } from '../data/session'
 import { configurationProblem, isSupabaseConfigured } from '../lib/supabase'
 import { useTranslation } from '../i18n/useTranslation'
 import { DEFAULT_PASSWORD } from '../lib/passwords'
+import { homeFor } from '../lib/permissions'
 import { exportLocalData } from '../lib/connection'
 import { Field, TextInput, PrimaryButton } from '../components/form'
 import brandLogo from '../assets/eleutheria-logo.png'
@@ -41,7 +42,13 @@ export default function Login() {
     // tells a stranger which half they got right.
     const outcome = await signIn(username, password)
     setBusy(false)
-    if (outcome === 'ok') navigate('/')
+    if (outcome === 'ok') {
+      // Data entry may not open the dashboard, so it would land on a locked
+      // page explaining itself; send everyone to the first page they can use.
+      const state = useAppStore.getState()
+      const member = state.staff.find((m) => m.id === state.currentStaffId)
+      navigate(homeFor(member && member.status === 'Active' ? member.role : 'data_entry'))
+    }
     else if (outcome === 'inactive') setError(t('auth_inactive'))
     else if (outcome === 'unlinked') setError(t('auth_unlinked'))
     else if (outcome === 'unreachable') setError(t('auth_unreachable'))

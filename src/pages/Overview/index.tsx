@@ -91,7 +91,7 @@ export default function Overview() {
         subtitle={today}
         actions={
           <>
-            {canEdit('operations') && (
+            {canEdit('placements') && (
               <>
                 <Link to="/applicants" className="btn btn-secondary">
                   <Plus className="size-3.5" />

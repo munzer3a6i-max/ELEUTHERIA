@@ -10,7 +10,13 @@ export type Theme = 'dark' | 'light'
  * What a member of staff may do. `accountant` changes the money and reads the
  * rest; `data_entry` works the caseload and never sees the finance pages.
  */
-export type StaffRole = 'admin' | 'accountant' | 'data_entry'
+/**
+ * `none` is somebody on the payroll who does not sign in at all: a driver, a
+ * cleaner, anybody whose pay the office runs but who has no business in the
+ * dashboard. They hold no username and no password, and every area is closed
+ * to them, so the row is a name on the roster and nothing more.
+ */
+export type StaffRole = 'super_admin' | 'admin' | 'accountant' | 'data_entry' | 'none'
 export type StaffStatus = 'Active' | 'Inactive' | 'Suspended'
 
 /**
@@ -70,6 +76,13 @@ export interface ExperienceEntry {
   id: string
   title: string
   employer: string
+  /**
+   * The years she was there, which is what the office types: 2024 to 2038.
+   * Zero on an entry recorded before the range existed.
+   */
+  fromYear: number
+  toYear: number
+  /** How long that comes to. Worked out from the range, never typed. */
   years: number
   /** What she did there, in her own words or the office's. */
   duties: string
@@ -301,12 +314,6 @@ export interface CvDetails {
   interviewStatus: string
 
   // --- the bio data asks for these, and the professional CV does not -------
-  /** The post on the bio data, when it differs from her profession. */
-  postApplied: string
-  /** Where she is going, which is nearly always Saudi Arabia. */
-  destinationCountry: string
-  monthlySalary: string
-  contractPeriod: string
   placeOfBirth: string
   livingTown: string
   children: string
@@ -317,7 +324,7 @@ export interface CvDetails {
   nextOfKin: string
   english: string
   arabic: string
-  /** Each is yes, no, or however the office wants to put it. */
+  /** Each is a yes or a no, and the bio data prints it as one. */
   skillBabySitting: string
   skillChildrenCare: string
   skillTutoring: string
@@ -355,10 +362,6 @@ export const EMPTY_CV_DETAILS: CvDetails = {
   preferredCountry: '',
   client: '',
   interviewStatus: '',
-  postApplied: '',
-  destinationCountry: '',
-  monthlySalary: '',
-  contractPeriod: '',
   placeOfBirth: '',
   livingTown: '',
   children: '',

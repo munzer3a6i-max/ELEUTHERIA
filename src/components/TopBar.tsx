@@ -14,6 +14,8 @@ export default function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const unreadCount = useAppStore((s) => s.notifications.filter((n) => !n.read).length)
   const setLanguage = useAppStore((s) => s.setLanguage)
+  const showPeso = useAppStore((s) => s.settings.showPeso)
+  const setShowPeso = useAppStore((s) => s.setShowPeso)
   const setTheme = useAppStore((s) => s.setTheme)
   const theme = useAppStore((s) => s.settings.theme)
   const { t, tb, language } = useTranslation()
@@ -62,6 +64,35 @@ export default function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
           <span className="hidden sm:inline">{t('toggle_language')}</span>
         </button>
 
+        {/* A real switch: a track with a knob that slides to the peso side.
+            The sign is typed as itself -- JSX text does not read escapes, and
+            a "\u20b1" written that way once sat on this button as six
+            characters of nothing. */}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={showPeso}
+          onClick={() => setShowPeso(!showPeso)}
+          title={t('toggle_peso')}
+          aria-label={t('toggle_peso')}
+          className="flex h-8 items-center gap-2 rounded-control px-2 text-[11px] text-ink-2 hover:bg-raised sm:px-2.5"
+        >
+          <span className={showPeso ? 'text-ink-3' : 'font-semibold text-ink'}>$</span>
+          <span
+            aria-hidden="true"
+            className={`relative inline-block h-4 w-7 shrink-0 rounded-pill border transition-colors ${
+              showPeso ? 'border-accent bg-accent' : 'border-line-strong bg-sunken'
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 size-3 rounded-pill transition-[inset-inline-start] ${
+                showPeso ? 'start-3.5 bg-accent-ink' : 'start-0.5 bg-ink-3'
+              }`}
+            />
+          </span>
+          <span className={showPeso ? 'font-semibold text-accent-text' : 'text-ink-3'}>₱</span>
+        </button>
+
         <button
           type="button"
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -72,19 +103,23 @@ export default function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
           {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
         </button>
 
-        <button
-          type="button"
-          onClick={() => navigate('/notifications')}
-          aria-label={`${t('nav_notifications')}${unreadCount > 0 ? ` (${unreadCount})` : ''}`}
-          className="btn btn-ghost relative size-8 p-0"
-        >
-          <Bell className="size-4" />
-          {unreadCount > 0 && (
-            <span className="num absolute end-1 top-1 flex size-3.5 items-center justify-center rounded-pill bg-accent text-[9px] font-semibold text-accent-ink">
-              {unreadCount}
-            </span>
-          )}
-        </button>
+        {/* Notifications sit in the System group, so the bell is shown to the
+            people who can open that page and to nobody else. */}
+        {canView('system') && (
+          <button
+            type="button"
+            onClick={() => navigate('/notifications')}
+            aria-label={`${t('nav_notifications')}${unreadCount > 0 ? ` (${unreadCount})` : ''}`}
+            className="btn btn-ghost relative size-8 p-0"
+          >
+            <Bell className="size-4" />
+            {unreadCount > 0 && (
+              <span className="num absolute end-1 top-1 flex size-3.5 items-center justify-center rounded-pill bg-accent text-[9px] font-semibold text-accent-ink">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+        )}
 
         <div className="relative ms-0.5 border-s border-line ps-1.5 sm:ms-1.5 sm:ps-2.5">
           <button

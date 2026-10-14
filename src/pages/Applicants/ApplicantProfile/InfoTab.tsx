@@ -1,37 +1,95 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Trash2, Globe, FileText, Upload, ExternalLink } from 'lucide-react'
-import { useAppStore } from '../../../store/useAppStore'
+import { useAppStore, useStatusDefinitions } from '../../../store/useAppStore'
+import { openPlacements } from '../../../data/statusPipelines'
 import { useTranslation } from '../../../i18n/useTranslation'
+import { useCurrentUser } from '../../../lib/useCurrentUser'
 import Modal from '../../../components/Modal'
 import { Field, TextInput, PrimaryButton, SecondaryButton } from '../../../components/form'
 import { clearWorkerCv, setWorkerCv, useCvUrl } from '../../../lib/cvs'
-import type { Applicant } from '../../../types'
+import CvImport from './CvImport'
+import { experiencePeriod, isYear, spanYears } from '../../../lib/experience'
+import type { Applicant, ExperienceEntry } from '../../../types'
 
 export default function InfoTab({ applicant }: { applicant: Applicant }) {
   const updateApplicant = useAppStore((s) => s.updateApplicant)
   const addExperience = useAppStore((s) => s.addExperience)
   const deleteExperience = useAppStore((s) => s.deleteExperience)
   const addEducation = useAppStore((s) => s.addEducation)
+  const addRequest = useAppStore((s) => s.addRequest)
+  const updateRequest = useAppStore((s) => s.updateRequest)
   const deleteEducation = useAppStore((s) => s.deleteEducation)
   const agencies = useAppStore((s) => s.agencies)
+  const agents = useAppStore((s) => s.agents)
+  const countries = useAppStore((s) => s.countries)
+  const professions = useAppStore((s) => s.professions)
   const managers = useAppStore((s) => s.managers)
   const employers = useAppStore((s) => s.employers)
   const staff = useAppStore((s) => s.staff)
   const allRequests = useAppStore((s) => s.requests)
+  const definitions = useStatusDefinitions()
   const requests = allRequests.filter((r) => r.applicantId === applicant.id)
   const { t, tb, language } = useTranslation()
+  const { canEdit, canRemove, member } = useCurrentUser()
+
+  // The placement her employer is read from and written to: the one still
+  // running. A placement that ended is history; choosing an employer then
+  // opens a new one rather than rewriting the old.
+  const placement =
+    [...openPlacements(applicant.id, allRequests, definitions)].sort((a, b) => (a.createdOn < b.createdOn ? 1 : -1))[0] ??
+    null
+
+  /**
+   * Moving her to another employer is an edit to the placement. Choosing one
+   * when she has no placement opens it, which is what makes her Selected and
+   * books the agent's first half -- the same thing the Add Applicant form does.
+   */
+  function chooseEmployer(employerId: string) {
+    if (placement) {
+      if (employerId) updateRequest(placement.id, { employerId })
+      return
+    }
+    if (!employerId) return
+    addRequest({
+      type: applicant.type,
+      contractDurationMonths: 24,
+      applicantId: applicant.id,
+      employerId,
+      responsibleEmployeeId: member?.id ?? '',
+      recruitmentAgencyId: applicant.type === 'Domestic' ? (applicant.recruitmentAgencyId ?? '') : '',
+      mosanedNumber: '',
+    })
+  }
 
   const [expOpen, setExpOpen] = useState(false)
   const [eduOpen, setEduOpen] = useState(false)
 
   const agency = agencies.find((a) => a.id === applicant.recruitmentAgencyId)
 
+  // A record can be wrong in any of its fields, so each list offers what the
+  // office has plus whatever is already on her -- an imported country or
+  // profession nobody has added to the lists yet stays selectable rather than
+  // being silently replaced by the first option.
+  const withCurrent = (names: string[], current: string) =>
+    (names.includes(current) || !current ? names : [current, ...names]).map((name) => ({
+      value: name,
+      label: name,
+    }))
+  const countryOptions = withCurrent(countries.map((c) => c.name.en), applicant.country)
+  const professionOptions = withCurrent(professions.map((p) => p.name.en), applicant.profession)
+
+  // Uploading a CV and reading it are one act: the file is stored as hers,
+  // then handed to the reader, which offers what it found for review below.
+  const [reading, setReading] = useState<File | null>(null)
+
   function handleCv(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
-    setWorkerCv(applicant, file).catch((problem: Error) => window.alert(problem.message))
+    setWorkerCv(applicant, file)
+      .then(() => setReading(file))
+      .catch((problem: Error) => window.alert(problem.message))
   }
 
   function handleCvRemove() {
@@ -53,15 +111,60 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
           <div className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3 text-[11px]">
             <MetaField label={t('label_english_name')} value={applicant.englishName} onSave={(v) => updateApplicant(applicant.id, { englishName: v })} />
             <MetaField label={t('label_arabic_name')} value={applicant.arabicName} onSave={(v) => updateApplicant(applicant.id, { arabicName: v })} dir="rtl" />
-            <MetaField label={language === 'ar' ? 'الجنس' : 'Gender'} value={applicant.gender} readOnly />
+            <SelectField
+              label={language === 'ar' ? 'الجنس' : 'Gender'}
+              value={applicant.gender}
+              onSave={(v) => updateApplicant(applicant.id, { gender: v as Applicant['gender'] })}
+              options={[
+                { value: 'Female', label: language === 'ar' ? 'أنثى' : 'Female' },
+                { value: 'Male', label: language === 'ar' ? 'ذكر' : 'Male' },
+              ]}
+            />
             <MetaField
               label={language === 'ar' ? 'تاريخ الميلاد' : 'Date of Birth'}
               value={applicant.dob}
               type="date"
               onSave={(v) => updateApplicant(applicant.id, { dob: v })}
             />
-            <MetaField label={language === 'ar' ? 'الدولة' : 'Country'} value={applicant.country} readOnly />
-            <MetaField label={language === 'ar' ? 'المهنة' : 'Profession'} value={applicant.profession} readOnly />
+            <SelectField
+              label={language === 'ar' ? 'الدولة' : 'Country'}
+              value={applicant.country}
+              onSave={(v) => updateApplicant(applicant.id, { country: v })}
+              options={countryOptions}
+            />
+            <SelectField
+              label={language === 'ar' ? 'المهنة' : 'Profession'}
+              value={applicant.profession}
+              onSave={(v) => updateApplicant(applicant.id, { profession: v })}
+              options={professionOptions}
+            />
+            <SelectField
+              label={language === 'ar' ? 'النوع' : 'Type'}
+              value={applicant.type}
+              onSave={(v) => updateApplicant(applicant.id, { type: v as Applicant['type'] })}
+              options={[
+                { value: 'Domestic', label: t('type_domestic') },
+                { value: 'Profession', label: t('type_profession') },
+              ]}
+            />
+            <SelectField
+              label={language === 'ar' ? 'مكتب الاستقدام' : 'Recruitment Agency'}
+              value={applicant.recruitmentAgencyId ?? ''}
+              onSave={(v) => updateApplicant(applicant.id, { recruitmentAgencyId: v || null })}
+              options={[
+                { value: '', label: language === 'ar' ? 'بدون مكتب' : 'No office' },
+                ...agencies.map((a) => ({ value: a.id, label: tb({ en: a.englishName, ar: a.arabicName }) })),
+              ]}
+            />
+            <SelectField
+              label={language === 'ar' ? 'الوكيل' : 'Agent'}
+              value={applicant.agentId ?? ''}
+              onSave={(v) => updateApplicant(applicant.id, { agentId: v || null })}
+              options={[
+                { value: '', label: language === 'ar' ? 'بدون وكيل' : 'No agent' },
+                ...agents.map((a) => ({ value: a.id, label: tb(a.name) })),
+              ]}
+            />
             <MetaField label={language === 'ar' ? 'رقم الجواز' : 'Passport No.'} value={applicant.passportNo} onSave={(v) => updateApplicant(applicant.id, { passportNo: v })} />
             <MetaField
               label={language === 'ar' ? 'بداية الجواز' : 'Passport Start'}
@@ -78,15 +181,20 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
             <MetaField label={language === 'ar' ? 'رقم الهوية' : 'ID Number'} value={applicant.idNumber} onSave={(v) => updateApplicant(applicant.id, { idNumber: v })} />
             <MetaField label={t('label_phone')} value={applicant.phone} onSave={(v) => updateApplicant(applicant.id, { phone: v })} />
             <MetaField label={language === 'ar' ? 'الهاتف الأرضي' : 'Telephone'} value={applicant.telephone} onSave={(v) => updateApplicant(applicant.id, { telephone: v })} />
-            <SelectField
-              label={t('label_manager')}
-              value={applicant.managerId ?? ''}
-              onSave={(v) => updateApplicant(applicant.id, { managerId: v || null })}
-              options={[
-                { value: '', label: t('label_manager_none') },
-                ...managers.map((m) => ({ value: m.id, label: tb(m.name) })),
-              ]}
-            />
+            {applicant.type === 'Domestic' ? (
+              // A domestic worker is the office's own, so there is nothing to choose.
+              <MetaField label={t('label_owner')} value={t('label_owner_office')} readOnly />
+            ) : (
+              <SelectField
+                label={t('label_owner')}
+                value={applicant.managerId ?? ''}
+                onSave={(v) => updateApplicant(applicant.id, { managerId: v || null })}
+                options={[
+                  { value: '', label: t('label_owner_office') },
+                  ...managers.map((m) => ({ value: m.id, label: tb(m.name) })),
+                ]}
+              />
+            )}
           </div>
         </div>
 
@@ -100,8 +208,10 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
               <input type="file" className="hidden" onChange={handleCv} />
             </label>
           </div>
-          <CvRow applicant={applicant} onRemove={handleCvRemove} />
+          <CvRow applicant={applicant} onRemove={canRemove('directory') ? handleCvRemove : null} />
         </div>
+
+        {reading && <CvImport applicant={applicant} file={reading} fileKept onDone={() => setReading(null)} />}
 
         <div className="rounded-panel border border-line bg-surface p-4">
           <div className="mb-2 flex items-center justify-between">
@@ -122,10 +232,16 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
                 <div>
                   <p className="text-ink">{exp.title}</p>
                   <p className="text-[10px] text-ink-3">
-                    {exp.employer} · {exp.years} {language === 'ar' ? 'سنوات' : 'yrs'}
+                    {[exp.employer, experiencePeriod(exp, language === 'ar' ? 'ar' : 'en')].filter(Boolean).join(' · ')}
                   </p>
                 </div>
-                <button type="button" onClick={() => deleteExperience(applicant.id, exp.id)} className="text-ink-3 hover:text-neg">
+                <button
+                  type="button"
+                  aria-label={t('action_delete')}
+                  hidden={!canRemove('directory')}
+                  onClick={() => deleteExperience(applicant.id, exp.id)}
+                  className="text-ink-3 hover:text-neg"
+                >
                   <Trash2 className="size-3.5" />
                 </button>
               </div>
@@ -160,7 +276,13 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
                     {edu.institution} · {edu.year}
                   </p>
                 </div>
-                <button type="button" onClick={() => deleteEducation(applicant.id, edu.id)} className="text-ink-3 hover:text-neg">
+                <button
+                  type="button"
+                  aria-label={t('action_delete')}
+                  hidden={!canRemove('directory')}
+                  onClick={() => deleteEducation(applicant.id, edu.id)}
+                  className="text-ink-3 hover:text-neg"
+                >
                   <Trash2 className="size-3.5" />
                 </button>
               </div>
@@ -225,6 +347,30 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
                 {language === 'ar' ? 'لا توجد طلبات استقدام مرتبطة بعد.' : 'No recruitment requests yet.'}
               </p>
             )}
+
+            {/* The employer is a fact about the placement, not about her, so
+                this writes to the placement -- and opens one when she has none,
+                which is the same thing the Add Applicant form does when an
+                employer is chosen there. */}
+            {canEdit('placements') && (
+              <div className="border-t border-line pt-3">
+                <SelectField
+                  label={t('label_employer')}
+                  value={placement?.employerId ?? ''}
+                  onSave={chooseEmployer}
+                  options={[
+                    { value: '', label: t('label_employer_none') },
+                    ...employers.map((e) => ({
+                      value: e.id,
+                      label: tb({ en: e.englishName, ar: e.arabicName }),
+                    })),
+                  ]}
+                />
+                <p className="mt-1 text-[10px] leading-relaxed text-ink-3">
+                  {placement ? t('label_employer_moves') : t('label_employer_opens')}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -256,7 +402,7 @@ export default function InfoTab({ applicant }: { applicant: Applicant }) {
  * a signed link to the private copy, never the public one: the office should
  * see the document whether or not this worker is on the website.
  */
-function CvRow({ applicant, onRemove }: { applicant: Applicant; onRemove: () => void }) {
+function CvRow({ applicant, onRemove }: { applicant: Applicant; onRemove: (() => void) | null }) {
   const { language } = useTranslation()
   const url = useCvUrl(applicant)
 
@@ -275,7 +421,7 @@ function CvRow({ applicant, onRemove }: { applicant: Applicant; onRemove: () => 
             <ExternalLink className="size-3" /> {language === 'ar' ? 'فتح' : 'Open'}
           </a>
         )}
-        {applicant.cvFileName && (
+        {applicant.cvFileName && onRemove && (
           <button
             type="button"
             onClick={onRemove}
@@ -400,22 +546,42 @@ function ExperienceModal({
   onSubmit,
 }: {
   onClose: () => void
-  onSubmit: (entry: { title: string; employer: string; years: number; duties: string; country: string }) => void
+  onSubmit: (entry: Omit<ExperienceEntry, 'id'>) => void
 }) {
   const { t, language } = useTranslation()
   const [title, setTitle] = useState('')
   const [employer, setEmployer] = useState('')
-  const [years, setYears] = useState('')
+  const [fromYear, setFromYear] = useState('')
+  const [toYear, setToYear] = useState('')
   const [duties, setDuties] = useState('')
   const [country, setCountry] = useState('')
+  const [problem, setProblem] = useState<string | null>(null)
+
+  const from = Number(fromYear)
+  const to = Number(toYear)
+  const years = spanYears(from, to)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setProblem(null)
     if (!title.trim()) return
+    // Half a range is no range: either both years make sense together, or the
+    // entry is kept without one rather than with a year nobody can read.
+    const ranged = isYear(from) && isYear(to)
+    if ((fromYear || toYear) && !ranged) {
+      setProblem(language === 'ar' ? 'اكتب سنتين بأربعة أرقام، من وإلى.' : 'Give both years, four digits each.')
+      return
+    }
+    if (ranged && to < from) {
+      setProblem(language === 'ar' ? 'سنة النهاية قبل سنة البداية.' : 'The last year comes before the first.')
+      return
+    }
     onSubmit({
       title: title.trim(),
       employer: employer.trim(),
-      years: Number(years) || 0,
+      fromYear: ranged ? from : 0,
+      toYear: ranged ? to : 0,
+      years,
       duties: duties.trim(),
       country: country.trim(),
     })
@@ -436,8 +602,39 @@ function ExperienceModal({
         >
           <TextInput value={country} onChange={(e) => setCountry(e.target.value)} />
         </Field>
-        <Field label={language === 'ar' ? 'عدد السنوات' : 'Years'}>
-          <TextInput type="number" min={0} value={years} onChange={(e) => setYears(e.target.value)} />
+        <Field
+          label={language === 'ar' ? 'سنوات العمل' : 'Years worked'}
+          hint={
+            years > 0
+              ? `${fromYear} - ${toYear} · ${years} ${language === 'ar' ? 'سنوات' : years === 1 ? 'year' : 'years'}`
+              : language === 'ar'
+                ? 'من سنة إلى سنة، مثل 2024 - 2038'
+                : 'From one year to another, like 2024 - 2038'
+          }
+        >
+          <div className="flex items-center gap-2">
+            <TextInput
+              type="number"
+              min={1950}
+              max={2100}
+              step={1}
+              placeholder="2024"
+              value={fromYear}
+              onChange={(e) => setFromYear(e.target.value)}
+              className="text-center"
+            />
+            <span className="shrink-0 text-ink-3">—</span>
+            <TextInput
+              type="number"
+              min={1950}
+              max={2100}
+              step={1}
+              placeholder="2038"
+              value={toYear}
+              onChange={(e) => setToYear(e.target.value)}
+              className="text-center"
+            />
+          </div>
         </Field>
         <Field
           label={language === 'ar' ? 'أهم المهام' : 'Key duties'}
@@ -445,6 +642,7 @@ function ExperienceModal({
         >
           <TextInput value={duties} onChange={(e) => setDuties(e.target.value)} />
         </Field>
+        {problem && <p className="mt-1 text-[11px] font-medium text-neg">{problem}</p>}
         <div className="mt-4 flex justify-end gap-2">
           <SecondaryButton onClick={onClose}>{t('action_cancel')}</SecondaryButton>
           <PrimaryButton type="submit">{t('action_add')}</PrimaryButton>

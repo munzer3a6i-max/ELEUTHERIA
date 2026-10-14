@@ -3,8 +3,10 @@ import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import TopBar from '../components/TopBar'
 import { DESKTOP_QUERY, useMediaQuery } from '../lib/useMediaQuery'
+import { useAppStore } from '../store/useAppStore'
 
 export default function AppShell() {
+  const showPeso = useAppStore((s) => s.settings.showPeso)
   const isDesktop = useMediaQuery(DESKTOP_QUERY)
   const [navOpen, setNavOpen] = useState(false)
   const location = useLocation()
@@ -37,7 +39,10 @@ export default function AppShell() {
       <div className="flex min-h-[100dvh] min-w-0 flex-1 flex-col">
         <TopBar onOpenNav={() => setNavOpen(true)} />
         <main className="min-w-0 flex-1">
-          <div className="mx-auto w-full max-w-[1800px]">
+          {/* Amounts are formatted by a plain function, not a hook, so the page
+              is remounted when the peso switch flips: cheaper than teaching
+              every table to subscribe to it, and the switch is a deliberate act. */}
+          <div key={showPeso ? 'peso' : 'usd'} className="mx-auto w-full max-w-[1800px]">
             <Outlet />
           </div>
         </main>

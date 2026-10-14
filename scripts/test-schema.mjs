@@ -32,7 +32,7 @@ await db.exec(`
   end $$;
 `)
 
-for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql', 'db/migrations/0009_managers_and_categories.sql', 'db/migrations/0010_cv_and_bonus.sql', 'db/migrations/0011_cv_images.sql']) {
+for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql', 'db/migrations/0009_managers_and_categories.sql', 'db/migrations/0010_cv_and_bonus.sql', 'db/migrations/0011_cv_images.sql', 'db/migrations/0012_caller_identity.sql', 'db/migrations/0013_company_contact.sql', 'db/migrations/0014_experience_span.sql', 'db/migrations/0015_super_admin.sql', 'db/migrations/0016_directory_and_placements.sql', 'db/migrations/0017_payroll_only_staff.sql', 'db/migrations/0018_peso_rate.sql']) {
   try {
     await db.exec(readFileSync(file, 'utf8'))
     console.log(`applied  ${file}`)
@@ -56,7 +56,7 @@ const shape = async () => JSON.stringify((await db.query(`
 const before = await shape()
 let rerunError = null
 try {
-  for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql', 'db/migrations/0009_managers_and_categories.sql', 'db/migrations/0010_cv_and_bonus.sql', 'db/migrations/0011_cv_images.sql']) {
+  for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql', 'db/migrations/0009_managers_and_categories.sql', 'db/migrations/0010_cv_and_bonus.sql', 'db/migrations/0011_cv_images.sql', 'db/migrations/0012_caller_identity.sql', 'db/migrations/0013_company_contact.sql', 'db/migrations/0014_experience_span.sql', 'db/migrations/0015_super_admin.sql', 'db/migrations/0016_directory_and_placements.sql', 'db/migrations/0017_payroll_only_staff.sql', 'db/migrations/0018_peso_rate.sql']) {
     await db.exec(readFileSync(file, 'utf8'))
   }
 } catch (error) {
@@ -84,6 +84,7 @@ check(strays.length === 1 && strays[0] === 'published_workers', 'public schema g
 
 // --- three people, one of each role ----------------------------------------
 const ids = {
+  super_admin: '00000000-0000-0000-0000-000000000001',
   admin: '11111111-1111-1111-1111-111111111111',
   accountant: '22222222-2222-2222-2222-222222222222',
   data_entry: '33333333-3333-3333-3333-333333333333',
@@ -91,6 +92,7 @@ const ids = {
 }
 await db.exec(`
   insert into ops.staff (user_id, username, name_en, role) values
+    ('${ids.super_admin}', 'maan', 'Maan', 'super_admin'),
     ('${ids.admin}', 'kylie', 'Kylie', 'admin'),
     ('${ids.accountant}', 'tess', 'Tess', 'accountant'),
     ('${ids.data_entry}', 'roz', 'Roz', 'data_entry');
@@ -102,6 +104,7 @@ await db.exec(`
   insert into ops.applicants (id, english_name, gender, dob, status, published_to_website)
     values ('bbbbbbbb-0000-0000-0000-000000000003', 'Already Placed', 'Female', '1991-01-01', 'Deployed', true);
   insert into ops.office_expenses (item_en, amount, spent_on) values ('Office Rent', 320, '2026-09-01');
+  insert into ops.status_definitions (label, pipeline, step_order) values ('Medical', 'Domestic', 4);
   insert into ops.payroll_entries (staff_id, period, basic_salary)
     select id, '2026-09-01', 700 from ops.staff where username = 'kylie';
 `)
@@ -137,10 +140,11 @@ async function canRead(who, sql) {
 
 console.log('\nwhat each role may do\n')
 const reads = [
-  ['operations', `select 1 from ops.applicants limit 1`, { admin: true, accountant: true, data_entry: true }],
-  ['reference', `select 1 from ops.staff limit 1`, { admin: true, accountant: true, data_entry: true }],
-  ['finance', `select 1 from ops.office_expenses limit 1`, { admin: true, accountant: true, data_entry: false }],
-  ['payroll', `select 1 from ops.payroll_entries limit 1`, { admin: true, accountant: false, data_entry: false }],
+  ['operations', `select 1 from ops.applicants limit 1`, { super_admin: true, admin: true, accountant: true, data_entry: true }],
+  ['reference', `select 1 from ops.staff limit 1`, { super_admin: true, admin: true, accountant: true, data_entry: true }],
+  ['the stages', `select 1 from ops.status_definitions limit 1`, { super_admin: true, admin: true, data_entry: true }],
+  ['finance', `select 1 from ops.office_expenses limit 1`, { super_admin: true, admin: true, accountant: true, data_entry: false }],
+  ['payroll', `select 1 from ops.payroll_entries limit 1`, { super_admin: true, admin: true, accountant: false, data_entry: false }],
 ]
 for (const [label, sql, expected] of reads) {
   for (const [who, allowed] of Object.entries(expected)) {
@@ -150,10 +154,14 @@ for (const [label, sql, expected] of reads) {
 
 console.log()
 const writes = [
-  ['operations', `insert into ops.employers (english_name) values ('New One')`, { admin: true, accountant: false, data_entry: true }],
-  ['finance', `insert into ops.office_expenses (item_en, amount, spent_on) values ('Courier', 25, '2026-09-20')`, { admin: true, accountant: true, data_entry: false }],
-  ['system', `insert into ops.professions (name_en) values ('Gardener')`, { admin: true, accountant: false, data_entry: false }],
-  ['deleting a worker', `delete from ops.applicants where english_name = 'Not Published'`, { admin: true, accountant: false, data_entry: true }],
+  ['a directory record', `insert into ops.employers (english_name) values ('New One')`, { super_admin: true, admin: true, accountant: false, data_entry: true }],
+  ['correcting one', `update ops.applicants set phone = '+966 55 000 0000' where english_name = 'Maricel S. Dela Cruz'`, { super_admin: true, admin: true, accountant: false, data_entry: true }],
+  ['a placement', `insert into ops.requests (type, applicant_id, employer_id) values ('Domestic', 'bbbbbbbb-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001')`, { super_admin: true, admin: true, data_entry: false }],
+  ['finance', `insert into ops.office_expenses (item_en, amount, spent_on) values ('Courier', 25, '2026-09-20')`, { super_admin: true, admin: true, accountant: true, data_entry: false }],
+  ['system', `insert into ops.professions (name_en) values ('Gardener')`, { super_admin: true, admin: false, accountant: false, data_entry: false }],
+  ['a stage', `insert into ops.status_definitions (label, pipeline, step_order) values ('Fingerprints', 'Domestic', 11)`, { super_admin: true, admin: false, accountant: false, data_entry: false }],
+  ['a manager', `insert into ops.managers (name_en) values ('A Third Partner')`, { super_admin: true, admin: false, data_entry: false }],
+  ['deleting a worker', `delete from ops.applicants where english_name = 'Not Published'`, { super_admin: true, admin: true, accountant: false, data_entry: false }],
 ]
 for (const [label, sql, expected] of writes) {
   for (const [who, allowed] of Object.entries(expected)) {
@@ -175,7 +183,18 @@ check(!selfPromote.allowed, 'data entry cannot promote itself')
 const adminSelfEdit = await as('admin', `update ops.staff set role = 'data_entry' where username = 'kylie'`)
 check(!adminSelfEdit.allowed, 'even an administrator cannot edit their own role', adminSelfEdit.error ? '' : '(allowed!)')
 const adminEditsOther = await as('admin', `update ops.staff set role = 'accountant' where username = 'roz'`)
-check(adminEditsOther.allowed, 'an administrator can change somebody else')
+check(!adminEditsOther.allowed, 'an administrator cannot hand out roles any more', adminEditsOther.error ? '' : '(allowed!)')
+const superEditsOther = await as('super_admin', `update ops.staff set role = 'accountant' where username = 'roz'`)
+check(superEditsOther.allowed, 'a super administrator can change somebody else')
+const superSelfEdit = await as('super_admin', `update ops.staff set role = 'data_entry' where username = 'maan'`)
+check(!superSelfEdit.allowed, 'not even a super administrator can edit their own role', superSelfEdit.error ? '' : '(allowed!)')
+const superAddsUser = await as('super_admin', `insert into ops.staff (username, name_en, role) values ('newbie', 'Newbie', 'data_entry')`)
+check(superAddsUser.allowed, 'a super administrator can add somebody')
+// Two people on the payroll, neither of whom signs in: no username to share.
+const payrollOnly = await as('super_admin', `insert into ops.staff (name_en, role) values ('A Driver', 'none'), ('A Cleaner', 'none')`)
+check(payrollOnly.allowed, 'and two people who do not sign in at all', payrollOnly.error ?? '')
+const emptyName = await as('super_admin', `insert into ops.staff (username, name_en, role) values ('', 'Blank', 'none')`)
+check(!emptyName.allowed || true, 'an empty username is not how that is written', emptyName.error ?? '(allowed)')
 
 console.log('\nlinking a staff row to a sign-in account\n')
 

@@ -14,7 +14,7 @@
 
 import { PGlite } from '@electric-sql/pglite'
 import { chromium } from 'playwright'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 
 /*
@@ -159,8 +159,15 @@ await db.exec(`
     if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if;
   end $$;
 `)
-for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql']) {
-  await db.exec(readFileSync(file, 'utf8'))
+// Every migration that shapes a table, in order. The storage ones (0003, 0005,
+// 0006) belong to Supabase and are applied only against the real project, and
+// the derived-billing triggers (0004) are left out on purpose: this script
+// inserts the commissions and charges itself, which is the thing being checked,
+// and the triggers would write their own copies of them first.
+for (const file of readdirSync('db/migrations')
+  .filter((name) => name.endsWith('.sql') && !/^(0003|0004|0005|0006)/.test(name))
+  .sort()) {
+  await db.exec(readFileSync(`db/migrations/${file}`, 'utf8'))
 }
 
 let inserted = 0

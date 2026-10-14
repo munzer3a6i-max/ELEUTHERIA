@@ -5,7 +5,7 @@ import { useAppStore, requestCost, invoiceTotalPaid, formatMoney } from '../../.
 import { useTranslation } from '../../../i18n/useTranslation'
 import { useCurrentUser } from '../../../lib/useCurrentUser'
 import Confirm from '../../../components/Confirm'
-import { removeApplicant, whyNotDelete } from '../../../lib/applicants'
+import { BLOCKER_LABEL, deletePlan, removeApplicant, type Blocker } from '../../../lib/applicants'
 import Header from './Header'
 import ProfileTabs, { type ProfileTabKey } from './ProfileTabs'
 import StageStepper from './StageStepper'
@@ -40,11 +40,17 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
   const applicant = useAppStore((s) => s.applicants.find((a) => a.id === applicantId))
   const allRequests = useAppStore((s) => s.requests)
   const invoices = useAppStore((s) => s.invoices)
+  const commissions = useAppStore((s) => s.agentCommissions)
   const { t, language } = useTranslation()
-  const { canEdit } = useCurrentUser()
-  const [activeTab, setActiveTab] = useState<ProfileTabKey>('financial')
+  const { canRemove, canView } = useCurrentUser()
+  // Data entry works the caseload and the money pages are not theirs, so the
+  // profile opens on her file rather than on her money, and the money tab is
+  // not offered at all.
+  const seesMoney = canView('finance')
+  const seesPlacements = canView('placements')
+  const [activeTab, setActiveTab] = useState<ProfileTabKey>(seesMoney ? 'financial' : 'info')
   const [removing, setRemoving] = useState(false)
-  const [refused, setRefused] = useState<number | null>(null)
+  const [refused, setRefused] = useState<{ blocker: Blocker; count: number } | null>(null)
 
   if (!applicant) {
     onDeleted()
@@ -62,7 +68,7 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
   }
 
   function handleSendToClient() {
-    const cost = activeRequest ? requestCost(activeRequest) : 0
+    const cost = activeRequest ? requestCost(activeRequest, commissions) : 0
     const paid = invoice ? invoiceTotalPaid(invoice) : 0
     const subject = encodeURIComponent(`Applicant Summary - ${applicant!.englishName}`)
     const body = encodeURIComponent(
@@ -75,8 +81,8 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
   function askToDelete() {
     // The database refuses a worker who is on a request, and a refusal after
     // the fact reads as the delete simply not working.
-    const blocked = whyNotDelete(applicantId)
-    if (blocked.kind === 'has-requests') setRefused(blocked.count)
+    const plan = deletePlan(applicantId)
+    if (plan.blocked) setRefused(plan.blocked)
     else setRemoving(true)
   }
 
@@ -84,7 +90,7 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
     const doomed = applicant!
     setRemoving(false)
     void removeApplicant(doomed).then((outcome) => {
-      if (outcome.kind === 'has-requests') setRefused(outcome.count)
+      if (outcome.kind === 'blocked') setRefused({ blocker: outcome.blocker, count: outcome.count })
     })
   }
 
@@ -106,14 +112,16 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
           >
             <Printer className="size-3.5" /> {language === 'ar' ? 'طباعة' : 'Print'}
           </button>
-          <button
-            type="button"
-            onClick={handleSendToClient}
-            className="btn btn-secondary"
-          >
-            <Send className="size-3.5" /> {language === 'ar' ? 'إرسال للعميل' : 'Send to Client'}
-          </button>
-          {canEdit('operations') && (
+          {seesMoney && (
+            <button
+              type="button"
+              onClick={handleSendToClient}
+              className="btn btn-secondary"
+            >
+              <Send className="size-3.5" /> {language === 'ar' ? 'إرسال للعميل' : 'Send to Client'}
+            </button>
+          )}
+          {canRemove('directory') && (
             <button
               type="button"
               onClick={askToDelete}
@@ -141,7 +149,7 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
         <Confirm
           title={t('applicant_has_requests_title')}
           message={t('applicant_has_requests')}
-          detail={`${t('applicant_requests_count')} ${refused}`}
+          detail={`${t(BLOCKER_LABEL[refused.blocker])} ${refused.count}`}
           confirmLabel={t('action_ok')}
           tone="danger"
           withoutCancel
@@ -150,10 +158,15 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
         />
       )}
 
-      <Header applicant={applicant} activeRequest={activeRequest} invoice={invoice} />
-      <ProfileTabs active={activeTab} onChange={setActiveTab} />
+      <Header applicant={applicant} activeRequest={activeRequest} invoice={invoice} seesMoney={seesMoney} />
+      <ProfileTabs
+        active={activeTab}
+        onChange={setActiveTab}
+        seesMoney={seesMoney}
+        seesPlacements={seesPlacements}
+      />
 
-      {activeTab === 'financial' && (
+      {activeTab === 'financial' && seesMoney && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           <div className="lg:col-span-3">
             <StageStepper
@@ -168,7 +181,7 @@ function ApplicantProfileContent({ applicantId, onDeleted }: { applicantId: stri
         </div>
       )}
       {activeTab === 'info' && <InfoTab applicant={applicant} />}
-      {activeTab === 'stages' && <RecruitmentStagesTab activeRequest={activeRequest} />}
+      {activeTab === 'stages' && seesPlacements && <RecruitmentStagesTab activeRequest={activeRequest} />}
       {activeTab === 'cv' && <CvTab applicant={applicant} />}
       {activeTab === 'documents' && <DocumentsTab applicant={applicant} />}
       {activeTab === 'notes' && <NotesTab applicant={applicant} />}

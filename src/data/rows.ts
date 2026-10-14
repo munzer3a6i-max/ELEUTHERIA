@@ -51,6 +51,7 @@ import type {
   RecruitmentAgency,
   RecruitmentRequest,
   StaffMember,
+  StatusDefinition,
   StatusHistoryEntry,
 } from '../types'
 
@@ -142,6 +143,30 @@ export const expenseCategoryRows = {
   in: (r: Row): ExpenseCategory => ({ id: text(r.id), name: { en: text(r.name_en), ar: text(r.name_ar) } }),
 }
 
+export const statusDefinitionRows = {
+  table: 'status_definitions',
+  out: (d: StatusDefinition): Row => ({
+    id: d.id,
+    label: d.label,
+    pipeline: d.pipeline,
+    step_order: d.order,
+    default_cost: d.defaultCost,
+    cost_note: d.costNote,
+    is_terminal: d.isTerminal,
+    is_exception: d.isException,
+  }),
+  in: (r: Row): StatusDefinition => ({
+    id: text(r.id),
+    label: text(r.label),
+    pipeline: text(r.pipeline) as StatusDefinition['pipeline'],
+    order: Number(r.step_order ?? 0),
+    defaultCost: money(r.default_cost),
+    costNote: text(r.cost_note),
+    isTerminal: Boolean(r.is_terminal),
+    isException: Boolean(r.is_exception),
+  }),
+}
+
 export const paymentSourceRows = {
   table: 'payment_sources',
   out: (p: PaymentSource): Row => ({ id: p.id, name: p.name, scopes: p.scopes }),
@@ -165,22 +190,34 @@ export const settingsRows = {
     company_tagline: s.companyTagline,
     license_number: s.licenseNumber,
     address: s.address,
+    website: s.website,
+    phones: s.phones,
+    email: s.email,
     currency: s.currency,
+    peso_rate: s.pesoRate,
   }),
   in: (r: Row): CompanySettings => ({
     companyName: text(r.company_name),
     companyTagline: text(r.company_tagline),
     licenseNumber: text(r.license_number),
     address: text(r.address),
+    website: text(r.website),
+    phones: text(r.phones),
+    email: text(r.email),
     currency: text(r.currency) || 'USD',
+    pesoRate: Number(r.peso_rate ?? 56.5) || 56.5,
   }),
 }
 
 export interface CompanySettings {
+  pesoRate: number
   companyName: string
   companyTagline: string
   licenseNumber: string
   address: string
+  website: string
+  phones: string
+  email: string
   currency: string
 }
 
@@ -196,7 +233,9 @@ export const staffRows = {
   out: (m: StaffMember): Row => ({
     id: m.id,
     user_id: m.userId,
-    username: m.username.toLowerCase(),
+    // No username at all for somebody who does not sign in: an empty string is
+    // a name nobody can type, and only one person could have it.
+    username: m.username.trim() ? m.username.toLowerCase() : null,
     name_en: m.name.en,
     name_ar: m.name.ar,
     phone: m.phone,
@@ -393,6 +432,8 @@ export const experienceRows = {
     applicant_id: applicantId,
     title: e.title,
     employer: e.employer,
+    from_year: e.fromYear || null,
+    to_year: e.toYear || null,
     years: e.years,
     duties: e.duties,
     country: e.country,
@@ -401,6 +442,8 @@ export const experienceRows = {
     id: text(r.id),
     title: text(r.title),
     employer: text(r.employer),
+    fromYear: Number(r.from_year ?? 0),
+    toYear: Number(r.to_year ?? 0),
     years: Number(r.years ?? 0),
     duties: text(r.duties),
     country: text(r.country),

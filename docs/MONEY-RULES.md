@@ -31,9 +31,9 @@ An agent introduces some of the candidates, not all of them. They earn
 **half their fee when their candidate is Selected** and **the other half when
 she is Deployed** — $500 and $500 by default, editable per agent.
 
-The fee is counted once. The pipeline's `Selected` and `Deployed` stages
-default to a $500 cost with the note "or $150 cash assistance if not placed
-through an agent". So:
+The fee is counted once. The `Selected` and `Deployed` stages carry no default
+cost of their own — every agent is on a different commission, so the figure is
+the agent's, not the stage's. So:
 
 | Candidate came from | Stage cost | Commission record |
 | --- | --- | --- |
@@ -43,9 +43,44 @@ through an agent". So:
 The status-update form applies this automatically and says which case it is,
 so the stage log and the Agents page can never bill the same fee twice.
 
+**A request opens on Selected.** Raising a recruitment request *is* the office
+saying this candidate has been chosen for this employer, so the stage is logged
+the moment the request is created, dated today and credited to whoever raised
+it. That is what makes the agent's first half, or the cash assistance, fall due
+straight away instead of waiting for somebody to type the stage in afterwards.
+It is an ordinary stage entry — editable, re-datable and deletable like any
+other — and it is priced by the same rule as the table above.
+
 Commissions are an **expense**, booked on the day the milestone was reached
 whether or not the money has left yet — the same accrual rule the stage costs
-already follow.
+already follow. They count against the placement that earned them: `requestCost`
+is the stage log plus the fees booked against that request, and the worker's own
+expenses list each fee as a line of its own. (`stageCost` is the stage log
+alone, for the few places that mean only that.)
+
+Reaching a milestone also moves the worker's own status — Selected, Deployed,
+Back Out — because the published view asks her record, not her stage log, and a
+worker whose status never moved went on advertising herself after she had
+already flown. It only ever moves her forward: deleting a stage does not undo a
+status somebody set on purpose.
+
+## Who the placement belongs to
+
+The month is split on one line: **a domestic worker is the office's own, and a
+tradesman belongs to the partner who brought him in.** The office raises the
+domestic workers, carries their costs and keeps what they earn, so no partner
+is named against them -- the request form says "The office" and gives nothing to
+choose. A professional request asks which partner, and the answer is kept on
+his own record, because it is a fact about him rather than about one placement.
+
+The Reports page splits on exactly that rule (`placementOwnerId`), so a worker's
+old manager tag cannot quietly send a domestic placement to a partner. The tag
+itself is left alone: nothing is rewritten to follow a policy that may change
+again, and the split is one function away from changing with it.
+
+Who *raised* a request is a different question, and is not a choice: it is
+whoever was signed in. It shows on the request as "Raised by", and it is the
+staff member credited on the Selected stage that opens the request.
 
 ## The partner office
 

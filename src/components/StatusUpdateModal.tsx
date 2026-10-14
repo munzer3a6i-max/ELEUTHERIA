@@ -1,23 +1,12 @@
 import { useState } from 'react'
-import { useAppStore } from '../store/useAppStore'
+import { useAppStore, useStatusDefinitions } from '../store/useAppStore'
 import { useTranslation } from '../i18n/useTranslation'
 import { pipelineForType, nextStatus } from '../data/statusPipelines'
-import { CASH_ASSISTANCE, DEPLOYMENT_STAGE, SELECTION_STAGE } from '../data/businessRules'
+import { milestoneCost } from '../data/businessRules'
 import Modal from './Modal'
 import { Field, SelectInput, TextInput, TextArea, PrimaryButton, SecondaryButton } from './form'
 import AttachmentField from './AttachmentField'
 import type { Attachment, StatusHistoryEntry } from '../types'
-
-/**
- * The fee an agent earns at a milestone is booked as their commission, so the
- * stage itself costs nothing. A candidate who came to us directly has no agent
- * to pay, and gets cash assistance at the same two points instead. Either way
- * the money is counted once.
- */
-function milestoneCost(label: string, hasAgent: boolean): number | null {
-  if (label !== SELECTION_STAGE && label !== DEPLOYMENT_STAGE) return null
-  return hasAgent ? 0 : CASH_ASSISTANCE
-}
 
 export default function StatusUpdateModal({
   requestType,
@@ -36,11 +25,12 @@ export default function StatusUpdateModal({
   onSubmit: (entry: Omit<StatusHistoryEntry, 'id'>) => void
 }) {
   const staff = useAppStore((s) => s.staff)
+  const definitions = useStatusDefinitions()
   const allPaymentSources = useAppStore((s) => s.paymentSources)
   const paymentSources = allPaymentSources.filter((p) => p.scopes.includes('Request Status'))
   const { t, language } = useTranslation()
-  const pipeline = pipelineForType(requestType)
-  const suggested = nextStatus(requestType, currentStatusLabel)
+  const pipeline = pipelineForType(requestType, definitions)
+  const suggested = nextStatus(requestType, currentStatusLabel, definitions)
 
   const [status, setStatus] = useState(initial?.status ?? suggested?.label ?? pipeline[0]?.label ?? '')
   const [date, setDate] = useState(initial?.date ?? new Date().toISOString().slice(0, 10))
@@ -94,8 +84,8 @@ export default function StatusUpdateModal({
           <p className="-mt-2 mb-3 rounded-control border border-line bg-sunken p-2 text-[10.5px] leading-relaxed text-ink-3">
             {hasAgent
               ? language === 'ar'
-                ? 'أتعاب الوكيل تُسجَّل في صفحة الوكلاء، لذلك تبقى تكلفة هذه المرحلة صفرًا حتى لا تُحتسب مرتين.'
-                : "The agent's fee is booked on the Agents page, so this stage stays at zero and the money is counted once."
+                ? 'أتعاب الوكيل تُسجَّل على الوكيل، لذلك تبقى تكلفة هذه المرحلة صفرًا. تظهر رغم ذلك بندًا مستقلًا في مصروفاتها، وتُدفع من صفحة الوكلاء.'
+                : "The agent's fee is booked against the agent, so this stage stays at zero. It still shows as a line of its own in her expenses, and is paid from the Agents page."
               : language === 'ar'
                 ? 'لا يوجد وكيل لهذه المرشحة، لذلك تُصرف مساعدة نقدية بدلًا من أتعاب الوكيل.'
                 : 'No agent introduced this candidate, so cash assistance is paid instead of an agent fee.'}
