@@ -64,16 +64,33 @@ export default function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
           <span className="hidden sm:inline">{t('toggle_language')}</span>
         </button>
 
+        {/* A real switch: a track with a knob that slides to the peso side.
+            The sign is typed as itself -- JSX text does not read escapes, and
+            a "\u20b1" written that way once sat on this button as six
+            characters of nothing. */}
         <button
           type="button"
+          role="switch"
+          aria-checked={showPeso}
           onClick={() => setShowPeso(!showPeso)}
           title={t('toggle_peso')}
           aria-label={t('toggle_peso')}
-          aria-pressed={showPeso}
-          className={`btn btn-ghost px-2 sm:px-3 ${showPeso ? 'bg-accent-soft text-accent-text' : ''}`}
+          className="flex h-8 items-center gap-2 rounded-control px-2 text-[11px] text-ink-2 hover:bg-raised sm:px-2.5"
         >
-          <span className="text-[13px] font-semibold leading-none">\u20b1</span>
-          <span className="hidden sm:inline">{showPeso ? t('toggle_peso_on') : t('toggle_peso_off')}</span>
+          <span className={showPeso ? 'text-ink-3' : 'font-semibold text-ink'}>$</span>
+          <span
+            aria-hidden="true"
+            className={`relative inline-block h-4 w-7 shrink-0 rounded-pill border transition-colors ${
+              showPeso ? 'border-accent bg-accent' : 'border-line-strong bg-sunken'
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 size-3 rounded-pill transition-[inset-inline-start] ${
+                showPeso ? 'start-3.5 bg-accent-ink' : 'start-0.5 bg-ink-3'
+              }`}
+            />
+          </span>
+          <span className={showPeso ? 'font-semibold text-accent-text' : 'text-ink-3'}>₱</span>
         </button>
 
         <button
