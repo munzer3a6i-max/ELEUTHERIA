@@ -542,3 +542,14 @@ finds by the years they ran are offered as experience entries. Nothing is
 written until *Apply* is pressed. A scanned CV is a picture with no text in it
 and is reported as such; the reader uses patterns only, nothing leaves the
 browser. `src/lib/cvImport.ts` holds the labels it knows.
+
+
+## A column the dashboard cannot find
+
+"Could not find the 'country' column of 'applicant_experience' in the schema
+cache" means the database is a column short: it was installed from an earlier
+copy of the schema and a later migration that adds the column was never run.
+`db/catch-up-columns.sql` is every such column in one place, each as
+*add column if not exists*, so it can be run as often as you like; it ends by
+reloading the API's schema and printing which columns are still missing, which
+should be none.
