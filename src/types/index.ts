@@ -382,6 +382,47 @@ export const EMPTY_CV_DETAILS: CvDetails = {
   skillCooking: '',
 }
 
+/** Where an employer's enquiry first reached the office. */
+export type LeadSource = 'WhatsApp' | 'Email' | 'Website form'
+
+/** How far an enquiry has come, from first message to a signed job order. */
+export type LeadStage = 'New enquiry' | 'Qualified' | 'Shortlisting' | 'Proposal sent' | 'Won' | 'Lost'
+
+/** How the office last spoke to them. */
+export type LeadChannel = 'WhatsApp' | 'Email' | 'Call' | 'Meeting'
+
+/**
+ * An employer's enquiry, from the first message to a job order or a no. Every
+ * one is entered by hand through the Add lead form for now; the times are kept
+ * as instants and shown in Arabia Standard Time, which is the clock the
+ * employers keep.
+ */
+export interface Lead {
+  id: string
+  employerName: string
+  contactName: string
+  phone: string
+  email: string
+  /** What they asked for, as they put it: "24 ICU & ER nurses". */
+  need: string
+  city: string
+  source: LeadSource
+  stage: LeadStage
+  /** The staff member who answers for this enquiry; empty while nobody does. */
+  ownerId: string
+  /** The day the enquiry arrived, YYYY-MM-DD. */
+  receivedOn: string
+  /** When the office last spoke to them, as an ISO instant; empty while it has not. */
+  lastContactAt: string
+  lastContactChannel: LeadChannel | ''
+  /** When somebody has to come back to them, as an ISO instant; empty for none. */
+  nextFollowUpAt: string
+  /** What that follow-up is for: "Share candidate CVs". */
+  nextStep: string
+  notes: string
+  createdOn: string
+}
+
 /** One of the people whose domestic workers are counted separately. */
 export interface Manager {
   id: string

@@ -5,6 +5,7 @@ export const translations = {
   nav_applicants: { en: 'Applicants', ar: 'المتقدمون' },
   nav_employers: { en: 'Employer Profile', ar: 'ملف صاحب العمل' },
   nav_agencies: { en: 'Recruitment Agency', ar: 'مكتب الاستقدام' },
+  nav_leads: { en: 'Leads', ar: 'العملاء المحتملون' },
   nav_staff: { en: 'Staff', ar: 'الموظفون' },
   nav_addons: { en: 'Addons', ar: 'الإعدادات الفرعية' },
   nav_invoices: { en: 'Invoices', ar: 'الفواتير' },

@@ -23,8 +23,7 @@ import {
   UserCog,
   UserPlus,
   Users,
-  Wallet,
-} from 'lucide-react'
+  Wallet, Inbox } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
@@ -130,6 +129,7 @@ export default function Sidebar({
   const panel = useRef<HTMLElement>(null)
   const navigate = useNavigate()
   const { t, language } = useTranslation()
+  const leadCount = useAppStore((s) => s.leads.length)
   const unreadCount = useAppStore((s) => s.notifications.filter((n) => !n.read).length)
   const settings = useAppStore((s) => s.settings)
   const { canView } = useCurrentUser()
@@ -227,6 +227,7 @@ export default function Sidebar({
             <>
               <GroupLabel>{language === 'ar' ? 'النظام' : 'System'}</GroupLabel>
               <NavItem to="/staff" icon={<UserCog className="size-4" />} label={t('nav_staff')} />
+              <NavItem to="/leads" icon={<Inbox className="size-4" />} label={t('nav_leads')} badge={leadCount} />
               <NavGroup icon={<Wallet className="size-4" />} label={t('nav_addons')} active={addonsActive}>
             <NavItem to="/addons/countries" icon={<Globe2 className="size-3.5" />} label={language === 'ar' ? 'الدول' : 'Countries'} />
             <NavItem to="/addons/cities" icon={<MapPin className="size-3.5" />} label={language === 'ar' ? 'المدن' : 'Cities'} />

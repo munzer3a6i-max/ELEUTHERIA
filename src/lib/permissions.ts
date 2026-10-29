@@ -126,6 +126,7 @@ const ROUTE_AREAS: [string, Area][] = [
   ['/agencies', 'directory'],
   ['/recruitments', 'placements'],
   ['/staff', 'system'],
+  ['/leads', 'system'],
   ['/addons', 'system'],
   ['/settings', 'system'],
   ['/notifications', 'system'],

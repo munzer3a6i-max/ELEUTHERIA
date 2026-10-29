@@ -34,6 +34,7 @@ import type {
   RecruitmentRequest,
   StaffMember,
   StatusDefinition,
+  Lead,
 } from '../types'
 
 export type Tables = Partial<Record<TableName, Row[]>>
@@ -46,6 +47,7 @@ export interface Assembled {
   professions: Profession[]
   managers: Manager[]
   statusDefinitions: StatusDefinition[]
+  leads: Lead[]
   expenseCategories: ExpenseCategory[]
   paymentSources: PaymentSource[]
   staff: StaffMember[]
@@ -95,6 +97,7 @@ export function assemble(tables: Tables): Assembled {
     professions: (tables.professions ?? []).map(rows.professionRows.in),
     managers: (tables.managers ?? []).map(rows.managerRows.in),
     statusDefinitions: (tables.status_definitions ?? []).map(rows.statusDefinitionRows.in),
+    leads: (tables.leads ?? []).map(rows.leadRows.in),
     expenseCategories: (tables.expense_categories ?? []).map(rows.expenseCategoryRows.in),
     paymentSources: (tables.payment_sources ?? []).map(rows.paymentSourceRows.in),
     staff: (tables.staff ?? []).map(rows.staffRows.in),

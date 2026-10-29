@@ -34,7 +34,7 @@ Deleting is its own right, not part of editing. Every store action whose name
 begins with `delete` is checked against that right rather than against editing,
 so a new one is covered the day it is written.
 
-The **System pages** are Staff, Addons, Notifications and Settings: who may
+The **System pages** are Staff, Leads, Addons, Notifications and Settings: who may
 sign in and with what role, the lists the office runs on (countries, cities,
 professions, managers, expense categories, payment sources), the stages of the
 recruitment itself, and the company's own details. That group is the super

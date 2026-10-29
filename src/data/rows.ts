@@ -53,6 +53,7 @@ import type {
   StaffMember,
   StatusDefinition,
   StatusHistoryEntry,
+  Lead,
 } from '../types'
 
 type Row = Record<string, unknown>
@@ -141,6 +142,49 @@ export const expenseCategoryRows = {
   table: 'expense_categories',
   out: (c: ExpenseCategory): Row => ({ id: c.id, name_en: c.name.en, name_ar: c.name.ar }),
   in: (r: Row): ExpenseCategory => ({ id: text(r.id), name: { en: text(r.name_en), ar: text(r.name_ar) } }),
+}
+
+export const leadRows = {
+  table: 'leads',
+  out: (l: Lead): Row => ({
+    id: l.id,
+    employer_name: l.employerName,
+    contact_name: l.contactName,
+    phone: l.phone,
+    email: l.email,
+    need: l.need,
+    city: l.city,
+    source: l.source,
+    stage: l.stage,
+    owner_id: l.ownerId || null,
+    received_on: l.receivedOn || null,
+    last_contact_at: l.lastContactAt || null,
+    last_contact_channel: l.lastContactChannel || null,
+    next_follow_up_at: l.nextFollowUpAt || null,
+    next_step: l.nextStep,
+    notes: l.notes,
+  }),
+  in: (r: Row): Lead => ({
+    id: text(r.id),
+    employerName: text(r.employer_name),
+    contactName: text(r.contact_name),
+    phone: text(r.phone),
+    email: text(r.email),
+    need: text(r.need),
+    city: text(r.city),
+    source: (text(r.source) || 'WhatsApp') as Lead['source'],
+    stage: (text(r.stage) || 'New enquiry') as Lead['stage'],
+    ownerId: text(r.owner_id),
+    receivedOn: dateIn(r.received_on),
+    // Instants come back from Postgres in its own spelling; one shape is kept
+    // so the page can compare them without caring which machine wrote them.
+    lastContactAt: r.last_contact_at ? new Date(String(r.last_contact_at)).toISOString() : '',
+    lastContactChannel: (text(r.last_contact_channel) as Lead['lastContactChannel']) || '',
+    nextFollowUpAt: r.next_follow_up_at ? new Date(String(r.next_follow_up_at)).toISOString() : '',
+    nextStep: text(r.next_step),
+    notes: text(r.notes),
+    createdOn: dateIn(r.created_at),
+  }),
 }
 
 export const statusDefinitionRows = {

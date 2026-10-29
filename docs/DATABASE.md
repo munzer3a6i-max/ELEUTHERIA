@@ -553,3 +553,17 @@ copy of the schema and a later migration that adds the column was never run.
 *add column if not exists*, so it can be run as often as you like; it ends by
 reloading the API's schema and printing which columns are still missing, which
 should be none.
+
+## Leads
+
+The Leads page (System → Leads) is the register of employers' enquiries, from
+the first WhatsApp message to a job order. Every lead is entered by hand
+through *Add lead* and kept in `ops.leads` (migration 0019, paste file
+`db/run-leads.sql`). It belongs to the super administrators, in the app and in
+the database alike: no other role reads or writes the table.
+
+Times are stored as instants and always shown in Arabia Standard Time
+(Asia/Riyadh), whatever machine the page is open on; the form's date-time
+fields are read as AST too. A lead is *overdue* when its next follow-up has
+passed and it is neither Won nor Lost; overdue leads are worked first.
+`src/lib/leads.ts` holds those rules.

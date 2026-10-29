@@ -18,6 +18,7 @@ import type {
   AppNotification,
   StatusDefinition,
   StatusHistoryEntry,
+  Lead,
   ApplicantStatus,
   Language,
   Theme,
@@ -150,6 +151,9 @@ const ACTION_AREA: Record<string, Area> = {
   moveStatusDefinition: 'system',
   placeStatusDefinition: 'system',
   deleteStatusDefinition: 'system',
+  addLead: 'system',
+  updateLead: 'system',
+  deleteLead: 'system',
   addManager: 'system',
   deleteManager: 'system',
   addExpenseCategory: 'system',
@@ -379,6 +383,8 @@ export interface AppState {
   managers: Manager[]
   /** The stages of each pipeline, as the office has them now. */
   statusDefinitions: StatusDefinition[]
+  /** Employers' enquiries, from first message to job order. */
+  leads: Lead[]
   expenseCategories: ExpenseCategory[]
   paymentSources: PaymentSource[]
   payroll: PayrollEntry[]
@@ -470,6 +476,10 @@ export interface AppState {
   placeStatusDefinition: (id: string, afterId: string | null) => void
   deleteStatusDefinition: (id: string) => void
 
+  addLead: (data: Omit<Lead, 'id' | 'createdOn'>) => string
+  updateLead: (id: string, patch: Partial<Omit<Lead, 'id' | 'createdOn'>>) => void
+  deleteLead: (id: string) => void
+
   addManager: (name: Manager['name']) => void
   deleteManager: (id: string) => void
   addExpenseCategory: (name: ExpenseCategory['name']) => void
@@ -526,6 +536,8 @@ export const useAppStore = create<AppState>()(
       professions: seedProfessions,
       managers: seedManagers,
       statusDefinitions: allStatusDefinitions,
+      // Entered by hand through the Add lead form; nothing is invented here.
+      leads: [],
       expenseCategories: seedExpenseCategories,
       paymentSources: seedPaymentSources,
       payroll: seedPayroll,
@@ -990,6 +1002,15 @@ export const useAppStore = create<AppState>()(
           }
         }),
 
+      addLead: (data) => {
+        const id = newId()
+        set((s) => ({ leads: [{ ...data, id, createdOn: todayIso() }, ...s.leads] }))
+        return id
+      },
+      updateLead: (id, patch) =>
+        set((s) => ({ leads: s.leads.map((lead) => (lead.id === id ? { ...lead, ...patch } : lead)) })),
+      deleteLead: (id) => set((s) => ({ leads: s.leads.filter((lead) => lead.id !== id) })),
+
       addManager: (name) => set((s) => ({ managers: [...s.managers, { id: newId(), name }] })),
       // Her record keeps pointing at a manager who has been removed only until
       // the next edit; the column is nulled here so nothing reads a ghost.
@@ -1167,6 +1188,7 @@ export const useAppStore = create<AppState>()(
           currentStaffId: '',
           agents: state.agents ?? seedAgents,
           managers: state.managers ?? seedManagers,
+          leads: state.leads ?? [],
           statusDefinitions:
             state.statusDefinitions && state.statusDefinitions.length > 0
               ? state.statusDefinitions

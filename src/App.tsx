@@ -26,6 +26,7 @@ import Notifications from './pages/Notifications'
 import Settings from './pages/Settings'
 import Account from './pages/Account'
 import NotFound from './pages/NotFound'
+import LeadsPage from './pages/Leads/LeadsPage'
 
 function App() {
   return (
@@ -45,6 +46,7 @@ function App() {
           <Route path="/recruitments/:id" element={<RequestDetail />} />
           <Route path="/invoices" element={<InvoicesList />} />
           <Route path="/staff" element={<StaffList />} />
+          <Route path="/leads" element={<LeadsPage />} />
           <Route path="/accounting" element={<FinancialCenter />} />
           <Route path="/accounting/payroll" element={<PayrollPage />} />
           <Route path="/accounting/agency-accounts" element={<AgencyAccountsPage />} />
