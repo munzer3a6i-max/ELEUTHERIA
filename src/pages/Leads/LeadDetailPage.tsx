@@ -2,7 +2,9 @@
   One lead: who they are, what they want, everything said so far, and what
   happens next.
 
-  Built from the "Selected lead" frame in the design file. Everything on it is
+  Built from the "Selected lead" frame in the design file -- the stage
+  tracker, the three columns of contact, brief, history, next action and
+  notes -- in the dashboard's own panel and type sizes. Everything on it is
   written by hand: Log contact records a message or call (and with it the last
   contact), Update stage moves the lead and writes the move into the history,
   Mark action complete files the next action away, and notes stay internal.
@@ -13,22 +15,27 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
-  ArrowLeft,
   Building2,
   CalendarDays,
   Check,
+  ChevronDown,
+  ChevronRight,
   CircleCheck,
   Clock,
   FileText,
   Mail,
   MessageCircle,
   Paperclip,
+  Pencil,
   Phone,
+  Plus,
   Trash2,
   Users,
 } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import { useCurrentUser } from '../../lib/useCurrentUser'
+import Modal from '../../components/Modal'
+import { Field, PrimaryButton, SecondaryButton, TextArea, TextInput } from '../../components/form'
 import {
   LEAD_CHANNELS,
   LEAD_PATH,
@@ -47,18 +54,7 @@ import {
 } from '../../lib/leads'
 import { formatBytes } from '../../lib/attachments'
 import { removeLeadDocument, signedLeadDocumentUrl, storageAvailable, uploadLeadDocument } from '../../lib/storage'
-import {
-  ChoiceCard,
-  DataContext,
-  Field,
-  GhostButton,
-  GoldButton,
-  LeadDialog,
-  LightButton,
-  PickerBox,
-  TextArea,
-  TextBox,
-} from './leadUi'
+import { ChoiceCard, DataContext, FilterTab, PickerInput } from './leadUi'
 import { SOURCE_ICON, initials } from './leadStyle'
 import type { Lead, LeadActivity, LeadChannel, LeadStage } from '../../types'
 
@@ -107,10 +103,10 @@ export default function LeadDetailPage() {
 
   if (!lead) {
     return (
-      <div className="flex flex-col gap-4 p-4 sm:p-8">
-        <p className="text-[14px] text-[#a6b4c9]">This lead no longer exists.</p>
-        <Link to="/leads" className="text-[13px] font-medium text-[#e5b44d] hover:underline">
-          Back to leads →
+      <div className="flex flex-col items-center gap-3 p-10 text-center">
+        <p className="text-sm text-ink">This lead no longer exists.</p>
+        <Link to="/leads" className="text-xs text-accent-text hover:text-accent">
+          Back to leads
         </Link>
       </div>
     )
@@ -120,52 +116,51 @@ export default function LeadDetailPage() {
   const summary = [lead.industry, [lead.city, lead.country].filter(Boolean).join(', '), needLine(lead)].filter(Boolean).join(' · ')
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-8">
-      {/* --- breadcrumb ----------------------------------------------------- */}
-      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-[13px] leading-[1.4]">
-        <button
-          type="button"
-          onClick={() => navigate('/leads')}
-          aria-label="Back to leads"
-          className="flex size-[26px] items-center justify-center rounded-[7px] bg-[#f4f6f9] text-[#e5b44d] hover:bg-white"
-        >
-          <ArrowLeft className="size-4" />
-        </button>
-        <Link to="/leads" className="text-[#a6b4c9] hover:text-ink">
-          Leads /
+    <div className="flex flex-col gap-4 p-4">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-ink-2">
+        <Link to="/leads" className="hover:text-ink">
+          Leads
         </Link>
+        <ChevronRight aria-hidden="true" className="size-3 rtl:rotate-180" />
         <span className="truncate text-ink">{lead.employerName}</span>
-        <span className="text-[12px] text-[#a6b4c9]">· {leadRef(lead)}</span>
+        <span className="text-ink-3">· {leadRef(lead)}</span>
       </nav>
 
-      {/* --- heading -------------------------------------------------------- */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-4">
-          <span className="flex size-[62px] shrink-0 items-center justify-center rounded-[16px] bg-[#fbf4e5]">
-            <Building2 aria-hidden="true" className="size-[30px] text-[#e5b44d]" />
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-panel bg-accent-soft text-accent-text">
+            <Building2 aria-hidden="true" className="size-5" />
           </span>
-          <div className="flex min-w-0 flex-col gap-1.5">
-            <h1 className="truncate text-[32px] font-medium leading-tight text-ink">{lead.employerName}</h1>
-            {summary && <p className="text-[14px] leading-[1.4] text-[#a6b4c9]">{summary}</p>}
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-semibold tracking-[-0.02em] text-ink">{lead.employerName}</h1>
+            {summary && <p className="mt-1 text-[12.5px] text-ink-3">{summary}</p>}
           </div>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <GhostButton onClick={() => navigate(`/leads/${lead.id}/edit`)}>Edit lead</GhostButton>
-          <GoldButton onClick={() => setDialog('contact')}>Log contact</GoldButton>
+        <div className="flex flex-wrap items-center gap-2">
+          <SecondaryButton onClick={() => navigate(`/leads/${lead.id}/edit`)} className="flex items-center gap-1.5">
+            <Pencil className="size-3.5" /> Edit lead
+          </SecondaryButton>
+          <PrimaryButton onClick={() => setDialog('contact')} className="flex items-center gap-1.5">
+            <Plus className="size-3.5" /> Log contact
+          </PrimaryButton>
         </div>
       </div>
 
       <ProcessCard lead={lead} now={now} />
 
-      {/* --- details -------------------------------------------------------- */}
-      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2 xl:grid-cols-[336px_minmax(0,1fr)_332px]">
-        <div className="flex flex-col gap-5">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2 xl:grid-cols-[300px_minmax(0,1fr)_300px]">
+        <div className="flex flex-col gap-4">
           <ContactCard lead={lead} />
           <BriefCard lead={lead} />
         </div>
         <HistoryCard lead={lead} nameOf={nameOf} />
-        <div className="flex flex-col gap-5 lg:col-span-2 lg:grid lg:grid-cols-2 xl:col-span-1 xl:flex">
-          <NextActionCard lead={lead} now={now} ownerName={lead.ownerId ? nameOf(lead.ownerId) : ''} onReschedule={() => setDialog('follow-up')} />
+        <div className="flex flex-col gap-4 lg:col-span-2 lg:grid lg:grid-cols-2 xl:col-span-1 xl:flex">
+          <NextActionCard
+            lead={lead}
+            now={now}
+            ownerName={lead.ownerId ? nameOf(lead.ownerId) : ''}
+            onReschedule={() => setDialog('follow-up')}
+          />
           <NotesCard lead={lead} nameOf={nameOf} canDelete={canRemove('system')} />
         </div>
       </div>
@@ -202,14 +197,16 @@ function ProcessCard({ lead, now }: { lead: Lead; now: Date }) {
   const lost = lead.stage === 'Lost'
 
   return (
-    <section className="flex flex-col gap-[22px] rounded-[18px] border border-[#26334a] bg-[#121f36] p-6">
-      <div className="relative flex flex-wrap items-start justify-between gap-2 text-[13px] leading-[1.4]">
-        <p className="font-medium text-white">Current process</p>
-        <p className="text-[12px] text-[#a6b4c9]">
-          {since
-            ? `${lead.stage} on ${shortDate(since)} · ${days === 0 ? 'today' : `${days} ${days === 1 ? 'day' : 'days'} in stage`}`
-            : lead.stage}
-        </p>
+    <section className="panel">
+      <header className="panel-header items-center">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+          <h2 className="panel-title">Current process</h2>
+          <p className="text-[11px] text-ink-3">
+            {since
+              ? `${lead.stage} on ${shortDate(since)} · ${days === 0 ? 'today' : `${days} ${days === 1 ? 'day' : 'days'} in stage`}`
+              : lead.stage}
+          </p>
+        </div>
         <div ref={panel} className="relative">
           <button
             type="button"
@@ -219,66 +216,54 @@ function ProcessCard({ lead, now }: { lead: Lead; now: Date }) {
               setOpen((v) => !v)
             }}
             aria-expanded={open}
-            className="font-medium text-[#e5b44d] hover:underline"
+            className="btn btn-ghost h-7 px-2 text-accent-text"
           >
-            Update stage ↓
+            Update stage <ChevronDown className="size-3.5" />
           </button>
           {open && (
-            <div className="absolute end-0 top-7 z-20 flex w-[300px] flex-col gap-3 rounded-[14px] bg-white p-4 text-[#17263c] shadow-2xl">
+            <div className="absolute end-0 top-8 z-20 flex w-[260px] flex-col gap-2 rounded-panel border border-line bg-surface p-3 shadow-pop">
               <div role="radiogroup" aria-label="Stage" className="flex flex-col gap-1.5">
                 {LEAD_STAGES.map((option) => (
                   <ChoiceCard key={option} label={option} selected={stage === option} onSelect={() => setStage(option)} />
                 ))}
               </div>
-              <TextArea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="What moved it? (optional)"
-                className="min-h-[64px] text-[13px]"
-              />
-              <GoldButton
+              <TextArea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="What moved it? (optional)" />
+              <PrimaryButton
                 disabled={stage === lead.stage}
                 onClick={() => {
                   setLeadStage(lead.id, stage, note)
                   setOpen(false)
                 }}
-                className="py-2.5 text-[15px]"
               >
                 Move to {stage}
-              </GoldButton>
+              </PrimaryButton>
             </div>
           )}
         </div>
-      </div>
+      </header>
 
-      <ol className="flex flex-wrap items-center gap-4">
+      <ol className="flex flex-wrap items-center gap-3 p-4">
         {LEAD_PATH.map((step, index) => {
           const done = !lost && index < current
           const here = !lost && index === current
           const last = index === LEAD_PATH.length - 1
           return (
-            <li key={step} className="flex min-w-[150px] flex-1 items-center gap-2.5">
+            <li key={step} className="flex min-w-[130px] flex-1 items-center gap-2">
               <span
-                className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold ${
-                  done || here ? 'bg-[#e5b44d] text-[#17263c]' : 'bg-[#26334a] text-[#a6b4c9]'
+                className={`num flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${
+                  done || here ? 'bg-accent text-accent-ink' : 'border border-line-strong bg-raised text-ink-3'
                 }`}
               >
-                {done ? <Check aria-label="Done" className="size-4" strokeWidth={2.5} /> : index + 1}
+                {done ? <Check aria-label="Done" className="size-3.5" strokeWidth={2.5} /> : index + 1}
               </span>
-              <span
-                className={`text-[13px] leading-[1.4] whitespace-nowrap ${
-                  here ? 'font-semibold text-[#e5b44d]' : done ? 'text-white' : 'text-[#a6b4c9]'
-                }`}
-              >
+              <span className={`text-[12px] whitespace-nowrap ${here ? 'font-semibold text-accent-text' : done ? 'text-ink' : 'text-ink-3'}`}>
                 {step}
               </span>
-              {!last && <span aria-hidden="true" className={`h-px min-w-4 flex-1 ${done ? 'bg-[#a8853a]' : 'bg-[#26334a]'}`} />}
+              {!last && <span aria-hidden="true" className={`h-px min-w-3 flex-1 ${done ? 'bg-accent-line' : 'bg-line'}`} />}
             </li>
           )
         })}
-        {lost && (
-          <li className="rounded-[7px] bg-[#fbefec] px-2.5 py-1.5 text-[12px] font-semibold text-[#b5473d]">Lost</li>
-        )}
+        {lost && <li className="chip chip-neg">Lost</li>}
       </ol>
     </section>
   )
@@ -286,20 +271,20 @@ function ProcessCard({ lead, now }: { lead: Lead; now: Date }) {
 
 /* ------------------------------------------------------------ the cards -- */
 
-function CardTitle({ title, right }: { title: string; right?: React.ReactNode }) {
+function CardHeader({ title, right }: { title: string; right?: React.ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-3">
-      <h2 className="text-[20px] font-medium text-[#17263c]">{title}</h2>
+    <header className="panel-header items-center">
+      <h2 className="panel-title">{title}</h2>
       {right}
-    </div>
+    </header>
   )
 }
 
 function Labelled({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex min-w-0 flex-col gap-[5px] leading-[1.4]">
-      <p className="text-[11px] font-medium text-[#69768a]">{label}</p>
-      <div className="text-[14px] break-words text-[#17263c]">{children || <span className="text-[#8a99ab]">—</span>}</div>
+    <div className="min-w-0">
+      <p className="text-[10.5px] text-ink-3">{label}</p>
+      <div className="mt-0.5 text-xs break-words text-ink">{children || <span className="text-ink-3">—</span>}</div>
     </div>
   )
 }
@@ -310,51 +295,43 @@ function ContactCard({ lead }: { lead: Lead }) {
   const digits = lead.phone.replace(/[^\d]/g, '')
 
   return (
-    <section className="flex flex-col gap-5 rounded-[18px] bg-white p-6 text-[#17263c]">
-      <CardTitle title="Contact information" />
-      <div className="flex flex-col gap-1.5 leading-[1.4]">
-        <p className="text-[17px] font-medium">{lead.contactName || '—'}</p>
-        <p className="text-[13px] text-[#69768a]">{[lead.contactRole, 'Primary contact'].filter(Boolean).join(' · ')}</p>
-      </div>
-      <p className="flex items-center gap-1.5">
-        <span aria-hidden="true" className={`size-1.5 rounded-full ${contacted ? 'bg-[#24735b]' : 'bg-[#b5473d]'}`} />
-        <span className={`text-[13px] font-medium ${contacted ? 'text-[#24735b]' : 'text-[#b5473d]'}`}>
-          {contacted ? 'Contacted' : 'Not contacted'}
-        </span>
-      </p>
-      <hr className="border-[#e3e8ef]" />
-      <Labelled label="PHONE / WHATSAPP">{lead.phone}</Labelled>
-      <Labelled label="EMAIL ADDRESS">{lead.email}</Labelled>
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-[11px] font-medium text-[#69768a]">SOURCE</p>
-        <p className="flex items-center gap-[7px] text-[13px]">
-          <SourceIcon aria-hidden="true" className="size-[17px] text-[#e5b44d]" />
-          {lead.source}
-        </p>
-      </div>
-      <div className="flex items-start justify-between gap-3 leading-[1.4]">
-        <p className="text-[11px] font-medium text-[#69768a]">RECEIVED</p>
-        <p className="text-[12px]">{receivedWhen(lead)}</p>
-      </div>
-      {digits ? (
-        <a
-          href={`https://wa.me/${digits}`}
-          target="_blank"
-          rel="noreferrer"
-          className="self-start rounded-[999px] border border-[#e3e8ef] bg-white px-6 py-[13px] text-[17px] font-medium hover:bg-[#f4f7fa]"
-        >
-          Open WhatsApp
-        </a>
-      ) : (
-        lead.email && (
-          <a
-            href={`mailto:${lead.email}`}
-            className="self-start rounded-[999px] border border-[#e3e8ef] bg-white px-6 py-[13px] text-[17px] font-medium hover:bg-[#f4f7fa]"
-          >
-            Send email
+    <section className="panel">
+      <CardHeader title="Contact information" />
+      <div className="flex flex-col gap-3 p-4">
+        <div>
+          <p className="text-sm font-semibold text-ink">{lead.contactName || '—'}</p>
+          <p className="mt-0.5 text-[11px] text-ink-3">{[lead.contactRole, 'Primary contact'].filter(Boolean).join(' · ')}</p>
+          <p className={`mt-1.5 flex items-center gap-1.5 text-[11px] font-medium ${contacted ? 'text-pos' : 'text-neg'}`}>
+            <span aria-hidden="true" className={`size-1.5 rounded-full ${contacted ? 'bg-pos' : 'bg-neg'}`} />
+            {contacted ? 'Contacted' : 'Not contacted'}
+          </p>
+        </div>
+        <hr className="border-line" />
+        <Labelled label="Phone / WhatsApp">{lead.phone}</Labelled>
+        <Labelled label="Email address">{lead.email}</Labelled>
+        <div className="flex items-center justify-between gap-3 text-xs">
+          <p className="text-[10.5px] text-ink-3">Source</p>
+          <p className="flex items-center gap-1.5 text-ink">
+            <SourceIcon aria-hidden="true" className="size-3.5 text-accent-text" />
+            {lead.source}
+          </p>
+        </div>
+        <div className="flex items-center justify-between gap-3 text-xs">
+          <p className="text-[10.5px] text-ink-3">Received</p>
+          <p className="text-ink">{receivedWhen(lead)}</p>
+        </div>
+        {digits ? (
+          <a href={`https://wa.me/${digits}`} target="_blank" rel="noreferrer" className="btn btn-secondary w-full">
+            <MessageCircle className="size-3.5" /> Open WhatsApp
           </a>
-        )
-      )}
+        ) : (
+          lead.email && (
+            <a href={`mailto:${lead.email}`} className="btn btn-secondary w-full">
+              <Mail className="size-3.5" /> Send email
+            </a>
+          )
+        )}
+      </div>
     </section>
   )
 }
@@ -399,47 +376,44 @@ function BriefCard({ lead }: { lead: Lead }) {
   }
 
   return (
-    <section className="flex flex-col gap-5 rounded-[18px] bg-white p-6 text-[#17263c]">
-      <CardTitle title="Recruitment brief" />
-      <Labelled label="POSITIONS REQUIRED">{lead.need || needLine(lead)}</Labelled>
-      <div className="grid grid-cols-2 gap-4">
-        <Labelled label="EXPERIENCE">{lead.experience}</Labelled>
-        <Labelled label="TARGET START">{lead.targetStart}</Labelled>
-      </div>
-      <Labelled label="EMPLOYER REQUIREMENTS">{lead.requirements}</Labelled>
+    <section className="panel">
+      <CardHeader title="Recruitment brief" />
+      <div className="flex flex-col gap-3 p-4">
+        <Labelled label="Positions required">{lead.need || needLine(lead)}</Labelled>
+        <div className="grid grid-cols-2 gap-3">
+          <Labelled label="Experience">{lead.experience}</Labelled>
+          <Labelled label="Target start">{lead.targetStart}</Labelled>
+        </div>
+        <Labelled label="Employer requirements">{lead.requirements}</Labelled>
 
-      <input ref={input} type="file" className="hidden" onChange={attach} />
-      {lead.document ? (
-        <div className="flex items-center gap-[9px] rounded-[10px] bg-[#f4f6f9] p-3">
-          <FileText aria-hidden="true" className="size-5 shrink-0 text-[#e5b44d]" />
-          <button type="button" onClick={open} className="flex min-w-0 flex-1 flex-col gap-0.5 text-start leading-[1.4]">
-            <span className="truncate text-[12px] font-medium hover:underline">{lead.document.name}</span>
-            <span className="text-[11px] text-[#69768a]">
-              {formatBytes(lead.document.size)}
-              {lead.document.addedAt && ` · Added ${shortDate(lead.document.addedAt)}`}
-            </span>
-          </button>
+        <input ref={input} type="file" className="hidden" onChange={attach} />
+        {lead.document ? (
+          <div className="flex items-center gap-2 rounded-control border border-line bg-sunken p-2.5">
+            <FileText aria-hidden="true" className="size-4 shrink-0 text-accent-text" />
+            <button type="button" onClick={open} className="min-w-0 flex-1 text-start">
+              <span className="block truncate text-[11.5px] font-medium text-ink hover:underline">{lead.document.name}</span>
+              <span className="block text-[10.5px] text-ink-3">
+                {formatBytes(lead.document.size)}
+                {lead.document.addedAt && ` · Added ${shortDate(lead.document.addedAt)}`}
+              </span>
+            </button>
+            <button type="button" onClick={detach} aria-label={`Remove ${lead.document.name}`} className="text-ink-3 hover:text-neg">
+              <Trash2 className="size-3.5" />
+            </button>
+          </div>
+        ) : (
           <button
             type="button"
-            onClick={detach}
-            aria-label={`Remove ${lead.document.name}`}
-            className="rounded-[7px] p-1 text-[#69768a] hover:bg-white hover:text-[#b5473d]"
+            onClick={() => input.current?.click()}
+            disabled={busy || !canStore}
+            className="flex items-center gap-2 rounded-control border border-dashed border-line-strong p-2.5 text-start text-[11px] text-ink-3 hover:border-accent-line hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <Trash2 className="size-4" />
+            <Paperclip aria-hidden="true" className="size-4 shrink-0 text-accent-text" />
+            {busy ? 'Uploading…' : canStore ? 'Attach the employer’s document' : 'Documents can be attached once the database is connected.'}
           </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => input.current?.click()}
-          disabled={busy || !canStore}
-          className="flex items-center gap-[9px] rounded-[10px] border border-dashed border-[#d0dcec] p-3 text-start text-[12px] text-[#69768a] hover:border-[#e5b44d] hover:text-[#17263c] disabled:opacity-60"
-        >
-          <Paperclip aria-hidden="true" className="size-5 shrink-0 text-[#e5b44d]" />
-          {busy ? 'Uploading…' : canStore ? 'Attach the employer’s document' : 'Documents can be attached once the database is connected.'}
-        </button>
-      )}
-      {problem && <p className="text-[12px] leading-[1.45] text-[#b5473d]">{problem}</p>}
+        )}
+        {problem && <p className="text-[11px] font-medium text-neg">{problem}</p>}
+      </div>
     </section>
   )
 }
@@ -497,67 +471,58 @@ function HistoryCard({ lead, nameOf }: { lead: Lead; nameOf: (id: string) => str
   const shown = tab === 'all' ? all : all.filter((item) => item.tab === tab)
 
   return (
-    <section className="flex min-w-0 flex-col gap-6 rounded-[18px] bg-white p-6 text-[#17263c]">
-      <CardTitle
+    <section className="panel min-w-0">
+      <CardHeader
         title="Contact history"
         right={
-          <p className="text-[12px] leading-[1.4] whitespace-nowrap text-[#69768a]">
+          <p className="text-[11px] whitespace-nowrap text-ink-3">
             {all.length} {all.length === 1 ? 'activity' : 'activities'}
           </p>
         }
       />
-      <div role="tablist" className="flex flex-wrap gap-[22px] border-b border-[#e3e8ef] pb-3.5 text-[13px] leading-[1.4]">
+      <div className="flex flex-wrap gap-1 border-b border-line px-3 py-2">
         {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === t.id}
-            onClick={() => setTab(t.id)}
-            className={tab === t.id ? 'font-semibold text-[#17263c]' : 'text-[#69768a] hover:text-[#17263c]'}
-          >
+          <FilterTab key={t.id} active={tab === t.id} onClick={() => setTab(t.id)}>
             {t.label}
-          </button>
+          </FilterTab>
         ))}
       </div>
 
-      <ol className="flex flex-col">
+      <ol className="flex flex-col p-4">
         {shown.map((item, index) => {
           const Icon = item.icon
           const last = index === shown.length - 1
           return (
-            <li key={item.key} className="flex gap-3.5">
-              <div className="flex w-[30px] shrink-0 flex-col items-center gap-2">
+            <li key={item.key} className="flex gap-3">
+              <div className="flex w-7 shrink-0 flex-col items-center gap-1.5">
                 <span
-                  className={`flex size-[30px] shrink-0 items-center justify-center rounded-full ${
-                    index === 0 ? 'bg-[#fbf4e5]' : 'bg-[#f4f6f9]'
+                  className={`flex size-7 shrink-0 items-center justify-center rounded-full ${
+                    index === 0 ? 'bg-accent-soft text-accent-text' : 'border border-line bg-raised text-ink-3'
                   }`}
                 >
-                  <Icon aria-hidden="true" className="size-4 text-[#e5b44d]" />
+                  <Icon aria-hidden="true" className="size-3.5" />
                 </span>
-                {!last && <span aria-hidden="true" className="w-px flex-1 bg-[#e3e8ef]" />}
+                {!last && <span aria-hidden="true" className="w-px flex-1 bg-line" />}
               </div>
-              <div className={`flex min-w-0 flex-1 flex-col gap-[9px] leading-[1.4] ${last ? '' : 'pb-6'}`}>
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-[14px] font-medium">{item.title}</p>
+              <div className={`min-w-0 flex-1 ${last ? '' : 'pb-4'}`}>
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="text-xs font-medium text-ink">{item.title}</p>
                   {item.at && (
-                    <p className="shrink-0 text-[11px] text-[#69768a]">
+                    <p className="shrink-0 text-[10.5px] text-ink-3">
                       {shortDate(item.at)} · {clock(item.at)}
                     </p>
                   )}
                 </div>
-                {item.body && <p className="text-[13px] whitespace-pre-line text-[#69768a]">{item.body}</p>}
-                {item.meta && <p className="text-[11px] text-[#69768a]">{item.meta}</p>}
+                {item.body && <p className="mt-1 text-[11.5px] whitespace-pre-line text-ink-2">{item.body}</p>}
+                {item.meta && <p className="mt-1 text-[10.5px] text-ink-3">{item.meta}</p>}
               </div>
             </li>
           )
         })}
-        {shown.length === 0 && <li className="py-6 text-center text-[13px] text-[#69768a]">Nothing of this kind yet.</li>}
+        {shown.length === 0 && <li className="py-6 text-center text-[11px] text-ink-3">Nothing of this kind yet.</li>}
       </ol>
 
-      <p className="border-t border-[#e3e8ef] pt-2 text-[11px] leading-[1.4] text-[#69768a]">
-        All times in AST (UTC+3) · Complete activity history
-      </p>
+      <p className="border-t border-line px-4 py-2 text-[10.5px] text-ink-3">All times in AST (UTC+3) · Complete activity history</p>
     </section>
   )
 }
@@ -579,61 +544,53 @@ function NextActionCard({
   const scheduled = Boolean(lead.nextFollowUpAt || lead.nextStep)
 
   return (
-    <section className="flex flex-col gap-[18px] rounded-[18px] bg-[#fbf4e5] p-6 text-[#17263c]">
-      <CardTitle
-        title="Next action"
-        right={
-          late && (
-            <span className="rounded-[6px] bg-[#fbefec] px-2 py-1 text-[11px] font-semibold leading-[1.4] text-[#b5473d]">OVERDUE</span>
-          )
-        }
-      />
-      {scheduled ? (
-        <>
-          <p className="text-[17px] font-medium leading-[1.4]">
-            {lead.nextStep || (isContacted(lead) ? 'Follow up' : 'First response')}
+    <section className="panel relative overflow-hidden border-accent-line">
+      <span aria-hidden="true" className="absolute inset-y-0 start-0 w-[3px] bg-accent" />
+      <CardHeader title="Next action" right={late && <span className="chip chip-neg">Overdue</span>} />
+      <div className="flex flex-col gap-3 p-4">
+        {scheduled ? (
+          <div>
+            <p className="text-sm font-semibold text-ink">{lead.nextStep || (isContacted(lead) ? 'Follow up' : 'First response')}</p>
+            {lead.nextFollowUpAt && (
+              <p className={`mt-1 text-[11.5px] ${late ? 'font-medium text-neg' : 'text-ink-2'}`}>
+                Due {longDate(lead.nextFollowUpAt)} · {clock(lead.nextFollowUpAt)} AST
+              </p>
+            )}
+            {lead.nextStepDetail && <p className="mt-1.5 text-[11.5px] whitespace-pre-line text-ink-3">{lead.nextStepDetail}</p>}
+          </div>
+        ) : (
+          <p className="text-[11.5px] text-ink-3">
+            {closed
+              ? lead.stage === 'Won'
+                ? 'Won. Hand the job order to the placement team.'
+                : 'This enquiry is closed.'
+              : 'Nothing is scheduled for this lead. Give it a clear next step.'}
           </p>
-          {lead.nextFollowUpAt && (
-            <p className={`text-[13px] leading-[1.4] ${late ? 'text-[#b5473d]' : 'text-[#69768a]'}`}>
-              Due {longDate(lead.nextFollowUpAt)} · {clock(lead.nextFollowUpAt)} AST
-            </p>
-          )}
-          {lead.nextStepDetail && <p className="text-[13px] leading-[1.4] whitespace-pre-line text-[#69768a]">{lead.nextStepDetail}</p>}
-        </>
-      ) : (
-        <p className="text-[13px] leading-[1.4] text-[#69768a]">
-          {closed
-            ? lead.stage === 'Won'
-              ? 'Won. Hand the job order to the placement team.'
-              : 'This enquiry is closed.'
-            : 'Nothing is scheduled for this lead. Give it a clear next step.'}
-        </p>
-      )}
+        )}
 
-      <div className="flex items-center gap-2.5">
-        <span className="flex size-[30px] shrink-0 items-center justify-center rounded-full bg-[#e9edf3] text-[11px] font-semibold">
-          {ownerName ? initials(ownerName) : '—'}
-        </span>
-        <div className="flex flex-col gap-0.5 leading-[1.4]">
-          <p className="text-[13px] font-medium">{ownerName || 'Unassigned'}</p>
-          <p className="text-[11px] text-[#69768a]">{ownerName ? 'Lead owner' : 'Choose an owner in Edit lead'}</p>
+        <div className="flex items-center gap-2">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-line bg-raised text-[10px] font-semibold text-ink-2">
+            {ownerName ? initials(ownerName) : '—'}
+          </span>
+          <div>
+            <p className="text-xs font-medium text-ink">{ownerName || 'Unassigned'}</p>
+            <p className="text-[10.5px] text-ink-3">{ownerName ? 'Lead owner' : 'Choose an owner in Edit lead'}</p>
+          </div>
         </div>
-      </div>
 
-      {scheduled ? (
-        <>
-          <GoldButton onClick={() => completeLeadAction(lead.id)} className="self-start">
-            Mark action complete
-          </GoldButton>
-          <button type="button" onClick={onReschedule} className="self-start text-[13px] font-medium leading-[1.4] text-[#82601d] hover:underline">
-            Reschedule follow-up →
-          </button>
-        </>
-      ) : (
-        <GoldButton onClick={onReschedule} className="self-start">
-          Schedule follow-up
-        </GoldButton>
-      )}
+        {scheduled ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <PrimaryButton onClick={() => completeLeadAction(lead.id)} className="flex items-center gap-1.5">
+              <Check className="size-3.5" /> Mark action complete
+            </PrimaryButton>
+            <SecondaryButton onClick={onReschedule}>Reschedule</SecondaryButton>
+          </div>
+        ) : (
+          <PrimaryButton onClick={onReschedule} className="self-start">
+            Schedule follow-up
+          </PrimaryButton>
+        )}
+      </div>
     </section>
   )
 }
@@ -654,59 +611,63 @@ function NotesCard({ lead, nameOf, canDelete }: { lead: Lead; nameOf: (id: strin
   const stamp = (note: LeadActivity) => `${nameOf(note.authorId)} · ${longDate(note.at)}, ${clock(note.at)}`
 
   return (
-    <section className="flex flex-col gap-5 rounded-[18px] bg-white p-6 text-[#17263c]">
-      <CardTitle
+    <section className="panel">
+      <CardHeader
         title="Internal notes"
         right={
-          <button type="button" onClick={() => box.current?.focus()} className="text-[13px] font-medium leading-[1.4] whitespace-nowrap text-[#82601d] hover:underline">
-            Add note +
+          <button type="button" onClick={() => box.current?.focus()} className="btn btn-ghost h-7 px-2 text-accent-text">
+            <Plus className="size-3.5" /> Add note
           </button>
         }
       />
-      {lead.notes && (
-        <div className="flex flex-col gap-3 rounded-[12px] bg-[#f4f6f9] p-4 leading-[1.4]">
-          <p className="text-[13px] whitespace-pre-line">{lead.notes}</p>
-          <p className="text-[11px] text-[#69768a]">Kept on the lead record</p>
-        </div>
-      )}
-      {notes.map((note) => (
-        <div key={note.id} className="group flex flex-col gap-3 rounded-[12px] bg-[#f4f6f9] p-4 leading-[1.4]">
-          <p className="text-[13px] whitespace-pre-line">{note.body}</p>
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-[11px] text-[#69768a]">{stamp(note)}</p>
-            {canDelete && (
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.confirm('Delete this note?')) deleteLeadNote(lead.id, note.id)
-                }}
-                aria-label="Delete note"
-                className="rounded-[6px] p-0.5 text-[#69768a] opacity-0 group-hover:opacity-100 hover:text-[#b5473d] focus:opacity-100"
-              >
-                <Trash2 className="size-3.5" />
-              </button>
-            )}
+      <div className="flex flex-col gap-2 p-4">
+        {lead.notes && (
+          <div className="rounded-control border border-line bg-sunken p-2.5">
+            <p className="text-[11.5px] whitespace-pre-line text-ink">{lead.notes}</p>
+            <p className="mt-1.5 text-[10.5px] text-ink-3">Kept on the lead record</p>
           </div>
-        </div>
-      ))}
-      <Field label="ADD A NOTE" hint="Only visible to your recruitment team">
-        <TextArea
-          ref={box}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) save()
-          }}
-          placeholder="Write a note for the team…"
-          className="min-h-[52px] py-3.5"
-          rows={1}
-        />
-      </Field>
-      {text.trim() && (
-        <LightButton onClick={save} className="self-start py-2.5 text-[15px]">
-          Save note
-        </LightButton>
-      )}
+        )}
+        {notes.map((note) => (
+          <div key={note.id} className="group rounded-control border border-line bg-sunken p-2.5">
+            <p className="text-[11.5px] whitespace-pre-line text-ink">{note.body}</p>
+            <div className="mt-1.5 flex items-center justify-between gap-2">
+              <p className="text-[10.5px] text-ink-3">{stamp(note)}</p>
+              {canDelete && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm('Delete this note?')) deleteLeadNote(lead.id, note.id)
+                  }}
+                  aria-label="Delete note"
+                  className="text-ink-3 opacity-0 group-hover:opacity-100 hover:text-neg focus:opacity-100"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+        <label className="mt-1 block">
+          <span className="mb-1.5 block text-[11px] font-semibold text-ink-2">Add a note</span>
+          <textarea
+            ref={box}
+            rows={2}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) save()
+            }}
+            placeholder="Write a note for the team…"
+            className="field"
+          />
+          <span className="mt-1 block text-[11px] text-ink-3">Only visible to your recruitment team</span>
+        </label>
+        {text.trim() && (
+          <SecondaryButton onClick={save} className="self-start">
+            Save note
+          </SecondaryButton>
+        )}
+      </div>
     </section>
   )
 }
@@ -742,49 +703,49 @@ function LogContactDialog({ lead, onClose }: { lead: Lead; onClose: () => void }
   }
 
   return (
-    <LeadDialog title="Log contact" note={`A message, call or meeting with ${lead.contactName || lead.employerName}.`} onClose={onClose}>
-      <form onSubmit={save} className="flex flex-col gap-4 px-6 py-5">
-        <div className="flex flex-col gap-2">
-          <span className="text-[12px] font-medium tracking-[0.08em] text-[#69768a]">CHANNEL</span>
+    <Modal title={`Log contact · ${lead.contactName || lead.employerName}`} onClose={onClose} width="max-w-lg">
+      <form onSubmit={save}>
+        <div className="mb-3">
+          <span className="mb-1.5 block text-[11px] font-semibold text-ink-2">Channel</span>
           <div role="radiogroup" aria-label="Channel" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {LEAD_CHANNELS.map((option) => (
               <ChoiceCard key={option} label={option} selected={channel === option} onSelect={() => setChannel(option)} />
             ))}
           </div>
         </div>
-        <div className="flex flex-col gap-2">
-          <span className="text-[12px] font-medium tracking-[0.08em] text-[#69768a]">DIRECTION</span>
+        <div className="mb-3">
+          <span className="mb-1.5 block text-[11px] font-semibold text-ink-2">Direction</span>
           <div role="radiogroup" aria-label="Direction" className="flex gap-2">
             <ChoiceCard label="We reached them" selected={direction === 'Outbound'} onSelect={() => setDirection('Outbound')} />
             <ChoiceCard label="They reached us" selected={direction === 'Inbound'} onSelect={() => setDirection('Inbound')} />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="DATE">
-            <PickerBox type="date" value={date} onChange={(e) => setDate(e.target.value)} icon={<CalendarDays className="size-[18px] text-[#e5b44d]" />} />
+        <div className="grid grid-cols-2 gap-x-3">
+          <Field label="Date">
+            <PickerInput type="date" value={date} onChange={(e) => setDate(e.target.value)} icon={<CalendarDays className="size-3.5" />} />
           </Field>
-          <Field label="TIME (AST)">
-            <PickerBox type="time" value={time} onChange={(e) => setTime(e.target.value)} icon={<Clock className="size-[18px] text-[#69768a]" />} />
+          <Field label="Time (AST)">
+            <PickerInput type="time" value={time} onChange={(e) => setTime(e.target.value)} icon={<Clock className="size-3.5" />} />
           </Field>
         </div>
-        <Field label="WHAT HAPPENED *">
-          <TextBox value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Requirements confirmed" autoFocus />
+        <Field label="What happened *">
+          <TextInput value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Requirements confirmed" autoFocus />
         </Field>
-        <Field label="DETAILS">
-          <TextArea value={body} onChange={(e) => setBody(e.target.value)} placeholder="What was said, agreed or asked for…" />
+        <Field label="Details">
+          <TextArea rows={3} value={body} onChange={(e) => setBody(e.target.value)} placeholder="What was said, agreed or asked for…" />
         </Field>
         {spoken && (
-          <Field label="DURATION (MINUTES)">
-            <TextBox type="number" min={0} value={minutes} onChange={(e) => setMinutes(e.target.value)} placeholder="18" />
+          <Field label="Duration (minutes)">
+            <TextInput type="number" min={0} value={minutes} onChange={(e) => setMinutes(e.target.value)} placeholder="18" />
           </Field>
         )}
-        {problem && <p className="text-[12px] text-[#b5473d]">{problem}</p>}
-        <div className="flex justify-end gap-3 border-t border-[#e3e8ef] pt-4">
-          <LightButton onClick={onClose}>Cancel</LightButton>
-          <GoldButton type="submit">Log contact</GoldButton>
+        {problem && <p className="mt-1 text-[11px] font-medium text-neg">{problem}</p>}
+        <div className="mt-4 flex justify-end gap-2">
+          <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
+          <PrimaryButton type="submit">Log contact</PrimaryButton>
         </div>
       </form>
-    </LeadDialog>
+    </Modal>
   )
 }
 
@@ -809,24 +770,24 @@ function FollowUpDialog({ lead, onClose }: { lead: Lead; onClose: () => void }) 
   }
 
   return (
-    <LeadDialog title={lead.nextFollowUpAt ? 'Reschedule follow-up' : 'Schedule follow-up'} note="Arabia Standard Time (UTC+3)." onClose={onClose}>
-      <form onSubmit={save} className="flex flex-col gap-4 px-6 py-5">
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="DATE *">
-            <PickerBox type="date" value={date} onChange={(e) => setDate(e.target.value)} icon={<CalendarDays className="size-[18px] text-[#e5b44d]" />} />
+    <Modal title={lead.nextFollowUpAt ? 'Reschedule follow-up' : 'Schedule follow-up'} onClose={onClose}>
+      <form onSubmit={save}>
+        <div className="grid grid-cols-2 gap-x-3">
+          <Field label="Date *">
+            <PickerInput type="date" value={date} onChange={(e) => setDate(e.target.value)} icon={<CalendarDays className="size-3.5" />} />
           </Field>
-          <Field label="TIME">
-            <PickerBox type="time" value={time} onChange={(e) => setTime(e.target.value)} icon={<Clock className="size-[18px] text-[#69768a]" />} />
+          <Field label="Time (AST)">
+            <PickerInput type="time" value={time} onChange={(e) => setTime(e.target.value)} icon={<Clock className="size-3.5" />} />
           </Field>
         </div>
-        <Field label="NEXT STEP">
-          <TextBox value={step} onChange={(e) => setStep(e.target.value)} placeholder="Send shortlist & fee proposal" autoFocus />
+        <Field label="Next step">
+          <TextInput value={step} onChange={(e) => setStep(e.target.value)} placeholder="Send shortlist & fee proposal" autoFocus />
         </Field>
-        <Field label="DETAILS">
-          <TextArea value={detail} onChange={(e) => setDetail(e.target.value)} placeholder="What has to happen, and anything to check first…" />
+        <Field label="Details">
+          <TextArea rows={3} value={detail} onChange={(e) => setDetail(e.target.value)} placeholder="What has to happen, and anything to check first…" />
         </Field>
-        {problem && <p className="text-[12px] text-[#b5473d]">{problem}</p>}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e3e8ef] pt-4">
+        {problem && <p className="mt-1 text-[11px] font-medium text-neg">{problem}</p>}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
           {lead.nextFollowUpAt ? (
             <button
               type="button"
@@ -834,19 +795,19 @@ function FollowUpDialog({ lead, onClose }: { lead: Lead; onClose: () => void }) 
                 updateLead(lead.id, { nextFollowUpAt: '', nextStep: '', nextStepDetail: '' })
                 onClose()
               }}
-              className="text-[13px] font-medium text-[#b5473d] hover:underline"
+              className="btn btn-danger"
             >
               Clear follow-up
             </button>
           ) : (
             <span />
           )}
-          <div className="flex gap-3">
-            <LightButton onClick={onClose}>Cancel</LightButton>
-            <GoldButton type="submit">Save</GoldButton>
+          <div className="flex gap-2">
+            <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
+            <PrimaryButton type="submit">Save</PrimaryButton>
           </div>
         </div>
       </form>
-    </LeadDialog>
+    </Modal>
   )
 }

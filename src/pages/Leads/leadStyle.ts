@@ -1,19 +1,20 @@
 /*
-  The colours and icons the lead pages give a stage and a source, and the
-  initials on an owner's badge.
+  The chip each stage wears, the icon for each source, and the initials on an
+  owner's badge -- in the app's own chip colours, so a lead page reads like
+  every other page in either theme.
 */
 
 import { FileText, Mail, MessageCircle, PenLine } from 'lucide-react'
 import type { LeadSource, LeadStage } from '../../types'
 
-/** The pill each stage wears, as the design colours them. */
-export const STAGE_TONE: Record<LeadStage, string> = {
-  'New enquiry': 'bg-[#f4f6f9] text-[#69768a]',
-  Qualified: 'bg-[#edf3f9] text-[#42688b]',
-  'Proposal sent': 'bg-[#fbf4e5] text-[#82601d]',
-  Shortlisting: 'bg-[#fbf4e5] text-[#82601d]',
-  Won: 'bg-[#eaf5ef] text-[#24735b]',
-  Lost: 'bg-[#fdecea] text-[#b5473d]',
+/** The design's stage colours, as the app's chips: grey, blue, gold, green, red. */
+export const STAGE_CHIP: Record<LeadStage, string> = {
+  'New enquiry': 'chip chip-neutral',
+  Qualified: 'chip chip-info',
+  'Proposal sent': 'chip chip-accent',
+  Shortlisting: 'chip chip-accent',
+  Won: 'chip chip-pos',
+  Lost: 'chip chip-neg',
 }
 
 export const SOURCE_ICON: Record<LeadSource, typeof Mail> = {
