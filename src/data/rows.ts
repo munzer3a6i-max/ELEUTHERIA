@@ -54,6 +54,7 @@ import type {
   StatusDefinition,
   StatusHistoryEntry,
   Lead,
+  LeadActivity,
 } from '../types'
 
 type Row = Record<string, unknown>
@@ -144,46 +145,111 @@ export const expenseCategoryRows = {
   in: (r: Row): ExpenseCategory => ({ id: text(r.id), name: { en: text(r.name_en), ar: text(r.name_ar) } }),
 }
 
+const instantIn = (value: unknown): string => (value ? new Date(String(value)).toISOString() : '')
+
 export const leadRows = {
   table: 'leads',
   out: (l: Lead): Row => ({
     id: l.id,
+    ref_no: l.refNo || null,
     employer_name: l.employerName,
     contact_name: l.contactName,
+    contact_role: l.contactRole,
     phone: l.phone,
     email: l.email,
-    need: l.need,
+    industry: l.industry,
     city: l.city,
+    country: l.country,
+    need: l.need,
+    enquiry: l.enquiry,
+    experience: l.experience,
+    target_start: l.targetStart,
+    requirements: l.requirements,
     source: l.source,
     stage: l.stage,
+    stage_changed_at: l.stageChangedAt || null,
+    contacted: l.contacted,
     owner_id: l.ownerId || null,
     received_on: l.receivedOn || null,
     last_contact_at: l.lastContactAt || null,
     last_contact_channel: l.lastContactChannel || null,
     next_follow_up_at: l.nextFollowUpAt || null,
     next_step: l.nextStep,
+    next_step_detail: l.nextStepDetail,
     notes: l.notes,
+    document_path: l.document?.path ?? null,
+    document_name: l.document?.name ?? null,
+    document_size: l.document?.size ?? null,
+    document_added_at: l.document?.addedAt || null,
+    ...(l.createdAt ? { created_at: l.createdAt } : {}),
   }),
+  // Instants come back from Postgres in its own spelling; one shape is kept
+  // so the page can compare them without caring which machine wrote them.
   in: (r: Row): Lead => ({
     id: text(r.id),
+    refNo: r.ref_no === null || r.ref_no === undefined ? 0 : Number(r.ref_no),
     employerName: text(r.employer_name),
     contactName: text(r.contact_name),
+    contactRole: text(r.contact_role),
     phone: text(r.phone),
     email: text(r.email),
-    need: text(r.need),
+    industry: text(r.industry),
     city: text(r.city),
+    country: text(r.country),
+    need: text(r.need),
+    enquiry: text(r.enquiry),
+    experience: text(r.experience),
+    targetStart: text(r.target_start),
+    requirements: text(r.requirements),
     source: (text(r.source) || 'WhatsApp') as Lead['source'],
     stage: (text(r.stage) || 'New enquiry') as Lead['stage'],
+    stageChangedAt: instantIn(r.stage_changed_at),
+    contacted: Boolean(r.contacted) || Boolean(r.last_contact_at),
     ownerId: text(r.owner_id),
     receivedOn: dateIn(r.received_on),
-    // Instants come back from Postgres in its own spelling; one shape is kept
-    // so the page can compare them without caring which machine wrote them.
-    lastContactAt: r.last_contact_at ? new Date(String(r.last_contact_at)).toISOString() : '',
+    lastContactAt: instantIn(r.last_contact_at),
     lastContactChannel: (text(r.last_contact_channel) as Lead['lastContactChannel']) || '',
-    nextFollowUpAt: r.next_follow_up_at ? new Date(String(r.next_follow_up_at)).toISOString() : '',
+    nextFollowUpAt: instantIn(r.next_follow_up_at),
     nextStep: text(r.next_step),
+    nextStepDetail: text(r.next_step_detail),
     notes: text(r.notes),
-    createdOn: dateIn(r.created_at),
+    document: r.document_path
+      ? {
+          path: text(r.document_path),
+          name: text(r.document_name),
+          size: money(r.document_size),
+          addedAt: instantIn(r.document_added_at),
+        }
+      : null,
+    activities: [],
+    createdAt: instantIn(r.created_at),
+  }),
+}
+
+export const leadActivityRows = {
+  table: 'lead_activities',
+  out: (a: LeadActivity, leadId: string): Row => ({
+    id: a.id,
+    lead_id: leadId,
+    kind: a.kind,
+    channel: a.channel || null,
+    direction: a.direction || null,
+    title: a.title,
+    body: a.body,
+    duration_minutes: a.durationMinutes || null,
+    author_id: a.authorId || null,
+    occurred_at: a.at,
+  }),
+  in: (r: Row): LeadActivity => ({
+    id: text(r.id),
+    kind: (text(r.kind) || 'note') as LeadActivity['kind'],
+    channel: (text(r.channel) as LeadActivity['channel']) || '',
+    direction: (text(r.direction) as LeadActivity['direction']) || '',
+    title: text(r.title),
+    body: text(r.body),
+    durationMinutes: money(r.duration_minutes),
+    authorId: text(r.author_id),
+    at: instantIn(r.occurred_at),
   }),
 }
 

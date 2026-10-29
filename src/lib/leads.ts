@@ -9,16 +9,90 @@
   as instants; only the reading of them is pinned to AST.
 */
 
-import type { Lead, LeadSource, LeadStage } from '../types'
+import type { Lead, LeadActivity, LeadSource, LeadStage } from '../types'
 
 export const AST = 'Asia/Riyadh'
 
-export const LEAD_SOURCES: LeadSource[] = ['WhatsApp', 'Email', 'Website form']
-export const LEAD_STAGES: LeadStage[] = ['New enquiry', 'Qualified', 'Shortlisting', 'Proposal sent', 'Won', 'Lost']
+export const LEAD_SOURCES: LeadSource[] = ['Manual entry', 'WhatsApp', 'Email', 'Website form']
+export const LEAD_STAGES: LeadStage[] = ['New enquiry', 'Qualified', 'Proposal sent', 'Shortlisting', 'Won', 'Lost']
 export const LEAD_CHANNELS = ['WhatsApp', 'Email', 'Call', 'Meeting'] as const
 
+/** The road a lead walks when it goes well; Lost is the way off it. */
+export const LEAD_PATH: LeadStage[] = ['New enquiry', 'Qualified', 'Proposal sent', 'Shortlisting', 'Won']
+
 /** The stages between a first answer and a decision. */
-const IN_PROGRESS: LeadStage[] = ['Qualified', 'Shortlisting', 'Proposal sent']
+const IN_PROGRESS: LeadStage[] = ['Qualified', 'Proposal sent', 'Shortlisting']
+
+/** "LD-1029" */
+export const leadRef = (lead: Lead) => `LD-${lead.refNo || '—'}`
+
+/** A lead saved before a field existed gets that field's empty value. */
+export function withLeadDefaults(lead: Partial<Lead> & { id: string }): Lead {
+  const legacy = lead as Partial<Lead> & { createdOn?: string }
+  return {
+    refNo: 0,
+    employerName: '',
+    contactName: '',
+    contactRole: '',
+    phone: '',
+    email: '',
+    industry: '',
+    city: '',
+    country: '',
+    need: '',
+    enquiry: '',
+    experience: '',
+    targetStart: '',
+    requirements: '',
+    source: 'WhatsApp',
+    stage: 'New enquiry',
+    stageChangedAt: '',
+    contacted: Boolean(lead.lastContactAt),
+    ownerId: '',
+    receivedOn: '',
+    lastContactAt: '',
+    lastContactChannel: '',
+    nextFollowUpAt: '',
+    nextStep: '',
+    nextStepDetail: '',
+    notes: '',
+    document: null,
+    ...lead,
+    activities: lead.activities ?? [],
+    createdAt: lead.createdAt ?? (legacy.createdOn ? `${legacy.createdOn}T00:00:00.000Z` : ''),
+  }
+}
+
+/** Newest first, the order a history is read in. */
+export function sortActivities(activities: LeadActivity[]): LeadActivity[] {
+  return [...activities].sort((a, b) => b.at.localeCompare(a.at))
+}
+
+/** The positions they want, short; the start of the enquiry when nobody wrote that. */
+export function needLine(lead: Lead): string {
+  if (lead.need) return lead.need
+  const first = lead.enquiry.split(/\n|\. /)[0].trim()
+  return first.length > 60 ? `${first.slice(0, 57)}…` : first
+}
+
+/** "26 Oct 2026 · 09:12", the time added only when the day it was entered is the day it came. */
+export function receivedWhen(lead: Lead): string {
+  if (!lead.receivedOn) return '—'
+  const [year, month, day] = lead.receivedOn.split('-').map(Number)
+  const date = `${day} ${MONTHS[month - 1]} ${year}`
+  return lead.createdAt && astToday(new Date(lead.createdAt)) === lead.receivedOn ? `${date} · ${clock(lead.createdAt)}` : date
+}
+
+/** Whole Riyadh calendar days since an instant. */
+export function daysSince(at: string, now: Date): number {
+  return Math.max(0, astDayNumber(now) - astDayNumber(at))
+}
+
+/** "28 Oct" */
+export function shortDate(at: string): string {
+  const p = astParts(at)
+  return `${p.day} ${MONTHS[p.month - 1]}`
+}
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -103,7 +177,7 @@ export function astToday(now = new Date()): string {
   return `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`
 }
 
-export const isContacted = (lead: Lead) => lead.lastContactAt !== ''
+export const isContacted = (lead: Lead) => lead.contacted || lead.lastContactAt !== ''
 export const isClosed = (lead: Lead) => lead.stage === 'Won' || lead.stage === 'Lost'
 export const isInProgress = (lead: Lead) => IN_PROGRESS.includes(lead.stage)
 
@@ -138,13 +212,15 @@ export function leadsCsv(leads: Lead[], ownerName: (id: string) => string): stri
   const cell = (value: string) => (/[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value)
   const when = (at: string) => (at ? `${longDate(at)} ${clock(at)}` : '')
   const header = [
-    'Employer', 'Contact', 'Phone', 'Email', 'Need', 'City', 'Source', 'Contact status', 'Stage',
-    'Owner', 'Received', 'Last contact (AST)', 'Last contact via', 'Next follow-up (AST)', 'Next step', 'Notes',
+    'Reference', 'Employer', 'Contact', 'Role', 'Phone', 'Email', 'Industry', 'City', 'Country', 'Positions',
+    'Enquiry', 'Experience', 'Target start', 'Requirements', 'Source', 'Contact status', 'Stage',
+    'Owner', 'Received', 'Last contact (AST)', 'Last contact via', 'Next follow-up (AST)', 'Next step',
   ]
   const rows = leads.map((lead) => [
-    lead.employerName, lead.contactName, lead.phone, lead.email, lead.need, lead.city, lead.source,
-    isContacted(lead) ? 'Contacted' : 'Not contacted', lead.stage, ownerName(lead.ownerId), lead.receivedOn,
-    when(lead.lastContactAt), lead.lastContactChannel, when(lead.nextFollowUpAt), lead.nextStep, lead.notes,
+    leadRef(lead), lead.employerName, lead.contactName, lead.contactRole, lead.phone, lead.email, lead.industry,
+    lead.city, lead.country, lead.need, lead.enquiry, lead.experience, lead.targetStart, lead.requirements,
+    lead.source, isContacted(lead) ? 'Contacted' : 'Not contacted', lead.stage, ownerName(lead.ownerId),
+    lead.receivedOn, when(lead.lastContactAt), lead.lastContactChannel, when(lead.nextFollowUpAt), lead.nextStep,
   ])
   return [header, ...rows].map((row) => row.map(cell).join(',')).join('\n')
 }

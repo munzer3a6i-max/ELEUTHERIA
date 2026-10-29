@@ -136,7 +136,7 @@ if (toSql) {
   // before a migration is brought up to date rather than failing against it --
   // which is exactly what re-runnable migrations are for.
   for (const file of readdirSync('db/migrations')
-    .filter((name) => name.endsWith('.sql') && !/^(0003|0005|0006)/.test(name))
+    .filter((name) => name.endsWith('.sql') && !/^(0003|0005|0006|0021)/.test(name))
     .sort()) {
     await db.exec(readFileSync(`db/migrations/${file}`, 'utf8'))
   }

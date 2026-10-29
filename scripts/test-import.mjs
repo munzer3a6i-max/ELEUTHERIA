@@ -57,7 +57,7 @@ async function freshDatabase() {
   // Every migration a plain Postgres can take: the storage ones (0003, 0005,
   // 0006) belong to Supabase and are applied only against the real project.
   for (const file of readdirSync('db/migrations')
-    .filter((name) => name.endsWith('.sql') && !/^(0003|0005|0006)/.test(name))
+    .filter((name) => name.endsWith('.sql') && !/^(0003|0005|0006|0021)/.test(name))
     .sort()) {
     await db.exec(readFileSync(`db/migrations/${file}`, 'utf8'))
   }

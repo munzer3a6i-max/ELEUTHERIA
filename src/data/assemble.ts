@@ -89,6 +89,7 @@ export function assemble(tables: Tables): Assembled {
   const history = by(tables.request_status_history, 'request_id')
   const payments = by(tables.invoice_payments, 'invoice_id')
   const costs = by(tables.backout_costs, 'backout_id')
+  const leadActivities = by(tables.lead_activities, 'lead_id')
 
   return {
     settings: tables.settings?.[0] ? rows.settingsRows.in(tables.settings[0]) : null,
@@ -97,7 +98,13 @@ export function assemble(tables: Tables): Assembled {
     professions: (tables.professions ?? []).map(rows.professionRows.in),
     managers: (tables.managers ?? []).map(rows.managerRows.in),
     statusDefinitions: (tables.status_definitions ?? []).map(rows.statusDefinitionRows.in),
-    leads: (tables.leads ?? []).map(rows.leadRows.in),
+    leads: (tables.leads ?? []).map((row) => {
+      const lead = rows.leadRows.in(row)
+      lead.activities = (leadActivities.get(lead.id) ?? [])
+        .map(rows.leadActivityRows.in)
+        .sort((a, b) => newestFirst(a.at, b.at))
+      return lead
+    }),
     expenseCategories: (tables.expense_categories ?? []).map(rows.expenseCategoryRows.in),
     paymentSources: (tables.payment_sources ?? []).map(rows.paymentSourceRows.in),
     staff: (tables.staff ?? []).map(rows.staffRows.in),

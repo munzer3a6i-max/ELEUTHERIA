@@ -41,6 +41,7 @@ const AREA: Record<TableName, Area> = {
   payment_sources: 'system',
   status_definitions: 'system',
   leads: 'system',
+  lead_activities: 'system',
   staff: 'system',
   agencies: 'directory',
   agents: 'directory',

@@ -19,6 +19,7 @@ import type {
   StatusDefinition,
   StatusHistoryEntry,
   Lead,
+  LeadActivity,
   ApplicantStatus,
   Language,
   Theme,
@@ -63,6 +64,7 @@ import { BACKOUT_STAGE, SELECTION_STAGE, milestoneCost, movesForward, statusFrom
 import { serverOwnsBilling } from '../data/ownership'
 import { canEdit, canRemove, type Area } from '../lib/permissions'
 import { DEFAULT_PASSWORD, makeCredentials, normaliseUsername, verifyPassword } from '../lib/passwords'
+import { sortActivities, withLeadDefaults } from '../lib/leads'
 
 /*
   Which area each action belongs to. Hiding a button keeps an honest person out
@@ -154,6 +156,11 @@ const ACTION_AREA: Record<string, Area> = {
   addLead: 'system',
   updateLead: 'system',
   deleteLead: 'system',
+  setLeadStage: 'system',
+  logLeadContact: 'system',
+  completeLeadAction: 'system',
+  addLeadNote: 'system',
+  deleteLeadNote: 'system',
   addManager: 'system',
   deleteManager: 'system',
   addExpenseCategory: 'system',
@@ -206,6 +213,25 @@ function todayIso(): string {
  * created here is saved. What kind of thing an id belongs to is answered by
  * the collection it is in, not by the id.
  */
+/** A new entry in a lead's history, by whoever is signed in. */
+function leadActivity(
+  kind: LeadActivity['kind'],
+  authorId: string,
+  fields: Partial<Omit<LeadActivity, 'id' | 'kind' | 'authorId'>> & { at: string },
+): LeadActivity {
+  return {
+    id: newId(),
+    kind,
+    channel: '',
+    direction: '',
+    title: '',
+    body: '',
+    durationMinutes: 0,
+    authorId,
+    ...fields,
+  }
+}
+
 function newId(): string {
   return crypto.randomUUID()
 }
@@ -476,9 +502,18 @@ export interface AppState {
   placeStatusDefinition: (id: string, afterId: string | null) => void
   deleteStatusDefinition: (id: string) => void
 
-  addLead: (data: Omit<Lead, 'id' | 'createdOn'>) => string
-  updateLead: (id: string, patch: Partial<Omit<Lead, 'id' | 'createdOn'>>) => void
+  /** Gives it the next reference and records who entered it; returns its id. */
+  addLead: (data: Omit<Lead, 'id' | 'refNo' | 'createdAt' | 'activities'>) => string
+  updateLead: (id: string, patch: Partial<Omit<Lead, 'id' | 'refNo' | 'createdAt' | 'activities'>>) => void
   deleteLead: (id: string) => void
+  /** Moves a lead to a stage and writes the move into its history. */
+  setLeadStage: (id: string, stage: Lead['stage'], note?: string) => void
+  /** Records a message, call or meeting, and with it the last contact. */
+  logLeadContact: (id: string, contact: Omit<LeadActivity, 'id' | 'kind' | 'authorId'>) => void
+  /** The next action is done: it goes into the history and the slot empties. */
+  completeLeadAction: (id: string) => void
+  addLeadNote: (id: string, body: string) => void
+  deleteLeadNote: (id: string, noteId: string) => void
 
   addManager: (name: Manager['name']) => void
   deleteManager: (id: string) => void
@@ -1004,12 +1039,82 @@ export const useAppStore = create<AppState>()(
 
       addLead: (data) => {
         const id = newId()
-        set((s) => ({ leads: [{ ...data, id, createdOn: todayIso() }, ...s.leads] }))
+        set((s) => {
+          const now = new Date().toISOString()
+          const refNo = Math.max(1000, ...s.leads.map((lead) => lead.refNo || 0)) + 1
+          // Notes typed into the form start the lead's history of notes.
+          const activities: LeadActivity[] = data.notes.trim()
+            ? [leadActivity('note', s.currentStaffId, { title: 'Note', body: data.notes.trim(), at: now })]
+            : []
+          return {
+            leads: [
+              { ...data, notes: '', id, refNo, createdAt: now, stageChangedAt: data.stageChangedAt || now, activities },
+              ...s.leads,
+            ],
+          }
+        })
         return id
       },
       updateLead: (id, patch) =>
         set((s) => ({ leads: s.leads.map((lead) => (lead.id === id ? { ...lead, ...patch } : lead)) })),
       deleteLead: (id) => set((s) => ({ leads: s.leads.filter((lead) => lead.id !== id) })),
+      setLeadStage: (id, stage, note = '') =>
+        set((s) => ({
+          leads: s.leads.map((lead) => {
+            if (lead.id !== id || lead.stage === stage) return lead
+            const at = new Date().toISOString()
+            const move = leadActivity('stage', s.currentStaffId, { title: `Moved to ${stage}`, body: note.trim(), at })
+            return { ...lead, stage, stageChangedAt: at, activities: [move, ...lead.activities] }
+          }),
+        })),
+      logLeadContact: (id, contact) =>
+        set((s) => ({
+          leads: s.leads.map((lead) => {
+            if (lead.id !== id) return lead
+            const entry = leadActivity('contact', s.currentStaffId, contact)
+            // An older call logged late does not move the last contact back.
+            const latest = !lead.lastContactAt || contact.at >= lead.lastContactAt
+            return {
+              ...lead,
+              contacted: true,
+              lastContactAt: latest ? contact.at : lead.lastContactAt,
+              lastContactChannel: latest ? contact.channel : lead.lastContactChannel,
+              activities: sortActivities([entry, ...lead.activities]),
+            }
+          }),
+        })),
+      completeLeadAction: (id) =>
+        set((s) => ({
+          leads: s.leads.map((lead) => {
+            if (lead.id !== id) return lead
+            const done = leadActivity('task', s.currentStaffId, {
+              title: `${lead.nextStep || 'Follow-up'} — done`,
+              body: lead.nextStepDetail,
+              at: new Date().toISOString(),
+            })
+            return { ...lead, nextStep: '', nextStepDetail: '', nextFollowUpAt: '', activities: [done, ...lead.activities] }
+          }),
+        })),
+      addLeadNote: (id, body) =>
+        set((s) => ({
+          leads: s.leads.map((lead) =>
+            lead.id === id
+              ? {
+                  ...lead,
+                  activities: [
+                    leadActivity('note', s.currentStaffId, { title: 'Note', body: body.trim(), at: new Date().toISOString() }),
+                    ...lead.activities,
+                  ],
+                }
+              : lead,
+          ),
+        })),
+      deleteLeadNote: (id, noteId) =>
+        set((s) => ({
+          leads: s.leads.map((lead) =>
+            lead.id === id ? { ...lead, activities: lead.activities.filter((a) => a.id !== noteId) } : lead,
+          ),
+        })),
 
       addManager: (name) => set((s) => ({ managers: [...s.managers, { id: newId(), name }] })),
       // Her record keeps pointing at a manager who has been removed only until
@@ -1188,7 +1293,7 @@ export const useAppStore = create<AppState>()(
           currentStaffId: '',
           agents: state.agents ?? seedAgents,
           managers: state.managers ?? seedManagers,
-          leads: state.leads ?? [],
+          leads: (state.leads ?? []).map(withLeadDefaults),
           statusDefinitions:
             state.statusDefinitions && state.statusDefinitions.length > 0
               ? state.statusDefinitions

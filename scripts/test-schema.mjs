@@ -32,7 +32,7 @@ await db.exec(`
   end $$;
 `)
 
-for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql', 'db/migrations/0009_managers_and_categories.sql', 'db/migrations/0010_cv_and_bonus.sql', 'db/migrations/0011_cv_images.sql', 'db/migrations/0012_caller_identity.sql', 'db/migrations/0013_company_contact.sql', 'db/migrations/0014_experience_span.sql', 'db/migrations/0015_super_admin.sql', 'db/migrations/0016_directory_and_placements.sql', 'db/migrations/0017_payroll_only_staff.sql', 'db/migrations/0018_peso_rate.sql', 'db/migrations/0019_leads.sql']) {
+for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql', 'db/migrations/0009_managers_and_categories.sql', 'db/migrations/0010_cv_and_bonus.sql', 'db/migrations/0011_cv_images.sql', 'db/migrations/0012_caller_identity.sql', 'db/migrations/0013_company_contact.sql', 'db/migrations/0014_experience_span.sql', 'db/migrations/0015_super_admin.sql', 'db/migrations/0016_directory_and_placements.sql', 'db/migrations/0017_payroll_only_staff.sql', 'db/migrations/0018_peso_rate.sql', 'db/migrations/0019_leads.sql', 'db/migrations/0020_lead_records.sql']) {
   try {
     await db.exec(readFileSync(file, 'utf8'))
     console.log(`applied  ${file}`)
@@ -56,7 +56,7 @@ const shape = async () => JSON.stringify((await db.query(`
 const before = await shape()
 let rerunError = null
 try {
-  for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql', 'db/migrations/0009_managers_and_categories.sql', 'db/migrations/0010_cv_and_bonus.sql', 'db/migrations/0011_cv_images.sql', 'db/migrations/0012_caller_identity.sql', 'db/migrations/0013_company_contact.sql', 'db/migrations/0014_experience_span.sql', 'db/migrations/0015_super_admin.sql', 'db/migrations/0016_directory_and_placements.sql', 'db/migrations/0017_payroll_only_staff.sql', 'db/migrations/0018_peso_rate.sql', 'db/migrations/0019_leads.sql']) {
+  for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql', 'db/migrations/0004_derived_billing.sql', 'db/migrations/0007_public_projection.sql', 'db/migrations/0008_link_accounts.sql', 'db/migrations/0009_managers_and_categories.sql', 'db/migrations/0010_cv_and_bonus.sql', 'db/migrations/0011_cv_images.sql', 'db/migrations/0012_caller_identity.sql', 'db/migrations/0013_company_contact.sql', 'db/migrations/0014_experience_span.sql', 'db/migrations/0015_super_admin.sql', 'db/migrations/0016_directory_and_placements.sql', 'db/migrations/0017_payroll_only_staff.sql', 'db/migrations/0018_peso_rate.sql', 'db/migrations/0019_leads.sql', 'db/migrations/0020_lead_records.sql']) {
     await db.exec(readFileSync(file, 'utf8'))
   }
 } catch (error) {
@@ -104,6 +104,7 @@ await db.exec(`
   insert into ops.applicants (id, english_name, gender, dob, status, published_to_website)
     values ('bbbbbbbb-0000-0000-0000-000000000003', 'Already Placed', 'Female', '1991-01-01', 'Deployed', true);
   insert into ops.office_expenses (item_en, amount, spent_on) values ('Office Rent', 320, '2026-09-01');
+  insert into ops.leads (id, employer_name) values ('cccccccc-0000-0000-0000-000000000001', 'Gulf Horizon Hospitality');
   insert into ops.status_definitions (label, pipeline, step_order) values ('Medical', 'Domestic', 4);
   insert into ops.payroll_entries (staff_id, period, basic_salary)
     select id, '2026-09-01', 700 from ops.staff where username = 'kylie';
@@ -161,7 +162,8 @@ const writes = [
   ['system', `insert into ops.professions (name_en) values ('Gardener')`, { super_admin: true, admin: false, accountant: false, data_entry: false }],
   ['a stage', `insert into ops.status_definitions (label, pipeline, step_order) values ('Fingerprints', 'Domestic', 11)`, { super_admin: true, admin: false, accountant: false, data_entry: false }],
   ['a manager', `insert into ops.managers (name_en) values ('A Third Partner')`, { super_admin: true, admin: false, data_entry: false }],
-  ['a lead', `insert into ops.leads (employer_name, need, source) values ('Al Noor Medical Group', '24 ICU & ER nurses', 'WhatsApp')`, { super_admin: true, admin: false, accountant: false, data_entry: false }],
+  ['a lead', `insert into ops.leads (employer_name, need, source) values ('Al Noor Medical Group', '24 ICU & ER nurses', 'Manual entry')`, { super_admin: true, admin: false, accountant: false, data_entry: false }],
+  ['a lead\'s history', `insert into ops.lead_activities (lead_id, kind, title) select id, 'note', 'Note' from ops.leads limit 1`, { super_admin: true, admin: false, accountant: false, data_entry: false }],
   ['deleting a worker', `delete from ops.applicants where english_name = 'Not Published'`, { super_admin: true, admin: true, accountant: false, data_entry: false }],
 ]
 for (const [label, sql, expected] of writes) {

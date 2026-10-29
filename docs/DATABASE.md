@@ -556,14 +556,30 @@ should be none.
 
 ## Leads
 
-The Leads page (System → Leads) is the register of employers' enquiries, from
-the first WhatsApp message to a job order. Every lead is entered by hand
-through *Add lead* and kept in `ops.leads` (migration 0019, paste file
-`db/run-leads.sql`). It belongs to the super administrators, in the app and in
-the database alike: no other role reads or writes the table.
+The Leads pages (System → Leads) keep every employer enquiry, from the first
+message to a job order. They are three pages, each built from its frame in the
+design file:
 
-Times are stored as instants and always shown in Arabia Standard Time
-(Asia/Riyadh), whatever machine the page is open on; the form's date-time
-fields are read as AST too. A lead is *overdue* when its next follow-up has
-passed and it is neither Won nor Lost; overdue leads are worked first.
-`src/lib/leads.ts` holds those rules.
+- **Leads** (`/leads`): the register, its four figures and the overdue notice.
+- **Add new lead** (`/leads/new`), which also edits (`/leads/:id/edit`): the
+  enquiry, its source, its contact status and stage, and the first follow-up.
+  Editing adds the brief (positions, experience, target start, employer
+  requirements), the contact's role, the industry and place, the owner and the
+  next step in words.
+- **The lead** (`/leads/:id`): the stage tracker, contact information, the
+  recruitment brief and its document, the contact history, the next action and
+  the internal notes.
+
+Every lead is entered by hand. They live in `ops.leads` (migrations 0019 and
+0020) with their history in `ops.lead_activities`: each message or call
+logged, each stage change, each next action completed, each internal note,
+with who recorded it and when. An employer's document goes in the private
+`lead-documents` bucket (0021). Paste files: `db/run-leads.sql`, then
+`db/run-lead-pages.sql`. Only super administrators read or write any of it,
+in the app and in the database alike.
+
+Each lead has a reference, LD-1001 onwards, given in the order they arrived.
+Times are stored as instants and always shown and typed in Arabia Standard
+Time (Asia/Riyadh), whatever machine the page is open on. A lead is *overdue*
+when its next follow-up has passed and it is neither Won nor Lost; overdue
+leads are worked first. `src/lib/leads.ts` holds those rules.

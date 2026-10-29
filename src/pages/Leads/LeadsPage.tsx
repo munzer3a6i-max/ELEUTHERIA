@@ -11,9 +11,9 @@
 */
 
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronDown, ChevronLeft, ChevronRight, FileText, Mail, MessageCircle, Search } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ChevronDown, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
-import { useCurrentUser } from '../../lib/useCurrentUser'
 import {
   LEAD_SOURCES,
   LEAD_STAGES,
@@ -26,29 +26,15 @@ import {
   isOverdue,
   leadsCsv,
   longDate,
+  needLine,
   receivedLabel,
   workOrder,
 } from '../../lib/leads'
-import LeadModal from './LeadModal'
-import type { Lead, LeadSource, LeadStage } from '../../types'
+import { DataContext, GhostButton, GoldButton } from './leadUi'
+import { SOURCE_ICON, STAGE_TONE } from './leadStyle'
+import type { LeadSource, LeadStage } from '../../types'
 
 const PAGE_SIZE = 10
-
-/** The pill each stage wears in the register, as the design colours them. */
-const STAGE_TONE: Record<LeadStage, string> = {
-  'New enquiry': 'bg-[#f4f6f9] text-[#69768a]',
-  Qualified: 'bg-[#edf3f9] text-[#42688b]',
-  Shortlisting: 'bg-[#fbf4e5] text-[#82601d]',
-  'Proposal sent': 'bg-[#fbf4e5] text-[#82601d]',
-  Won: 'bg-[#eaf5ef] text-[#24735b]',
-  Lost: 'bg-[#fdecea] text-[#b5473d]',
-}
-
-const SOURCE_ICON: Record<LeadSource, typeof Mail> = {
-  WhatsApp: MessageCircle,
-  Email: Mail,
-  'Website form': FileText,
-}
 
 type ContactFilter = 'all' | 'contacted' | 'not-contacted'
 
@@ -117,10 +103,7 @@ function Metric({
 export default function LeadsPage() {
   const leads = useAppStore((s) => s.leads)
   const staff = useAppStore((s) => s.staff)
-  const addLead = useAppStore((s) => s.addLead)
-  const updateLead = useAppStore((s) => s.updateLead)
-  const deleteLead = useAppStore((s) => s.deleteLead)
-  const { canRemove } = useCurrentUser()
+  const navigate = useNavigate()
 
   // "Now" moves on its own, so an enquiry tips into overdue while the page is open.
   const [now, setNow] = useState(() => new Date())
@@ -137,7 +120,6 @@ export default function LeadsPage() {
   const [overdueOnly, setOverdueOnly] = useState(false)
   const [paging, setPaging] = useState({ filters: '', page: 0 })
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [editing, setEditing] = useState<Lead | 'new' | null>(null)
 
   const ownerName = (id: string) => staff.find((m) => m.id === id)?.name.en ?? ''
 
@@ -233,21 +215,10 @@ export default function LeadsPage() {
           <p className="text-[14px] leading-[1.4] text-[#a6b4c9]">Every enquiry. A clear next step.</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={exportLeads}
-            disabled={filtered.length === 0}
-            className="rounded-[999px] border border-[#506078] bg-white/[0.04] px-6 py-[13px] text-[17px] font-medium text-white hover:bg-white/[0.08] disabled:opacity-40"
-          >
+          <GhostButton onClick={exportLeads} disabled={filtered.length === 0}>
             {selected.size > 0 ? `Export ${selected.size} selected` : 'Export leads'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setEditing('new')}
-            className="rounded-[999px] bg-[#e5b44d] px-6 py-[13px] text-[17px] font-medium text-[#0b1b2b] hover:bg-[#ecc263]"
-          >
-            + Add lead
-          </button>
+          </GhostButton>
+          <GoldButton onClick={() => navigate('/leads/new')}>+ Add lead</GoldButton>
         </div>
       </div>
 
@@ -256,7 +227,12 @@ export default function LeadsPage() {
         <Metric
           value={leads.length}
           label="Total employer enquiries"
-          note={`${bySource.WhatsApp} WhatsApp · ${bySource.Email} Email · ${bySource['Website form']} Website`}
+          note={[
+            `${bySource.WhatsApp} WhatsApp`,
+            `${bySource.Email} Email`,
+            `${bySource['Website form']} Website`,
+            ...(bySource['Manual entry'] > 0 ? [`${bySource['Manual entry']} Manual`] : []),
+          ].join(' · ')}
         />
         <Metric value={notContacted.length} label="Not contacted" note="Awaiting a first response" />
         <Metric value={inProgress.length} label="In progress" note="Qualified through shortlisting" />
@@ -290,7 +266,10 @@ export default function LeadsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-5">
           <div className="flex flex-wrap gap-2">
             {chip('all', 'All channels', leads.length)}
-            {LEAD_SOURCES.map((source) => chip(source, source, bySource[source]))}
+            {/* Manual entries get a chip of their own only once there are some. */}
+            {LEAD_SOURCES.filter((source) => source !== 'Manual entry' || bySource[source] > 0).map((source) =>
+              chip(source, source, bySource[source]),
+            )}
           </div>
           <p className="text-[12px] leading-[1.4] text-[#69768a]">
             {leads.length} employer {leads.length === 1 ? 'enquiry' : 'enquiries'}
@@ -361,15 +340,15 @@ export default function LeadsPage() {
               const SourceIcon = SOURCE_ICON[lead.source]
               const contacted = isContacted(lead)
               const late = isOverdue(lead, now)
-              const subtitle = [lead.contactName, lead.need, lead.city].filter(Boolean).join(' · ')
+              const subtitle = [lead.contactName, needLine(lead), lead.city].filter(Boolean).join(' · ')
               return (
                 <div
                   key={lead.id}
                   role="button"
                   tabIndex={0}
-                  onClick={() => setEditing(lead)}
+                  onClick={() => navigate(`/leads/${lead.id}`)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') setEditing(lead)
+                    if (e.key === 'Enter') navigate(`/leads/${lead.id}`)
                   }}
                   className="group flex h-[66px] cursor-pointer items-center gap-4 border-b border-s-[3px] border-[#e3e8ef] border-s-transparent bg-white px-6 outline-none hover:border-s-[#e5b44d] hover:bg-[#fcf8ee] focus-visible:border-s-[#e5b44d] focus-visible:bg-[#fcf8ee]"
                 >
@@ -404,7 +383,7 @@ export default function LeadsPage() {
                     </span>
                   </div>
                   <div className="flex w-[136px] shrink-0 flex-col gap-[3px] leading-[1.4] whitespace-nowrap">
-                    {contacted ? (
+                    {lead.lastContactAt ? (
                       <>
                         <span className="text-[12px] text-[#17263c]">{longDate(lead.lastContactAt)}</span>
                         <span className="text-[11px] text-[#69768a]">
@@ -414,7 +393,7 @@ export default function LeadsPage() {
                       </>
                     ) : (
                       <>
-                        <span className="text-[12px] text-[#69768a]">Not yet contacted</span>
+                        <span className="text-[12px] text-[#69768a]">{contacted ? 'Contact not logged' : 'Not yet contacted'}</span>
                         <span className="text-[11px] text-[#69768a]">{receivedLabel(lead.receivedOn)}</span>
                       </>
                     )}
@@ -493,37 +472,7 @@ export default function LeadsPage() {
         </div>
       </div>
 
-      <div className="flex flex-wrap justify-between gap-2 text-[11px] leading-[1.4] text-[#a6b4c9]">
-        <p>All times in Arabia Standard Time (UTC+3)</p>
-        <p>Employer enquiries · Internal use only</p>
-      </div>
-
-      {editing && (
-        <LeadModal
-          lead={editing === 'new' ? null : editing}
-          onClose={() => setEditing(null)}
-          onSave={(draft) => {
-            if (editing === 'new') addLead(draft)
-            else updateLead(editing.id, draft)
-            setEditing(null)
-          }}
-          onDelete={
-            editing !== 'new' && canRemove('system')
-              ? () => {
-                  if (window.confirm(`Delete the enquiry from ${editing.employerName}? This cannot be undone.`)) {
-                    deleteLead(editing.id)
-                    setSelected((was) => {
-                      const next = new Set(was)
-                      next.delete(editing.id)
-                      return next
-                    })
-                    setEditing(null)
-                  }
-                }
-              : undefined
-          }
-        />
-      )}
+      <DataContext right="Employer enquiries · Internal use only" />
     </div>
   )
 }

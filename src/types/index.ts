@@ -383,13 +383,40 @@ export const EMPTY_CV_DETAILS: CvDetails = {
 }
 
 /** Where an employer's enquiry first reached the office. */
-export type LeadSource = 'WhatsApp' | 'Email' | 'Website form'
+export type LeadSource = 'Manual entry' | 'WhatsApp' | 'Email' | 'Website form'
 
 /** How far an enquiry has come, from first message to a signed job order. */
-export type LeadStage = 'New enquiry' | 'Qualified' | 'Shortlisting' | 'Proposal sent' | 'Won' | 'Lost'
+export type LeadStage = 'New enquiry' | 'Qualified' | 'Proposal sent' | 'Shortlisting' | 'Won' | 'Lost'
 
 /** How the office last spoke to them. */
 export type LeadChannel = 'WhatsApp' | 'Email' | 'Call' | 'Meeting'
+
+/**
+ * One step of the conversation with an employer: a message or call either
+ * way, a stage change, a next action done, or an internal note.
+ */
+export interface LeadActivity {
+  id: string
+  kind: 'contact' | 'stage' | 'task' | 'note'
+  channel: LeadChannel | ''
+  direction: 'Inbound' | 'Outbound' | ''
+  title: string
+  body: string
+  /** How long a call or meeting ran; 0 when nobody said. */
+  durationMinutes: number
+  /** The staff member who recorded it. */
+  authorId: string
+  /** When it happened, as an ISO instant. */
+  at: string
+}
+
+/** The one document an employer sent with the enquiry, kept in Storage. */
+export interface LeadDocument {
+  path: string
+  name: string
+  size: number
+  addedAt: string
+}
 
 /**
  * An employer's enquiry, from the first message to a job order or a no. Every
@@ -399,15 +426,31 @@ export type LeadChannel = 'WhatsApp' | 'Email' | 'Call' | 'Meeting'
  */
 export interface Lead {
   id: string
+  /** The number quoted for it: LD-1001. */
+  refNo: number
   employerName: string
   contactName: string
+  /** Their position: "HR Director". */
+  contactRole: string
   phone: string
   email: string
-  /** What they asked for, as they put it: "24 ICU & ER nurses". */
-  need: string
+  industry: string
   city: string
+  country: string
+  /** Positions required, short: "24 ICU & ER nurses". */
+  need: string
+  /** The enquiry as it came in: roles, numbers, location, start date. */
+  enquiry: string
+  experience: string
+  targetStart: string
+  /** What the employer insists on: licences, eligibility, experience. */
+  requirements: string
   source: LeadSource
   stage: LeadStage
+  /** When the lead reached its current stage, as an ISO instant; empty if unknown. */
+  stageChangedAt: string
+  /** Somebody has answered them, whether or not a contact was logged. */
+  contacted: boolean
   /** The staff member who answers for this enquiry; empty while nobody does. */
   ownerId: string
   /** The day the enquiry arrived, YYYY-MM-DD. */
@@ -419,8 +462,15 @@ export interface Lead {
   nextFollowUpAt: string
   /** What that follow-up is for: "Share candidate CVs". */
   nextStep: string
+  /** The follow-up in more words. */
+  nextStepDetail: string
+  /** A note kept on the lead before notes had a history of their own. */
   notes: string
-  createdOn: string
+  document: LeadDocument | null
+  /** Newest first. */
+  activities: LeadActivity[]
+  /** When it was entered, as an ISO instant. */
+  createdAt: string
 }
 
 /** One of the people whose domestic workers are counted separately. */

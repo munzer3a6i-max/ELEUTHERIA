@@ -20,6 +20,8 @@ interface Kind {
   public: string
   fallbackType: string
   noun: string
+  /** What to run when the bucket is missing, if not db/fix-storage.sql. */
+  setup?: string
 }
 
 const PHOTO: Kind = {
@@ -37,6 +39,16 @@ const DOCUMENT: Kind = {
   public: '',
   fallbackType: 'image/jpeg',
   noun: 'document',
+}
+
+// What an employer sends with an enquiry. Leads are the super
+// administrators' alone, so their files are kept apart from the workers'.
+const LEAD_DOCUMENT: Kind = {
+  private: 'lead-documents',
+  public: '',
+  fallbackType: 'application/pdf',
+  noun: 'document',
+  setup: 'db/run-lead-pages.sql',
 }
 
 const CV: Kind = {
@@ -91,7 +103,9 @@ function explain(kind: Kind, error: { message: string; status?: number }): strin
   const said = error.status ? `(Storage said ${error.status}: ${message})` : `(Storage said: ${message})`
 
   if (/bucket not found|not found/i.test(message)) {
-    return `This project has no bucket called ${kind.private}. Run db/fix-storage.sql in the SQL editor, which creates all five buckets and their rules. ${said}`
+    return kind.setup
+      ? `This project has no bucket called ${kind.private}. Run ${kind.setup} in the SQL editor, which creates it and its rules. ${said}`
+      : `This project has no bucket called ${kind.private}. Run db/fix-storage.sql in the SQL editor, which creates all five buckets and their rules. ${said}`
   }
   if (/mime type|content type|too large|maximum allowed size|payload/i.test(message)) {
     return `The ${kind.private} bucket refuses the file itself: something set a type or size limit on it. Open Storage, ${kind.private}, and clear "Allowed MIME types" and the file size limit. ${said}`
@@ -207,3 +221,10 @@ export const signedFullBodyUrl = (path: string) => signedUrl(PHOTO, path)
 export const uploadPassportCopy = (applicantId: string, file: File) => upload(DOCUMENT, applicantId, file)
 export const removePassportCopy = (path: string) => remove(DOCUMENT, path)
 export const signedPassportCopyUrl = (path: string) => signedUrl(DOCUMENT, path)
+
+/* ------------------------------------------------------ lead documents -- */
+
+/** The document an employer sent with an enquiry. Super administrators only. */
+export const uploadLeadDocument = (leadId: string, file: File) => upload(LEAD_DOCUMENT, leadId, file)
+export const removeLeadDocument = (path: string) => remove(LEAD_DOCUMENT, path)
+export const signedLeadDocumentUrl = (path: string) => signedUrl(LEAD_DOCUMENT, path)
