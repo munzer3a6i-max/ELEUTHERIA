@@ -529,10 +529,22 @@ SUPABASE_DB_URL='postgresql://...' node scripts/inspect-schema.mjs   # everythin
 ## The peso rate
 
 The books are kept in dollars. The `₱` switch in the top bar shows every dollar
-amount with its peso equivalent beside it (`$1,400 · ₱79,100`), at the rate in
-Settings → Company → *Pesos per dollar*, which is kept in `ops.settings.peso_rate`
-(migration 0018). Whether a given machine shows the pesos is that machine's
-choice, like its language, and is not stored in the database.
+amount with its peso equivalent beside it (`$1,400 · ₱81,372`), and the rate in
+use sits beside the switch.
+
+By default that rate is **live**: each browser reads the European Central
+Bank's daily USD→PHP reference rate from Frankfurter (`api.frankfurter.app`),
+falling back to ExchangeRate-API's open endpoint (`open.er-api.com`) if that
+cannot be reached. Neither needs a key or an account -- which matters, because
+a key shipped in a web page is readable by anyone. The rate is kept for six
+hours and checked hourly; `src/lib/pesoRate.ts` holds the fetching.
+
+Settings → Company → *Use the live peso rate from the bank* turns this off for
+the whole office (`ops.settings.peso_rate_live`, migration 0023, paste file
+`db/run-live-peso.sql`). The saved rate (`ops.settings.peso_rate`, 0018) is
+then the rate, and while live is on it is the fallback for when neither
+service answers. Whether a given machine shows the pesos at all is that
+machine's choice, like its language, and is not stored in the database.
 
 ## Reading a CV
 

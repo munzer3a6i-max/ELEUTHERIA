@@ -65,6 +65,7 @@ import { serverOwnsBilling } from '../data/ownership'
 import { canEdit, canRemove, type Area } from '../lib/permissions'
 import { DEFAULT_PASSWORD, makeCredentials, normaliseUsername, verifyPassword } from '../lib/passwords'
 import { sortActivities, withLeadDefaults } from '../lib/leads'
+import type { LiveRate } from '../lib/pesoRate'
 
 /*
   Which area each action belongs to. Hiding a button keeps an honest person out
@@ -77,6 +78,8 @@ const ACTION_AREA: Record<string, Area> = {
   setLanguage: 'personal',
   setTheme: 'personal',
   setShowPeso: 'personal',
+  // Each browser keeps the live rate it fetched, whoever is signed in.
+  setPesoLive: 'personal',
   signIn: 'personal',
   signOut: 'personal',
   changeOwnPassword: 'personal',
@@ -390,6 +393,11 @@ interface AppSettings {
    * about the office's books rather than about this screen.
    */
   pesoRate: number
+  /**
+   * Follow the bank's live rate rather than the one above, which is then only
+   * the fallback for when the live rate cannot be reached. The office's choice.
+   */
+  pesoRateLive: boolean
   /** Shows every amount in pesos beside the dollars. This machine's choice, like the language. */
   showPeso: boolean
   language: Language
@@ -411,6 +419,8 @@ export interface AppState {
   statusDefinitions: StatusDefinition[]
   /** Employers' enquiries, from first message to job order. */
   leads: Lead[]
+  /** The live peso rate this browser last fetched; null until it has one. */
+  pesoLive: LiveRate | null
   expenseCategories: ExpenseCategory[]
   paymentSources: PaymentSource[]
   payroll: PayrollEntry[]
@@ -440,6 +450,7 @@ export interface AppState {
   setLanguage: (lang: Language) => void
   setTheme: (theme: Theme) => void
   setShowPeso: (showPeso: boolean) => void
+  setPesoLive: (live: LiveRate | null) => void
   updateSettings: (patch: Partial<Omit<AppSettings, 'language' | 'theme'>>) => void
 
   addApplicant: (data: Omit<Applicant, 'id' | 'createdOn' | 'updatedOn' | 'updatedBy' | 'status' | 'experience' | 'education' | 'documents' | 'notes' | 'photoDataUrl' | 'photoPath' | 'cvFileName' | 'cvPath' | 'cvDetails' | 'fullBodyPath' | 'fullBodyDataUrl' | 'passportCopyFileName' | 'passportCopyPath' | 'passportCopyDataUrl' | 'cvLinkedToWebsite'>) => string
@@ -573,6 +584,7 @@ export const useAppStore = create<AppState>()(
       statusDefinitions: allStatusDefinitions,
       // Entered by hand through the Add lead form; nothing is invented here.
       leads: [],
+      pesoLive: null,
       expenseCategories: seedExpenseCategories,
       paymentSources: seedPaymentSources,
       payroll: seedPayroll,
@@ -596,6 +608,7 @@ export const useAppStore = create<AppState>()(
         email: 'info@eleutheria.agency',
         currency: 'USD',
         pesoRate: 56.5,
+        pesoRateLive: true,
         showPeso: false,
         language: 'en',
         theme: 'dark',
@@ -622,6 +635,7 @@ export const useAppStore = create<AppState>()(
       setLanguage: (language) => set((s) => ({ settings: { ...s.settings, language } })),
       setTheme: (theme) => set((s) => ({ settings: { ...s.settings, theme } })),
       setShowPeso: (showPeso) => set((s) => ({ settings: { ...s.settings, showPeso } })),
+      setPesoLive: (pesoLive) => set({ pesoLive }),
       updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
 
       addApplicant: (data) => {
@@ -1294,6 +1308,7 @@ export const useAppStore = create<AppState>()(
           agents: state.agents ?? seedAgents,
           managers: state.managers ?? seedManagers,
           leads: (state.leads ?? []).map(withLeadDefaults),
+          pesoLive: state.pesoLive ?? null,
           statusDefinitions:
             state.statusDefinitions && state.statusDefinitions.length > 0
               ? state.statusDefinitions
@@ -1394,6 +1409,14 @@ export function invoiceBalance(invoice: Invoice): number {
   return invoice.servicePrice - invoiceTotalPaid(invoice)
 }
 
+/**
+ * The rate the pesos are shown at: the bank's live rate when the office
+ * follows it and this browser has one, otherwise the rate saved in Settings.
+ */
+export function effectivePesoRate(settings: Pick<AppSettings, 'pesoRate' | 'pesoRateLive'>, live: LiveRate | null): number {
+  return settings.pesoRateLive !== false && live && live.rate > 0 ? live.rate : settings.pesoRate
+}
+
 export function formatMoney(amount: number, currency = 'USD', fractionDigits = 2): string {
   const symbol = currency === 'USD' ? '$' : currency
   const value = Math.abs(amount).toLocaleString('en-US', {
@@ -1406,8 +1429,9 @@ export function formatMoney(amount: number, currency = 'USD', fractionDigits = 2
   // beside it, at the office's rate. Pesos are never shown with cents: nobody
   // reads a peso figure to the centavo, and it keeps the pair short enough for
   // a table cell.
-  const { showPeso, pesoRate } = useAppStore.getState().settings
-  if (!showPeso || currency !== 'USD' || !(pesoRate > 0)) return dollars
+  const state = useAppStore.getState()
+  const pesoRate = effectivePesoRate(state.settings, state.pesoLive)
+  if (!state.settings.showPeso || currency !== 'USD' || !(pesoRate > 0)) return dollars
   const pesos = Math.abs(amount * pesoRate).toLocaleString('en-US', { maximumFractionDigits: 0 })
   return `${dollars} \u00b7 \u20b1${pesos}`
 }

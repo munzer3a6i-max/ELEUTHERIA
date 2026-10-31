@@ -305,6 +305,7 @@ export const settingsRows = {
     email: s.email,
     currency: s.currency,
     peso_rate: s.pesoRate,
+    peso_rate_live: s.pesoRateLive !== false,
   }),
   in: (r: Row): CompanySettings => ({
     companyName: text(r.company_name),
@@ -316,11 +317,14 @@ export const settingsRows = {
     email: text(r.email),
     currency: text(r.currency) || 'USD',
     pesoRate: Number(r.peso_rate ?? 56.5) || 56.5,
+    // A project that has not run 0023 yet has no column, which means live.
+    pesoRateLive: r.peso_rate_live !== false,
   }),
 }
 
 export interface CompanySettings {
   pesoRate: number
+  pesoRateLive: boolean
   companyName: string
   companyTagline: string
   licenseNumber: string

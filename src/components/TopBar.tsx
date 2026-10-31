@@ -1,7 +1,7 @@
 import { Bell, Languages, LogOut, Menu, Moon, Search, Settings as SettingsIcon, Sun, User } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAppStore } from '../store/useAppStore'
+import { effectivePesoRate, useAppStore } from '../store/useAppStore'
 import { useTranslation } from '../i18n/useTranslation'
 import { useCurrentUser } from '../lib/useCurrentUser'
 import SyncStatus from './SyncStatus'
@@ -15,6 +15,14 @@ export default function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
   const unreadCount = useAppStore((s) => s.notifications.filter((n) => !n.read).length)
   const setLanguage = useAppStore((s) => s.setLanguage)
   const showPeso = useAppStore((s) => s.settings.showPeso)
+  const settings = useAppStore((s) => s.settings)
+  const pesoLive = useAppStore((s) => s.pesoLive)
+  const pesoRate = effectivePesoRate(settings, pesoLive)
+  // Where the rate in use comes from, for the switch's tooltip.
+  const rateNote =
+    settings.pesoRateLive !== false && pesoLive
+      ? `₱${pesoRate.toFixed(2)} per $1 · ${pesoLive.source}${pesoLive.date ? `, ${pesoLive.date}` : ''}`
+      : `₱${pesoRate.toFixed(2)} per $1 · saved rate`
   const setShowPeso = useAppStore((s) => s.setShowPeso)
   const setTheme = useAppStore((s) => s.setTheme)
   const theme = useAppStore((s) => s.settings.theme)
@@ -73,7 +81,7 @@ export default function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
           role="switch"
           aria-checked={showPeso}
           onClick={() => setShowPeso(!showPeso)}
-          title={t('toggle_peso')}
+          title={`${t('toggle_peso')} — ${rateNote}`}
           aria-label={t('toggle_peso')}
           className="flex h-8 items-center gap-2 rounded-control px-2 text-[11px] text-ink-2 hover:bg-raised sm:px-2.5"
         >
@@ -91,6 +99,7 @@ export default function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
             />
           </span>
           <span className={showPeso ? 'font-semibold text-accent-text' : 'text-ink-3'}>₱</span>
+          {showPeso && <span className="num hidden text-[10.5px] text-ink-3 lg:inline">{pesoRate.toFixed(2)}</span>}
         </button>
 
         <button
