@@ -21,7 +21,7 @@
 // path, so nothing is lost and it is obvious what still needs uploading.
 
 import { createHash, randomUUID } from 'node:crypto'
-import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, rmSync, readdirSync } from 'node:fs'
 import { createRequire } from 'node:module'
 
 const [, , path, ...flags] = process.argv
@@ -122,19 +122,23 @@ if (toSql) {
   const db = new PGlite('db/.pglite-dryrun')
   await db.waitReady
   const fresh = (await db.query(`select to_regclass('ops.staff') as t`)).rows[0].t === null
-  if (fresh) {
-    await db.exec(`
-      create schema if not exists auth;
-      create or replace function auth.uid() returns uuid language sql stable as $$ select null::uuid $$;
-      do $$ begin
-        if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if;
-        if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if;
-      end $$;
-    `)
-    for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql',
-                        'db/migrations/0004_derived_billing.sql']) {
-      await db.exec(readFileSync(file, 'utf8'))
-    }
+  await db.exec(`
+    create schema if not exists auth;
+    create or replace function auth.uid() returns uuid language sql stable as $$ select null::uuid $$;
+    do $$ begin
+      if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if;
+      if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if;
+    end $$;
+  `)
+  // Everything a plain Postgres can take, in order: the storage migrations
+  // (0003, 0005, 0006) belong to Supabase and are applied only there. They run
+  // on every pass, not just the first, so a dry-run database left over from
+  // before a migration is brought up to date rather than failing against it --
+  // which is exactly what re-runnable migrations are for.
+  for (const file of readdirSync('db/migrations')
+    .filter((name) => name.endsWith('.sql') && !/^(0003|0005|0006|0021)/.test(name))
+    .sort()) {
+    await db.exec(readFileSync(`db/migrations/${file}`, 'utf8'))
   }
   query = (sql, params = []) => db.query(sql, params)
   close = () => db.close()
@@ -203,11 +207,14 @@ try {
   // --- reference and people ------------------------------------------------
   const s = state.settings ?? {}
   await query(
-    `insert into ops.settings (id, company_name, company_tagline, license_number, address, currency)
-     values (true, $1, $2, $3, $4, $5)
+    `insert into ops.settings (id, company_name, company_tagline, license_number, address, website, phones, email, currency)
+     values (true, $1, $2, $3, $4, $5, $6, $7, $8)
      on conflict (id) do update set company_name = excluded.company_name, company_tagline = excluded.company_tagline,
-       license_number = excluded.license_number, address = excluded.address, currency = excluded.currency`,
-    [s.companyName ?? 'Eleutheria', s.companyTagline ?? '', s.licenseNumber ?? '', s.address ?? '', s.currency ?? 'USD'],
+       license_number = excluded.license_number, address = excluded.address, website = excluded.website,
+       phones = excluded.phones, email = excluded.email, currency = excluded.currency`,
+    [s.companyName ?? 'Eleutheria', s.companyTagline ?? '', s.licenseNumber ?? '', s.address ?? '',
+     s.website ?? 'eleutheria.agency', s.phones ?? 'PH +63 961 278 0038 · PH +63 960 401 4714',
+     s.email ?? 'info@eleutheria.agency', s.currency ?? 'USD'],
   )
 
   await upsert('countries', (state.countries ?? []).map((c) => ({
@@ -269,8 +276,10 @@ try {
         'published_to_website', 'agency_id', 'agent_id'])
 
   await upsert('applicant_experience', applicants.flatMap((a) => a.experience.map((e) => ({
-    id: idFor('experience', e.id), applicant_id: idFor('applicant', a.id), title: e.title, employer: e.employer, years: e.years,
-  }))), ['id', 'applicant_id', 'title', 'employer', 'years'])
+    id: idFor('experience', e.id), applicant_id: idFor('applicant', a.id), title: e.title, employer: e.employer,
+    from_year: e.fromYear || null, to_year: e.toYear || null, years: e.years,
+    duties: e.duties ?? '', country: e.country ?? '',
+  }))), ['id', 'applicant_id', 'title', 'employer', 'from_year', 'to_year', 'years', 'duties', 'country'])
 
   await upsert('applicant_education', applicants.flatMap((a) => a.education.map((e) => ({
     id: idFor('education', e.id), applicant_id: idFor('applicant', a.id), degree: e.degree, institution: e.institution, year: e.year,

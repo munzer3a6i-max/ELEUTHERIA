@@ -13,13 +13,23 @@
   because a CV with gaps is honest and one that fills them in is not.
 */
 
+import { experiencePeriod } from './experience'
 import type { Applicant, ExperienceEntry } from '../types'
 
 export type CvTemplate = 'professional' | 'domestic'
 
 export interface CvInput {
   applicant: Applicant
-  company: { name: string; tagline: string; licenceNumber: string; address: string }
+  company: {
+    name: string
+    tagline: string
+    licenceNumber: string
+    address: string
+    /** The letterhead's second line: how to reach the office. */
+    website: string
+    phones: string
+    email: string
+  }
   /** Data URLs, so the finished file depends on nothing it cannot carry. */
   photo: string | null
   fullBody: string | null
@@ -77,8 +87,7 @@ function ageFrom(dob: string): string {
 }
 
 function period(job: ExperienceEntry): string {
-  if (job.years <= 0) return '—'
-  return `${job.years} ${job.years === 1 ? 'year' : 'years'}`
+  return experiencePeriod(job) || '—'
 }
 
 function issuedToday(): string {
@@ -90,6 +99,24 @@ function issuedToday(): string {
 function referenceFor(applicant: Applicant): string {
   return applicant.cvDetails.reference || `EIP-${applicant.id.slice(0, 4).toUpperCase()}`
 }
+
+/*
+  The terms of the posting.
+
+  Every domestic worker on this agency's books goes to the same place on the
+  same contract for the same money, so these are three facts about the office
+  rather than three questions about her. They are printed, not asked: a field
+  that can only hold one answer is a field somebody can get wrong.
+*/
+export const DOMESTIC_TERMS = {
+  post: 'HOUSEMAID',
+  postAr: 'عاملة منزلية',
+  country: 'KSA',
+  countryAr: 'المملكة العربية السعودية',
+  salary: 'USD 400',
+  period: 'TWO YEARS',
+  periodAr: 'سنتان',
+} as const
 
 /** Which document this worker gets, unless somebody has said otherwise. */
 export function templateFor(applicant: Applicant): CvTemplate {
@@ -148,8 +175,20 @@ const head = (title: string) => `<!doctype html>
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
     font-size: 7pt; color: ${MUTED};
   }
+  /* The one thing on the page that is not the document: a way to save it.
+     A CV reaches people as a PDF, and the browser's own print makes a better
+     one than anything this file could draw. It prints itself out of the way. */
+  [data-controls] { display: flex; gap: 6px; margin-top: 6px; }
+  [data-controls] button {
+    font-family: 'Public Sans', system-ui, sans-serif;
+    font-size: 7pt; letter-spacing: 0.1em; text-transform: uppercase;
+    color: #1c1710; background: #f2ede1; border: 1px solid #d9cdaf;
+    border-radius: 2px; padding: 5px 11px; cursor: pointer; white-space: nowrap;
+  }
+  [data-controls] button:hover { background: #e9e1cd; }
   @media print {
     html { background: #fff; }
+    [data-controls] { display: none !important; }
     .page { margin: 0; box-shadow: none; page-break-after: always; }
     .page:last-child { page-break-after: auto; }
   }
@@ -186,13 +225,22 @@ function threeUp(en: string, value: string | number | null | undefined, ar: stri
   </div>`
 }
 
+/**
+ * A skill is a yes or a no and nothing else -- an employer reading the page
+ * wants to know whether she cooks, not how the office phrased it. Anything
+ * that is not plainly a yes reads as a no, so a half-filled record never
+ * claims something nobody said.
+ */
+export function saysYes(value: string): boolean {
+  return /^(y|yes|true|1|نعم|اي|أي)$/i.test(value.trim())
+}
+
 function skillRow(en: string, ar: string, value: string, last = false): string {
-  const said = value.trim()
-  const on = said !== ''
+  const on = saysYes(value)
   return `<div style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:3px 0;${last ? '' : `border-bottom:1px solid ${LINE_SOFT};`}">
     <span style="font-size:9pt;color:${INK}">${escape(en)}</span>
     <span class="ar" dir="rtl" style="font-size:8pt;color:${MUTED_AR};text-align:right;white-space:nowrap">${escape(ar)}</span>
-    <span style="display:inline-block;min-width:38px;text-align:center;padding:1px 8px;border-radius:100px;font-size:7.5pt;font-weight:600;letter-spacing:0.08em;border:1px solid ${on ? GOLD_RULE : LINE_MID};color:${on ? GOLD : '#9a8c6e'};background:${on ? '#faf4e3' : 'transparent'}">${on ? escape(said.toUpperCase()) : '—'}</span>
+    <span style="display:inline-block;min-width:38px;text-align:center;padding:1px 8px;border-radius:100px;font-size:7.5pt;font-weight:600;letter-spacing:0.08em;border:1px solid ${on ? GOLD_RULE : LINE_MID};color:${on ? GOLD : '#9a8c6e'};background:${on ? '#faf4e3' : 'transparent'}">${on ? 'YES' : 'NO'}</span>
   </div>`
 }
 
@@ -236,10 +284,7 @@ function professionalCv({ applicant, company, photo, logo }: CvInput): string {
       <div class="brand-left">
         ${logo ? `<img src="${logo}" alt="${escape(company.name)}" style="width:238px;height:auto">` : `<b style="font-size:13pt">${escape(company.name)}</b>`}
       </div>
-      <div class="contact">
-        <span>${escape(company.licenceNumber)}</span>
-        <span>${escape(company.address)}</span>
-      </div>
+      ${letterheadContact(company, '3px', true)}
     </div>
 
     <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 0 16px">
@@ -320,7 +365,7 @@ function professionalCv({ applicant, company, photo, logo }: CvInput): string {
 
     <div class="foot">
       <span>Screened, background-checked and document-verified by ${escape(company.name)}.</span>
-      <span>info@eleutheria.agency</span>
+      <span>${escape(company.email)}</span>
     </div>
   </section>
 ${tail}`
@@ -362,10 +407,7 @@ function domesticBioData({ applicant, company, photo, fullBody, passportCopy, lo
   <section class="page" style="padding:0.45in 0.5in;line-height:1.4">
     <div class="brand brand-rule" style="padding-bottom:9px">
       ${brandLeft}
-      <div class="contact" style="padding-bottom:2px">
-        <span>${escape(company.licenceNumber)}</span>
-        <span>${escape(company.address)}</span>
-      </div>
+      ${letterheadContact(company, '2px', true)}
     </div>
 
     <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:12px 0">
@@ -374,8 +416,8 @@ function domesticBioData({ applicant, company, photo, fullBody, passportCopy, lo
         <span class="ar" dir="rtl" style="font-size:10pt;font-weight:600;color:${INK}">السيرة الذاتية للعمل في المملكة العربية السعودية</span>
       </div>
       <div style="display:flex;gap:22px;flex:0 0 auto">
-        ${banner('Post Applied', 'الوظيفة', (cv.postApplied || cv.jobTitle || applicant.profession).toUpperCase())}
-        ${banner('Country', 'الدولة', (cv.destinationCountry || 'KSA').toUpperCase())}
+        ${banner('Post Applied', 'الوظيفة', DOMESTIC_TERMS.post)}
+        ${banner('Country', 'الدولة', DOMESTIC_TERMS.country)}
         ${banner('Ref. No.', '', referenceFor(applicant))}
       </div>
     </div>
@@ -392,12 +434,12 @@ function domesticBioData({ applicant, company, photo, fullBody, passportCopy, lo
         <div style="display:flex;flex-direction:column;gap:2px">
           <span class="lab" style="white-space:nowrap">Monthly Salary</span>
           <span class="ar" dir="rtl" style="font-size:7.5pt;color:${MUTED_AR}">الراتب الشهري</span>
-          <span style="font-size:12pt;font-weight:600;color:${INK_STRONG};white-space:nowrap">${show(cv.monthlySalary || cv.expectedSalary)}</span>
+          <span style="font-size:12pt;font-weight:600;color:${INK_STRONG};white-space:nowrap">${DOMESTIC_TERMS.salary}</span>
         </div>
         <div style="display:flex;flex-direction:column;gap:2px">
           <span class="lab" style="white-space:nowrap">Contract Period</span>
           <span class="ar" dir="rtl" style="font-size:7.5pt;color:${MUTED_AR}">مدة العقد</span>
-          <span style="font-size:12pt;font-weight:600;color:${INK_STRONG};white-space:nowrap">${show(cv.contractPeriod || 'TWO YEARS')}</span>
+          <span style="font-size:12pt;font-weight:600;color:${INK_STRONG};white-space:nowrap">${DOMESTIC_TERMS.period}</span>
         </div>
       </div>
     </div>
@@ -482,7 +524,7 @@ function domesticBioData({ applicant, company, photo, fullBody, passportCopy, lo
     </div>
 
     <div class="foot" style="margin-top:12px">
-      <span>Screened and document-verified by ${escape(company.name)} · info@eleutheria.agency</span>
+      <span>Screened and document-verified by ${escape(company.name)}${company.email ? ` · ${escape(company.email)}` : ''}</span>
       <span>Page 1 of 2</span>
     </div>
   </section>
@@ -509,6 +551,24 @@ function domesticBioData({ applicant, company, photo, fullBody, passportCopy, lo
     </div>
   </section>
 ${tail}`
+}
+
+/**
+ * The letterhead's right-hand side: the licence number, then the line somebody
+ * holding the document rings. Both templates print the same thing, and an
+ * empty field simply does not take a line.
+ */
+function letterheadContact(company: CvInput['company'], padding: string, controls = false): string {
+  const reach = [company.website, company.phones].filter(Boolean).join(' · ')
+  const lines = [company.licenceNumber, reach, company.address].filter(Boolean)
+  return `<div class="contact" style="padding-bottom:${padding}">
+        ${lines.map((line) => `<span>${escape(line)}</span>`).join('\n        ')}${
+          controls
+            ? `
+        <div data-controls="1"><button type="button" onclick="window.print()">Save as PDF · حفظ PDF</button></div>`
+            : ''
+        }
+      </div>`
 }
 
 /* --------------------------------------------------------------- the door -- */

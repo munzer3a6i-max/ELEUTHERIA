@@ -10,7 +10,13 @@ export type Theme = 'dark' | 'light'
  * What a member of staff may do. `accountant` changes the money and reads the
  * rest; `data_entry` works the caseload and never sees the finance pages.
  */
-export type StaffRole = 'admin' | 'accountant' | 'data_entry'
+/**
+ * `none` is somebody on the payroll who does not sign in at all: a driver, a
+ * cleaner, anybody whose pay the office runs but who has no business in the
+ * dashboard. They hold no username and no password, and every area is closed
+ * to them, so the row is a name on the roster and nothing more.
+ */
+export type StaffRole = 'super_admin' | 'admin' | 'accountant' | 'data_entry' | 'none'
 export type StaffStatus = 'Active' | 'Inactive' | 'Suspended'
 
 /**
@@ -70,6 +76,13 @@ export interface ExperienceEntry {
   id: string
   title: string
   employer: string
+  /**
+   * The years she was there, which is what the office types: 2024 to 2038.
+   * Zero on an entry recorded before the range existed.
+   */
+  fromYear: number
+  toYear: number
+  /** How long that comes to. Worked out from the range, never typed. */
   years: number
   /** What she did there, in her own words or the office's. */
   duties: string
@@ -301,12 +314,6 @@ export interface CvDetails {
   interviewStatus: string
 
   // --- the bio data asks for these, and the professional CV does not -------
-  /** The post on the bio data, when it differs from her profession. */
-  postApplied: string
-  /** Where she is going, which is nearly always Saudi Arabia. */
-  destinationCountry: string
-  monthlySalary: string
-  contractPeriod: string
   placeOfBirth: string
   livingTown: string
   children: string
@@ -317,7 +324,7 @@ export interface CvDetails {
   nextOfKin: string
   english: string
   arabic: string
-  /** Each is yes, no, or however the office wants to put it. */
+  /** Each is a yes or a no, and the bio data prints it as one. */
   skillBabySitting: string
   skillChildrenCare: string
   skillTutoring: string
@@ -355,10 +362,6 @@ export const EMPTY_CV_DETAILS: CvDetails = {
   preferredCountry: '',
   client: '',
   interviewStatus: '',
-  postApplied: '',
-  destinationCountry: '',
-  monthlySalary: '',
-  contractPeriod: '',
   placeOfBirth: '',
   livingTown: '',
   children: '',
@@ -377,6 +380,97 @@ export const EMPTY_CV_DETAILS: CvDetails = {
   skillWashing: '',
   skillIroning: '',
   skillCooking: '',
+}
+
+/** Where an employer's enquiry first reached the office. */
+export type LeadSource = 'Manual entry' | 'WhatsApp' | 'Email' | 'Website form'
+
+/** How far an enquiry has come, from first message to a signed job order. */
+export type LeadStage = 'New enquiry' | 'Qualified' | 'Proposal sent' | 'Shortlisting' | 'Won' | 'Lost'
+
+/** How the office last spoke to them. */
+export type LeadChannel = 'WhatsApp' | 'Email' | 'Call' | 'Meeting'
+
+/**
+ * One step of the conversation with an employer: a message or call either
+ * way, a stage change, a next action done, or an internal note.
+ */
+export interface LeadActivity {
+  id: string
+  kind: 'contact' | 'stage' | 'task' | 'note'
+  channel: LeadChannel | ''
+  direction: 'Inbound' | 'Outbound' | ''
+  title: string
+  body: string
+  /** How long a call or meeting ran; 0 when nobody said. */
+  durationMinutes: number
+  /** The staff member who recorded it. */
+  authorId: string
+  /** When it happened, as an ISO instant. */
+  at: string
+}
+
+/** The one document an employer sent with the enquiry, kept in Storage. */
+export interface LeadDocument {
+  path: string
+  name: string
+  size: number
+  addedAt: string
+}
+
+/**
+ * An employer's enquiry, from the first message to a job order or a no. Every
+ * one is entered by hand through the Add lead form for now; the times are kept
+ * as instants and shown in Arabia Standard Time, which is the clock the
+ * employers keep.
+ */
+export interface Lead {
+  id: string
+  /** The number quoted for it: LD-1001. */
+  refNo: number
+  employerName: string
+  contactName: string
+  /** Their position: "HR Director". */
+  contactRole: string
+  phone: string
+  email: string
+  industry: string
+  city: string
+  country: string
+  /** Positions required, short: "24 ICU & ER nurses". */
+  need: string
+  /** The enquiry as it came in: roles, numbers, location, start date. */
+  enquiry: string
+  experience: string
+  targetStart: string
+  /** What the employer insists on: licences, eligibility, experience. */
+  requirements: string
+  source: LeadSource
+  stage: LeadStage
+  /** When the lead reached its current stage, as an ISO instant; empty if unknown. */
+  stageChangedAt: string
+  /** Somebody has answered them, whether or not a contact was logged. */
+  contacted: boolean
+  /** The staff member who answers for this enquiry; empty while nobody does. */
+  ownerId: string
+  /** The day the enquiry arrived, YYYY-MM-DD. */
+  receivedOn: string
+  /** When the office last spoke to them, as an ISO instant; empty while it has not. */
+  lastContactAt: string
+  lastContactChannel: LeadChannel | ''
+  /** When somebody has to come back to them, as an ISO instant; empty for none. */
+  nextFollowUpAt: string
+  /** What that follow-up is for: "Share candidate CVs". */
+  nextStep: string
+  /** The follow-up in more words. */
+  nextStepDetail: string
+  /** A note kept on the lead before notes had a history of their own. */
+  notes: string
+  document: LeadDocument | null
+  /** Newest first. */
+  activities: LeadActivity[]
+  /** When it was entered, as an ISO instant. */
+  createdAt: string
 }
 
 /** One of the people whose domestic workers are counted separately. */

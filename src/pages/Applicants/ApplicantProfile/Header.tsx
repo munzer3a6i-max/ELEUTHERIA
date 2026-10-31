@@ -64,13 +64,17 @@ export default function Header({
   applicant,
   activeRequest,
   invoice,
+  seesMoney = true,
 }: {
   applicant: Applicant
   activeRequest: RecruitmentRequest | null
   invoice: Invoice | null
+  /** False for a role the money is not shown to. */
+  seesMoney?: boolean
 }) {
   const setApplicantStatus = useAppStore((s) => s.setApplicantStatus)
   const employers = useAppStore((s) => s.employers)
+  const commissions = useAppStore((s) => s.agentCommissions)
   const { language } = useTranslation()
   const { canEdit } = useCurrentUser()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -78,7 +82,7 @@ export default function Header({
 
   const employer = activeRequest ? employers.find((e) => e.id === activeRequest.employerId) : undefined
   const age = ageFromDob(applicant.dob)
-  const totalExpenses = activeRequest ? requestCost(activeRequest) : 0
+  const totalExpenses = activeRequest ? requestCost(activeRequest, commissions) : 0
   const totalIncome = invoice ? invoiceTotalPaid(invoice) : 0
   const netProfit = totalIncome - totalExpenses
   const profitMargin = totalIncome === 0 ? 0 : (netProfit / totalIncome) * 100
@@ -109,7 +113,7 @@ export default function Header({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-      <div className="lg:col-span-8 flex items-center gap-5 rounded-panel border border-line bg-surface p-[17px]">
+      <div className={`${seesMoney ? 'lg:col-span-8' : 'lg:col-span-12'} flex items-center gap-5 rounded-panel border border-line bg-surface p-[17px]`}>
         <div className="flex flex-col items-center">
           <div className="flex size-24 items-center justify-center overflow-hidden rounded-pill border-2 border-accent-line bg-raised p-1 shadow-md">
             <div className="flex size-full items-center justify-center overflow-hidden rounded-pill bg-raised">
@@ -123,7 +127,7 @@ export default function Header({
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
           <button
             type="button"
-            hidden={!canEdit('operations')}
+            hidden={!canEdit('directory')}
             onClick={() => fileInputRef.current?.click()}
             className="mt-2 flex items-center gap-1 rounded-control border border-line-strong bg-raised px-2.5 py-1 text-[10px] text-ink-2 shadow-sm hover:border-accent-line"
           >
@@ -138,7 +142,7 @@ export default function Header({
             </h1>
             <select
               value={applicant.status}
-              disabled={!canEdit('operations')}
+              disabled={!canEdit('directory')}
               onChange={(e) => handleStatusChange(e.target.value as ApplicantStatus)}
               aria-label={language === 'ar' ? 'حالة العاملة' : 'Worker status'}
               className={`rounded-control border px-2 py-0.5 text-[10px] font-bold focus:outline-none ${STATUS_TONE[applicant.status]}`}
@@ -156,13 +160,13 @@ export default function Header({
                 applicant.cvLinkedToWebsite
                   ? 'border-info/40 bg-info-soft text-info'
                   : 'border-line-strong bg-raised text-ink-3'
-              } ${canEdit('operations') ? '' : 'pointer-events-none opacity-60'}`}
+              } ${canEdit('directory') ? '' : 'pointer-events-none opacity-60'}`}
             >
               <input
                 type="checkbox"
                 className="sr-only"
                 checked={applicant.cvLinkedToWebsite}
-                disabled={!canEdit('operations')}
+                disabled={!canEdit('directory')}
                 onChange={(e) => handlePublish(e.target.checked)}
               />
               <Globe className="size-3" />
@@ -197,6 +201,7 @@ export default function Header({
         </div>
       </div>
 
+      {seesMoney && (
       <div className="lg:col-span-4 flex flex-col justify-between rounded-panel border border-line bg-surface p-[17px]">
         <div className="flex items-center justify-between border-b border-line pb-[9px]">
           <h2 className="text-[11px] font-semibold text-ink-3">
@@ -219,6 +224,7 @@ export default function Header({
           {language === 'ar' ? 'محدث' : 'Updated'} {applicant.updatedOn} {language === 'ar' ? 'بواسطة' : 'by'} {applicant.updatedBy}
         </div>
       </div>
+      )}
     </div>
   )
 }

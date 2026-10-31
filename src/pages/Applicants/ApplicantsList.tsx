@@ -3,13 +3,14 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { Globe, Plus, Search, Trash2, User } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
+import { placementOwnerId } from '../../data/businessRules'
 import { useCurrentUser } from '../../lib/useCurrentUser'
 import PageHeader from '../../components/PageHeader'
 import StatusBadge from '../../components/StatusBadge'
 import WorkerPhoto from '../../components/WorkerPhoto'
 import Modal from '../../components/Modal'
 import Confirm from '../../components/Confirm'
-import { removeApplicant, whyNotDelete } from '../../lib/applicants'
+import { BLOCKER_LABEL, deletePlan, removeApplicant, type Blocker } from '../../lib/applicants'
 import { BilingualField, Field, TextInput, SelectInput, PrimaryButton, SecondaryButton } from '../../components/form'
 import type { Applicant, ApplicantStatus, RequestType, Gender } from '../../types'
 
@@ -22,9 +23,12 @@ export default function ApplicantsList() {
   const countries = useAppStore((s) => s.countries)
   const agencies = useAppStore((s) => s.agencies)
   const managers = useAppStore((s) => s.managers)
+  const requests = useAppStore((s) => s.requests)
+  const employers = useAppStore((s) => s.employers)
   const addApplicant = useAppStore((s) => s.addApplicant)
+  const addRequest = useAppStore((s) => s.addRequest)
   const { t, tb, language } = useTranslation()
-  const { canEdit } = useCurrentUser()
+  const { canEdit, canRemove, member } = useCurrentUser()
   const navigate = useNavigate()
 
   const [searchParams, setSearchParams] = useSearchParams()
@@ -35,7 +39,8 @@ export default function ApplicantsList() {
   const [websiteOnly, setWebsiteOnly] = useState(false)
   const [managerFilter, setManagerFilter] = useState<string>('all')
   const [removing, setRemoving] = useState<Applicant | null>(null)
-  const [refused, setRefused] = useState<number | null>(null)
+  const [refused, setRefused] = useState<{ blocker: Blocker; count: number } | null>(null)
+  const [placements, setPlacements] = useState(0)
 
   const filtered = useMemo(() => {
     return applicants.filter((a) => {
@@ -55,11 +60,14 @@ export default function ApplicantsList() {
   }, [applicants, query, statusFilter, typeFilter, websiteOnly, managerFilter])
 
   function askToDelete(applicant: Applicant) {
-    // The database refuses a worker who is on a request, so find that out
-    // before she vanishes from the screen and comes back on the next load.
-    const blocked = whyNotDelete(applicant.id)
-    if (blocked.kind === 'has-requests') setRefused(blocked.count)
-    else setRemoving(applicant)
+    // Work out what the delete would take before she vanishes from the screen
+    // and comes back on the next load.
+    const plan = deletePlan(applicant.id)
+    if (plan.blocked) setRefused(plan.blocked)
+    else {
+      setPlacements(plan.placements)
+      setRemoving(applicant)
+    }
   }
 
   function handleDelete() {
@@ -67,7 +75,7 @@ export default function ApplicantsList() {
     const applicant = removing
     setRemoving(null)
     void removeApplicant(applicant).then((outcome) => {
-      if (outcome.kind === 'has-requests') setRefused(outcome.count)
+      if (outcome.kind === 'blocked') setRefused({ blocker: outcome.blocker, count: outcome.count })
     })
   }
 
@@ -77,7 +85,7 @@ export default function ApplicantsList() {
         title={t('nav_applicants')}
         subtitle={`${applicants.length} ${language === 'ar' ? 'متقدم' : 'applicants'}`}
         actions={
-          canEdit('operations') && (
+          canEdit('directory') && (
             <PrimaryButton onClick={() => setAddOpen(true)} className="flex items-center gap-1.5">
               <Plus className="size-3.5" /> {language === 'ar' ? 'إضافة متقدم' : 'Add Applicant'}
             </PrimaryButton>
@@ -124,7 +132,7 @@ export default function ApplicantsList() {
           <select
             value={managerFilter}
             onChange={(e) => setManagerFilter(e.target.value)}
-            aria-label={t('label_manager')}
+            aria-label={t('label_owner')}
             className="rounded-control border border-line bg-sunken px-2 py-1.5 text-[11px] text-ink focus:outline-none"
           >
             <option value="all">{t('label_manager_all')}</option>
@@ -133,7 +141,7 @@ export default function ApplicantsList() {
                 {tb(m.name)}
               </option>
             ))}
-            <option value="none">{t('label_manager_none')}</option>
+            <option value="none">{t('label_owner_office')}</option>
           </select>
         )}
         <div className="flex flex-wrap items-center gap-1">
@@ -159,8 +167,8 @@ export default function ApplicantsList() {
               <th className="px-4 py-3">{t('label_name')}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'المهنة' : 'Profession'}</th>
               <th className="px-4 py-3">{language === 'ar' ? 'النوع' : 'Type'}</th>
-              <th className="px-4 py-3">{language === 'ar' ? 'مكتب الاستقدام' : 'Agency'}</th>
-              <th className="px-4 py-3">{t('label_manager')}</th>
+              <th className="px-4 py-3">{language === 'ar' ? 'المصدر' : 'Source'}</th>
+              <th className="px-4 py-3">{t('label_owner')}</th>
               <th className="px-4 py-3">{t('label_status')}</th>
               <th className="sticky end-0 bg-surface px-4 py-3 text-end">{t('label_action')}</th>
             </tr>
@@ -168,7 +176,19 @@ export default function ApplicantsList() {
           <tbody>
             {filtered.map((a) => {
               const agency = agencies.find((ag) => ag.id === a.recruitmentAgencyId)
-              const manager = managers.find((m) => m.id === a.managerId)
+              const owner = managers.find((m) => m.id === placementOwnerId(a.type, a.managerId))
+              // Where she came from. A domestic worker comes through a partner
+              // office; a tradesman is hired direct, so the column names the
+              // employer who asked for him -- which is on his placement, since
+              // that is what joins the two.
+              const placement = requests
+                .filter((r) => r.applicantId === a.id)
+                .sort((x, y) => (x.createdOn < y.createdOn ? 1 : -1))[0]
+              const employer = placement ? employers.find((e) => e.id === placement.employerId) : undefined
+              const source =
+                a.type === 'Domestic'
+                  ? agency && tb({ en: agency.englishName, ar: agency.arabicName })
+                  : employer && tb({ en: employer.englishName, ar: employer.arabicName })
               return (
                 <tr key={a.id} className="text-xs">
                   <td className="px-4 py-3">
@@ -185,8 +205,8 @@ export default function ApplicantsList() {
                   <td className="px-4 py-3 text-ink-2">
                     {a.type === 'Domestic' ? t('type_domestic') : t('type_profession')}
                   </td>
-                  <td className="px-4 py-3 text-ink-2">{agency ? tb({ en: agency.englishName, ar: agency.arabicName }) : '-'}</td>
-                  <td className="px-4 py-3 text-ink-2">{manager ? tb(manager.name) : '-'}</td>
+                  <td className="px-4 py-3 text-ink-2">{source || '-'}</td>
+                  <td className="px-4 py-3 text-ink-2">{owner ? tb(owner.name) : t('label_owner_office')}</td>
                   <td className="px-4 py-3">
                     <span className="flex items-center gap-1.5">
                       <StatusBadge status={a.status} />
@@ -203,7 +223,8 @@ export default function ApplicantsList() {
                   <td className="sticky end-0 bg-surface px-4 py-3 text-end">
                     <button
                       type="button"
-                      hidden={!canEdit('operations')}
+                      aria-label={t('action_delete')}
+                      hidden={!canRemove('directory')}
                       onClick={() => askToDelete(a)}
                       className="text-ink-3 hover:text-neg"
                     >
@@ -229,8 +250,22 @@ export default function ApplicantsList() {
           professions={professions.map((p) => p.name.en)}
           countries={countries.map((c) => c.name.en)}
           onClose={() => setAddOpen(false)}
-          onSubmit={(data) => {
+          onSubmit={({ employerId, ...data }) => {
             const id = addApplicant(data)
+            // An employer chosen here is the placement itself, so it opens the
+            // recruitment request rather than being remembered twice. Without
+            // one she is simply on the books, as before.
+            if (employerId) {
+              addRequest({
+                type: data.type,
+                contractDurationMonths: 24,
+                applicantId: id,
+                employerId,
+                responsibleEmployeeId: member?.id ?? '',
+                recruitmentAgencyId: data.recruitmentAgencyId ?? '',
+                mosanedNumber: '',
+              })
+            }
             setAddOpen(false)
             navigate(`/applicants/${id}`)
           }}
@@ -241,7 +276,9 @@ export default function ApplicantsList() {
         <Confirm
           title={t('applicant_delete_title')}
           message={t('applicant_delete_confirm')}
-          detail={`${tb({ en: removing.englishName, ar: removing.arabicName || removing.englishName })} — ${removing.passportNo || removing.profession}`}
+          detail={`${tb({ en: removing.englishName, ar: removing.arabicName || removing.englishName })} — ${removing.passportNo || removing.profession}${
+            placements > 0 ? `\n${t('applicant_delete_placements')} ${placements}` : ''
+          }`}
           confirmLabel={t('action_delete')}
           tone="danger"
           onConfirm={handleDelete}
@@ -253,7 +290,7 @@ export default function ApplicantsList() {
         <Confirm
           title={t('applicant_has_requests_title')}
           message={t('applicant_has_requests')}
-          detail={`${t('applicant_requests_count')} ${refused}`}
+          detail={`${t(BLOCKER_LABEL[refused.blocker])} ${refused.count}`}
           confirmLabel={t('action_ok')}
           tone="danger"
           withoutCancel
@@ -292,9 +329,12 @@ function AddApplicantModal({
     recruitmentAgencyId: string | null
     agentId: string | null
     managerId: string | null
+    /** The employer she is being placed with, when one is known already. */
+    employerId: string
   }) => void
 }) {
   const agencies = useAppStore((s) => s.agencies)
+  const employers = useAppStore((s) => s.employers)
   const agents = useAppStore((s) => s.agents)
   const managers = useAppStore((s) => s.managers)
   const { t, tb, language } = useTranslation()
@@ -313,10 +353,19 @@ function AddApplicantModal({
   const [agencyId, setAgencyId] = useState('')
   const [agentId, setAgentId] = useState('')
   const [managerId, setManagerId] = useState('')
+  const [employerId, setEmployerId] = useState('')
+  const [problem, setProblem] = useState<string | null>(null)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!englishName.trim() || !passportNo.trim()) return
+    setProblem(null)
+    // The name is the one thing a record cannot do without. A passport is not:
+    // plenty arrive before they hold one, and Passporting is a stage of the
+    // process for exactly that reason.
+    if (!englishName.trim()) {
+      setProblem(language === 'ar' ? 'الاسم بالإنجليزية مطلوب.' : 'The English name is needed.')
+      return
+    }
     onSubmit({
       englishName: englishName.trim(),
       arabicName: arabicName.trim(),
@@ -334,7 +383,8 @@ function AddApplicantModal({
       telephone: '',
       recruitmentAgencyId: agencyId || null,
       agentId: agentId || null,
-      managerId: managerId || null,
+      managerId: type === 'Domestic' ? null : managerId || null,
+      employerId,
     })
   }
 
@@ -384,7 +434,7 @@ function AddApplicantModal({
           </SelectInput>
         </Field>
         <Field label={language === 'ar' ? 'رقم الجواز' : 'Passport No.'}>
-          <TextInput value={passportNo} onChange={(e) => setPassportNo(e.target.value)} required />
+          <TextInput value={passportNo} onChange={(e) => setPassportNo(e.target.value)} placeholder={language === 'ar' ? 'اختياري' : 'Optional'} />
         </Field>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={language === 'ar' ? 'بداية الجواز' : 'Passport Start'}>
@@ -429,17 +479,43 @@ function AddApplicantModal({
               : 'An agent earns half their fee at selection and the other half at deployment.'}
           </p>
         </Field>
-        <Field label={t('label_manager')}>
-          <SelectInput value={managerId} onChange={(e) => setManagerId(e.target.value)}>
-            <option value="">{t('label_manager_none')}</option>
-            {managers.map((m) => (
-              <option key={m.id} value={m.id}>
-                {tb(m.name)}
-              </option>
-            ))}
-          </SelectInput>
-          <p className="mt-1 text-[10.5px] text-ink-3">{t('label_manager_hint')}</p>
+        <Field label={t('label_owner')}>
+          {type === 'Domestic' ? (
+            <p className="rounded-control border border-line bg-sunken px-3 py-2 text-xs text-ink">
+              {t('label_owner_office')}
+            </p>
+          ) : (
+            <SelectInput value={managerId} onChange={(e) => setManagerId(e.target.value)}>
+              <option value="">{t('label_owner_office')}</option>
+              {managers.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {tb(m.name)}
+                </option>
+              ))}
+            </SelectInput>
+          )}
+          <p className="mt-1 text-[10.5px] text-ink-3">
+            {type === 'Domestic' ? t('label_owner_office_note') : t('label_owner_partner_note')}
+          </p>
         </Field>
+        <Field label={language === 'ar' ? 'صاحب العمل (اختياري)' : 'Employer (optional)'}>
+          <SelectInput value={employerId} onChange={(e) => setEmployerId(e.target.value)}>
+            <option value="">{language === 'ar' ? 'لم يُحدَّد بعد' : 'Not placed yet'}</option>
+            {employers
+              .filter((e) => e.status === 'Active' || e.id === employerId)
+              .map((e) => (
+                <option key={e.id} value={e.id}>
+                  {tb({ en: e.englishName, ar: e.arabicName })}
+                </option>
+              ))}
+          </SelectInput>
+          <p className="mt-1 text-[10.5px] leading-relaxed text-ink-3">
+            {language === 'ar'
+              ? 'اختيار صاحب العمل هنا يفتح طلب الاستقدام فورًا على عقد سنتين، فتبدأ مراحلها وماليّتها من اليوم الأول. اتركه فارغًا إن لم تُحدَّد بعد.'
+              : 'Choosing one opens her recruitment request straight away, on a two-year contract, so her stages and her money start from day one. Leave it empty if she is not placed yet.'}
+          </p>
+        </Field>
+        {problem && <p className="mt-2 text-[11px] font-medium text-neg">{problem}</p>}
         <div className="mt-4 flex justify-end gap-2">
           <SecondaryButton onClick={onClose}>{t('action_cancel')}</SecondaryButton>
           <PrimaryButton type="submit">{language === 'ar' ? 'إضافة متقدم' : 'Add Applicant'}</PrimaryButton>

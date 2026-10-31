@@ -214,12 +214,13 @@ anyone who opens the developer tools can edit them.
 | | operations | finance | payroll | staff & settings |
 | --- | --- | --- | --- | --- |
 | **admin** | read, write | read, write | read, write | read, write |
-| **accountant** | read | read, write | — | read |
+| **accountant** | read | read, write | read, write | read |
 | **data entry** | read, write | — | — | read |
 | **anon** (the website) | — | — | — | — |
 
-Payroll is narrower than the rest of finance on purpose: it is what colleagues
-earn. And nobody can change their own role or status, administrator or not —
+Payroll was at first kept to the administrators alone; since migration 0022 it
+follows the rest of finance, because the accountant runs it (paste file
+`db/run-payroll-access.sql`). And nobody can change their own role or status, administrator or not —
 a trigger refuses it, because that is the single edit that would undo
 everything above.
 
@@ -371,6 +372,15 @@ and the CV tab shows only the half that the chosen template prints.
 `ops.applicant_experience.duties` and `.country` exist because the two
 experience tables ask what she did and where.
 
+A job is recorded as the years she was there -- `from_year` and `to_year`,
+2021 to 2023 -- because that is what her passport, her contract and her own
+memory say, and it is what both documents print under Period. `years` is
+still there and still a number: it is worked out from the range rather than
+typed a second time and disagreed with, so the total on her record and the
+website's cards read exactly what they always did. Both year columns are null
+on an entry recorded before the range existed, and an entry with no range
+falls back to printing its count of years.
+
 The bio data prints two more pictures than the website ever sees:
 `full_body_path` is the standing photograph beside her details, and
 `passport_copy_path` is the copy on its second page. Both live in the private
@@ -419,12 +429,80 @@ https://<project>.supabase.co/storage/v1/object/public/published-cvs/<cv_path>
 holds the name the office uploaded and stays inside `ops`, because a visitor
 has no use for it.
 
+What is stored matters as much as where. A file is served back with the type
+it was given when it was uploaded, and a browser sent a document labelled
+`text/plain` prints the markup on the screen rather than the page -- and reads
+its bytes as Western European rather than Unicode, so every Arabic word turns
+to rubbish. So the type is decided by the key's extension rather than by
+whatever the browser said when somebody chose the file: `.html` is stored as
+`text/html; charset=utf-8`, `.pdf` as `application/pdf`. A CV published before
+that was true keeps its old type until it is published again, which the CV tab's
+Publish does.
+
 This is the one place where the dashboard hands a document to strangers, so it
 is worth being plain about what it means: while a worker is on the website, her
 CV can be read by anyone who has the link, with no key and no sign-in. Nothing
 narrows that to people the office knows. Keep passport scans and identity
 papers out of the CV -- they belong in `worker-documents`, which is private --
 and unpublishing the worker deletes the public copy.
+
+### When an upload is refused
+
+Storage answers four quite different refusals with the same `400 Bad Request`,
+which in a browser console reads as though the file were at fault. It usually
+is not. The four are: the bucket does not exist; the rules on it do not let
+this account write; the bucket has a type or size limit somebody set in the
+dashboard; or the key is malformed.
+
+Two things tell them apart.
+
+**Settings, Database, Check file storage** puts a one-pixel picture into each
+of the five buckets and deletes it again, using the session the real upload
+would use, and names what came back for each. It also asks the database
+whether it recognises the signed-in account as active staff, which is what
+every write rule turns on.
+
+**`db/fix-storage.sql`**, pasted into the SQL editor, repairs all four causes:
+it creates any missing bucket, puts each one back to public or private as it
+should be, clears any file size limit and allowed MIME types, and rewrites the
+four rules on each. It is safe to run twice and touches no file already
+uploaded. If the role running it cannot write Storage's own tables, it says so
+under Notices and names what to do by hand instead.
+
+`db/why-storage.sql` answers it from the database's own side, and is the
+quickest way to settle an argument: it walks the exact chain an upload walks --
+does the bucket exist, is there any rule that would let somebody write to it,
+is an account linked, what does `auth.uid()` see with the settings Storage puts
+on the connection, what does `ops.is_staff()` answer -- and then tries the
+insert itself as the `authenticated` role, reporting each step as a row. The
+first row that reads badly is the cause. It deletes its own test row and
+uploads no file.
+
+`db/check-storage.sql` is the read-only version, for when it is easier to look
+than to try.
+
+One failure deserves naming, because it is quiet: `storage.objects` belongs to
+Storage rather than to this database's owner, so the SQL editor's role may not
+be allowed to write rules on it. `fix-storage.sql` reports that under Notices,
+where it is easy to miss, and its table then shows `0` rules. Two policies
+written in the dashboard instead cover every bucket, and `why-storage.sql`
+ends with the exact fields to fill in.
+
+### Who the caller is
+
+`ops.is_staff()` turns on `auth.uid()`, which reads the signed-in account out
+of a setting the server puts on the connection. There is more than one server:
+PostgREST, which the dashboard's queries go through, and Storage, which uploads
+go through, and an older project's `auth.uid()` reads only one of the two
+settings they set. When it reads the one Storage did not set, every upload is
+refused for row level security while every other screen works perfectly --
+which is a confusing thing to debug and worth being able to rule out.
+
+`0012_caller_identity.sql` resolves the identity from whichever setting is
+there, through `ops.caller_uid()`, and `ops.current_role()` asks that instead
+of `auth.uid()` alone. It is still the signed-in account and nothing else:
+both settings are written by the server out of a verified token, and a caller
+cannot set either.
 
 ## What is still to build
 
@@ -446,3 +524,75 @@ adding a second source of truth beside it. To see it:
 node scripts/inspect-schema.mjs                      # what the anon key can see
 SUPABASE_DB_URL='postgresql://...' node scripts/inspect-schema.mjs   # everything
 ```
+
+
+## The peso rate
+
+The books are kept in dollars. The `₱` switch in the top bar shows every dollar
+amount with its peso equivalent beside it (`$1,400 · ₱81,372`), and the rate in
+use sits beside the switch.
+
+By default that rate is **live**: each browser reads the European Central
+Bank's daily USD→PHP reference rate from Frankfurter (`api.frankfurter.app`),
+falling back to ExchangeRate-API's open endpoint (`open.er-api.com`) if that
+cannot be reached. Neither needs a key or an account -- which matters, because
+a key shipped in a web page is readable by anyone. The rate is kept for six
+hours and checked hourly; `src/lib/pesoRate.ts` holds the fetching.
+
+Settings → Company → *Use the live peso rate from the bank* turns this off for
+the whole office (`ops.settings.peso_rate_live`, migration 0023, paste file
+`db/run-live-peso.sql`). The saved rate (`ops.settings.peso_rate`, 0018) is
+then the rate, and while live is on it is the fallback for when neither
+service answers. Whether a given machine shows the pesos at all is that
+machine's choice, like its language, and is not stored in the database.
+
+## Reading a CV
+
+Uploading a CV on the Applicant Information tab stores the file as hers and
+reads it in the same act: every field it recognises is offered for review,
+editable, ticked by default only where her record is empty, and the jobs it
+finds by the years they ran are offered as experience entries. Nothing is
+written until *Apply* is pressed. A scanned CV is a picture with no text in it
+and is reported as such; the reader uses patterns only, nothing leaves the
+browser. `src/lib/cvImport.ts` holds the labels it knows.
+
+
+## A column the dashboard cannot find
+
+"Could not find the 'country' column of 'applicant_experience' in the schema
+cache" means the database is a column short: it was installed from an earlier
+copy of the schema and a later migration that adds the column was never run.
+`db/catch-up-columns.sql` is every such column in one place, each as
+*add column if not exists*, so it can be run as often as you like; it ends by
+reloading the API's schema and printing which columns are still missing, which
+should be none.
+
+## Leads
+
+The Leads pages (System → Leads) keep every employer enquiry, from the first
+message to a job order. They are three pages, each built from its frame in the
+design file:
+
+- **Leads** (`/leads`): the register, its four figures and the overdue notice.
+- **Add new lead** (`/leads/new`), which also edits (`/leads/:id/edit`): the
+  enquiry, its source, its contact status and stage, and the first follow-up.
+  Editing adds the brief (positions, experience, target start, employer
+  requirements), the contact's role, the industry and place, the owner and the
+  next step in words.
+- **The lead** (`/leads/:id`): the stage tracker, contact information, the
+  recruitment brief and its document, the contact history, the next action and
+  the internal notes.
+
+Every lead is entered by hand. They live in `ops.leads` (migrations 0019 and
+0020) with their history in `ops.lead_activities`: each message or call
+logged, each stage change, each next action completed, each internal note,
+with who recorded it and when. An employer's document goes in the private
+`lead-documents` bucket (0021). Paste files: `db/run-leads.sql`, then
+`db/run-lead-pages.sql`. Only super administrators read or write any of it,
+in the app and in the database alike.
+
+Each lead has a reference, LD-1001 onwards, given in the order they arrived.
+Times are stored as instants and always shown and typed in Arabia Standard
+Time (Asia/Riyadh), whatever machine the page is open on. A lead is *overdue*
+when its next follow-up has passed and it is neither Won nor Lost; overdue
+leads are worked first. `src/lib/leads.ts` holds those rules.

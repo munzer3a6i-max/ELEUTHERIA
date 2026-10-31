@@ -18,22 +18,47 @@ export interface ReadResult {
   text: string
   /** Field name to value, only where a pattern matched. */
   found: Record<string, string>
+  /** Jobs the file listed with the years they ran, each one an experience entry. */
+  experience: FoundExperience[]
   /** True when the file holds no text at all -- a scan rather than a document. */
   imageOnly: boolean
   pages: number
 }
 
+export interface FoundExperience {
+  title: string
+  employer: string
+  fromYear: number
+  toYear: number
+}
+
 /** Where each found value belongs. The CV tab turns these into the review. */
 export type FieldKey =
   | 'englishName'
+  | 'arabicName'
+  | 'gender'
   | 'dob'
   | 'country'
   | 'profession'
   | 'phone'
+  | 'idNumber'
   | 'passportNo'
   | 'passportStart'
   | 'passportEnd'
   | 'experienceYears'
+  | 'cv.reference'
+  | 'cv.placeOfBirth'
+  | 'cv.livingTown'
+  | 'cv.children'
+  | 'cv.height'
+  | 'cv.weight'
+  | 'cv.motherName'
+  | 'cv.fatherName'
+  | 'cv.nextOfKin'
+  | 'cv.english'
+  | 'cv.arabic'
+  | 'cv.availability'
+  | 'cv.preferredCountry'
   | 'cv.maritalStatus'
   | 'cv.religion'
   | 'cv.currentLocation'
@@ -87,6 +112,22 @@ function asDate(value: string): string {
 
 const digitsOnly = (value: string) => value.replace(/[^\d]/g, '')
 
+/** F, Female, أنثى and the rest all mean the same record. */
+function asGender(value: string): string {
+  const v = value.trim().toLowerCase()
+  if (/^(f|female|woman|أنثى|انثى)/.test(v)) return 'Female'
+  if (/^(m|male|man|ذكر)/.test(v)) return 'Male'
+  return value.trim()
+}
+
+/** "2", "two", "none" -- the number of children as a figure. */
+function asCount(value: string): string {
+  const v = value.trim().toLowerCase()
+  if (/^(none|nil|no|n\/a|0|-)$/.test(v)) return '0'
+  const words: Record<string, string> = { one: '1', two: '2', three: '3', four: '4', five: '5', six: '6' }
+  return words[v] ?? (value.replace(/[^\d]/g, '').slice(0, 2) || value.trim())
+}
+
 const RULES: Rule[] = [
   { key: 'englishName', label: { en: 'Full name', ar: 'الاسم الكامل' }, labels: ['full name', 'name of applicant', 'applicant name', 'candidate name', 'name', 'الاسم الكامل', 'الاسم'] },
   { key: 'dob', label: { en: 'Date of birth', ar: 'تاريخ الميلاد' }, labels: ['date of birth', 'birth date', 'birthdate', 'd.o.b', 'dob', 'تاريخ الميلاد'], clean: asDate },
@@ -105,7 +146,23 @@ const RULES: Rule[] = [
   { key: 'cv.education', label: { en: 'Education', ar: 'المؤهل' }, labels: ['educational attainment', 'education', 'qualification', 'المؤهل', 'التعليم'] },
   { key: 'cv.expectedSalary', label: { en: 'Expected salary', ar: 'الراتب المتوقع' }, labels: ['expected salary', 'salary expectation', 'الراتب المتوقع'] },
   { key: 'cv.coreSkills', label: { en: 'Skills', ar: 'المهارات' }, labels: ['skills', 'core skills', 'key skills', 'المهارات'] },
-  { key: 'experienceYears', label: { en: 'Years of experience', ar: 'سنوات الخبرة' }, labels: ['years of experience', 'total experience', 'experience', 'سنوات الخبرة'], clean: digitsOnly },
+  { key: 'experienceYears', label: { en: 'Years of experience', ar: 'سنوات الخبرة' }, labels: ['years of experience', 'total experience', 'سنوات الخبرة'], clean: digitsOnly },
+  { key: 'gender', label: { en: 'Gender', ar: 'الجنس' }, labels: ['gender', 'sex', 'الجنس'], clean: asGender },
+  { key: 'arabicName', label: { en: 'Arabic name', ar: 'الاسم بالعربية' }, labels: ['arabic name', 'name in arabic', 'الاسم بالعربية', 'الاسم بالعربي'] },
+  { key: 'idNumber', label: { en: 'ID number', ar: 'رقم الهوية' }, labels: ['id number', 'id no', 'national id', 'identity number', 'رقم الهوية'] },
+  { key: 'cv.reference', label: { en: 'Reference no.', ar: 'الرقم المرجعي' }, labels: ['reference no', 'reference number', 'ref no', 'ref', 'code no', 'applicant no', 'الرقم المرجعي'] },
+  { key: 'cv.placeOfBirth', label: { en: 'Place of birth', ar: 'مكان الميلاد' }, labels: ['place of birth', 'birthplace', 'birth place', 'مكان الميلاد', 'محل الميلاد'] },
+  { key: 'cv.livingTown', label: { en: 'Living town', ar: 'مدينة السكن' }, labels: ['living town', 'home town', 'hometown', 'city', 'province', 'مدينة السكن'] },
+  { key: 'cv.children', label: { en: 'Children', ar: 'الأطفال' }, labels: ['no. of children', 'number of children', 'no of children', 'children', 'kids', 'عدد الأطفال', 'الأطفال'], clean: asCount },
+  { key: 'cv.height', label: { en: 'Height', ar: 'الطول' }, labels: ['height', 'الطول'] },
+  { key: 'cv.weight', label: { en: 'Weight', ar: 'الوزن' }, labels: ['weight', 'الوزن'] },
+  { key: 'cv.motherName', label: { en: "Mother's name", ar: 'اسم الأم' }, labels: ["mother's name", 'mother name', 'name of mother', 'mother', 'اسم الأم'] },
+  { key: 'cv.fatherName', label: { en: "Father's name", ar: 'اسم الأب' }, labels: ["father's name", 'father name', 'name of father', 'father', 'اسم الأب'] },
+  { key: 'cv.nextOfKin', label: { en: 'Next of kin', ar: 'أقرب الأقارب' }, labels: ['next of kin', 'emergency contact', 'contact person', 'أقرب الأقارب', 'جهة الاتصال في الطوارئ'] },
+  { key: 'cv.english', label: { en: 'English', ar: 'الإنجليزية' }, labels: ['english language', 'english level', 'english', 'الإنجليزية', 'اللغة الإنجليزية'] },
+  { key: 'cv.arabic', label: { en: 'Arabic', ar: 'العربية' }, labels: ['arabic language', 'arabic level', 'arabic', 'العربية', 'اللغة العربية'] },
+  { key: 'cv.availability', label: { en: 'Availability', ar: 'الجاهزية' }, labels: ['availability', 'available from', 'available', 'الجاهزية'] },
+  { key: 'cv.preferredCountry', label: { en: 'Preferred country', ar: 'الدولة المفضلة' }, labels: ['preferred country', 'country of destination', 'destination', 'الدولة المفضلة'] },
 ]
 
 export const FIELD_LABELS: Record<string, { en: string; ar: string }> = Object.fromEntries(
@@ -163,14 +220,56 @@ export function extractFields(text: string): Record<string, string> {
     if (email) found['cv.email'] = email[0]
   }
 
+  // A name written in Arabic is the Arabic name, wherever it is on the page.
+  if (!found.arabicName) {
+    const arabic = lines.find((line) => /^[\u0600-\u06FF\s]{6,}$/.test(line) && line.split(' ').length <= 5 && !looksLikeLabel(line))
+    if (arabic) found.arabicName = arabic
+  }
+
   return found
+}
+
+/**
+ * The jobs a CV lists, found by the one thing every format agrees on: the
+ * years each one ran. "Housemaid - Al Rashid family, Riyadh 2019 - 2021",
+ * "2017 to 2019 Caregiver, Dubai" and "Saudi Arabia (2 years) 2015-2017" each
+ * give a range; what is left on the line is the job and who it was for.
+ */
+export function extractExperience(text: string): FoundExperience[] {
+  const out: FoundExperience[] = []
+  const range = /\b((?:19|20)\d{2})\s*(?:-|–|—|to|till|until|\/)\s*((?:19|20)\d{2}|present|now|current|date)\b/i
+  const thisYear = new Date().getFullYear()
+
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.replace(/\s+/g, ' ').trim()
+    const match = range.exec(line)
+    if (!match) continue
+    const fromYear = Number(match[1])
+    const toYear = /^\d{4}$/.test(match[2]) ? Number(match[2]) : thisYear
+    if (toYear < fromYear || fromYear < 1960) continue
+
+    // What is left once the years go: a job, and who it was for.
+    const rest = line
+      .replace(match[0], ' ')
+      .replace(/\(\s*\d+\s*(?:years?|yrs?|months?)\s*\)/i, ' ')
+      .replace(/^[\s:•·\-–,]+|[\s:•·\-–,]+$/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+    if (!rest || rest.length > 140 || looksLikeLabel(rest)) continue
+    // "Caregiver - Dubai family" / "Caregiver, Dubai family" / "Caregiver at Dubai family"
+    const split = /\s+(?:-|–|—|,|\/|\bat\b|\bfor\b|\bwith\b)\s+/i.exec(rest)
+    const title = split ? rest.slice(0, split.index).trim() : rest
+    const employer = split ? rest.slice(split.index + split[0].length).trim() : ''
+    out.push({ title, employer, fromYear, toYear })
+  }
+  return out
 }
 
 /** Reads a file in the browser. PDFs are parsed; plain text is taken as is. */
 export async function readCvFile(file: File): Promise<ReadResult> {
   if (file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt')) {
     const text = await file.text()
-    return { text, found: extractFields(text), imageOnly: text.trim() === '', pages: 1 }
+    return { text, found: extractFields(text), experience: extractExperience(text), imageOnly: text.trim() === '', pages: 1 }
   }
 
   // Loaded only when somebody actually imports a CV: it is a large library and
@@ -208,6 +307,7 @@ export async function readCvFile(file: File): Promise<ReadResult> {
   return {
     text,
     found: extractFields(text),
+    experience: extractExperience(text),
     imageOnly: text.trim() === '',
     pages: document.numPages,
   }

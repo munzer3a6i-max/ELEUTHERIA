@@ -36,7 +36,7 @@ export default function AgentsList() {
   const deleteAgent = useAppStore((s) => s.deleteAgent)
   const setCommissionStatus = useAppStore((s) => s.setCommissionStatus)
   const { t, tb, language } = useTranslation()
-  const { canEdit, canView } = useCurrentUser()
+  const { canEdit, canRemove, canView } = useCurrentUser()
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editing, setEditing] = useState<Agent | 'new' | null>(null)
@@ -84,7 +84,7 @@ export default function AgentsList() {
         title={t('agent_title')}
         subtitle={t('agent_subtitle')}
         actions={
-          canEdit('operations') && (
+          canEdit('directory') && (
             <PrimaryButton onClick={() => setEditing('new')}>
               <Plus className="size-3.5" /> {t('agent_add')}
             </PrimaryButton>
@@ -153,7 +153,7 @@ export default function AgentsList() {
                   <StatusBadge status={row.agent.status} />
                 </td>
                 <td className="text-end">
-                  <span className="flex items-center justify-end gap-1" hidden={!canEdit('operations')}>
+                  <span className="flex items-center justify-end gap-1" hidden={!canEdit('directory')}>
                     <button
                       type="button"
                       aria-label={t('action_edit')}
@@ -168,6 +168,7 @@ export default function AgentsList() {
                     <button
                       type="button"
                       aria-label={t('action_delete')}
+                      hidden={!canRemove('directory')}
                       onClick={(e) => {
                         e.stopPropagation()
                         handleDelete(row.agent)

@@ -3,7 +3,9 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Receipt } from 'lucide-react'
 import { useAppStore, currentStatus, requestCost, formatMoney } from '../../store/useAppStore'
 import { useTranslation } from '../../i18n/useTranslation'
+import { placementOwnerId } from '../../data/businessRules'
 import { useCurrentUser } from '../../lib/useCurrentUser'
+import NewInvoiceModal from '../Invoices/NewInvoiceModal'
 import StatusUpdateModal from '../../components/StatusUpdateModal'
 import { AttachmentChip } from '../../components/AttachmentField'
 import { TextArea, SecondaryButton } from '../../components/form'
@@ -35,9 +37,10 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
   const employers = useAppStore((s) => s.employers)
   const agencies = useAppStore((s) => s.agencies)
   const staff = useAppStore((s) => s.staff)
+  const managers = useAppStore((s) => s.managers)
   const paymentSources = useAppStore((s) => s.paymentSources)
   const invoices = useAppStore((s) => s.invoices)
-  const addInvoice = useAppStore((s) => s.addInvoice)
+  const commissions = useAppStore((s) => s.agentCommissions)
   const deleteRequest = useAppStore((s) => s.deleteRequest)
   const updateRequest = useAppStore((s) => s.updateRequest)
   const addStatusUpdate = useAppStore((s) => s.addStatusUpdate)
@@ -46,6 +49,7 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
   const { t, tb, language } = useTranslation()
   const { canEdit } = useCurrentUser()
   const [statusModal, setStatusModal] = useState<'add' | StatusHistoryEntry | null>(null)
+  const [billing, setBilling] = useState(false)
 
   if (!request) {
     onDeleted()
@@ -56,9 +60,10 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
   const employer = employers.find((e) => e.id === request.employerId)
   const agency = agencies.find((a) => a.id === request.recruitmentAgencyId)
   const officer = staff.find((s) => s.id === request.responsibleEmployeeId)
+  const owner = managers.find((m) => m.id === placementOwnerId(request.type, applicant?.managerId ?? null))
   const invoice = invoices.find((i) => i.recruitmentRequestId === requestId)
   const status = currentStatus(request)
-  const totalCost = requestCost(request)
+  const totalCost = requestCost(request, commissions)
 
   function handleDelete() {
     if (window.confirm(t('action_delete') + '?')) deleteRequest(requestId)
@@ -68,17 +73,6 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
     if (window.confirm(t('action_delete') + '?')) deleteStatusUpdate(requestId, entryId)
   }
 
-  const recruitmentAgencyId = request.recruitmentAgencyId
-
-  function handleCreateInvoice() {
-    if (!employer) return
-    addInvoice({
-      recruitmentRequestId: requestId,
-      employerId: employer.id,
-      recruitmentAgencyId,
-      servicePrice: totalCost || 500,
-    })
-  }
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -98,8 +92,10 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <SummaryCard label={language === 'ar' ? 'المتقدم' : 'Applicant'} value={applicant ? (language === 'ar' ? applicant.arabicName || applicant.englishName : applicant.englishName) : '-'} to={applicant ? `/applicants/${applicant.id}` : undefined} />
         <SummaryCard label={language === 'ar' ? 'صاحب العمل' : 'Employer'} value={employer ? tb({ en: employer.englishName, ar: employer.arabicName }) : '-'} />
-        <SummaryCard label={language === 'ar' ? 'مكتب الاستقدام' : 'Agency'} value={agency ? tb({ en: agency.englishName, ar: agency.arabicName }) : '-'} />
-        <SummaryCard label={language === 'ar' ? 'الموظف المسؤول' : 'Officer'} value={officer ? tb(officer.name) : '-'} />
+        {request.type === 'Domestic' && (
+          <SummaryCard label={language === 'ar' ? 'مكتب الاستقدام' : 'Agency'} value={agency ? tb({ en: agency.englishName, ar: agency.arabicName }) : '-'} />
+        )}
+        <SummaryCard label={t('label_owner')} value={owner ? tb(owner.name) : t('label_owner_office')} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -116,7 +112,7 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
               </div>
               <button
                 type="button"
-                hidden={!canEdit('operations')}
+                hidden={!canEdit('placements')}
                 onClick={() => setStatusModal('add')}
                 className="flex items-center gap-1.5 rounded-control bg-accent px-3 py-1.5 text-[11px] font-bold text-accent-ink hover:bg-accent"
               >
@@ -144,7 +140,7 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
                     </div>
                     <div className="flex shrink-0 items-center gap-3">
                       <span className="font-bold text-accent-text">{formatMoney(h.cost)}</span>
-                      {canEdit('operations') && (
+                      {canEdit('placements') && (
                         <>
                           <button type="button" onClick={() => setStatusModal(h)} className="text-ink-3 hover:text-accent-text">
                             <Pencil className="size-3.5" />
@@ -202,9 +198,10 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
             </h2>
             <div className="flex flex-col gap-2 text-[11px]">
               <DetailRow label={language === 'ar' ? 'مدة العقد' : 'Contract Duration'} value={`${request.contractDurationMonths} ${language === 'ar' ? 'شهر' : 'months'}`} />
-              <DetailRow label="Mosaned #" value={request.mosanedNumber || '-'} />
+              {request.type === 'Domestic' && <DetailRow label="Mosaned #" value={request.mosanedNumber || '-'} />}
               <DetailRow label={language === 'ar' ? 'تاريخ الإنشاء' : 'Created'} value={request.createdOn} />
               <DetailRow label={language === 'ar' ? 'آخر تحديث' : 'Last Updated'} value={request.updatedOn} />
+              <DetailRow label={t('label_raised_by')} value={officer ? tb(officer.name) : '-'} />
             </div>
           </div>
 
@@ -222,7 +219,7 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
                   {language === 'ar' ? 'لا توجد فاتورة لهذا الطلب بعد.' : 'No invoice for this request yet.'}
                 </p>
                 {canEdit('finance') && (
-                  <SecondaryButton onClick={handleCreateInvoice} className="w-full">
+                  <SecondaryButton onClick={() => setBilling(true)} className="w-full">
                     {language === 'ar' ? 'إنشاء فاتورة' : 'Create Invoice'}
                   </SecondaryButton>
                 )}
@@ -249,6 +246,8 @@ function RequestDetailContent({ requestId, onDeleted }: { requestId: string; onD
           }}
         />
       )}
+
+      {billing && <NewInvoiceModal requestId={requestId} onClose={() => setBilling(false)} />}
     </div>
   )
 }

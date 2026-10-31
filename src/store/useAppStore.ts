@@ -16,7 +16,10 @@ import type {
   ExpenseCategory,
   PaymentSource,
   AppNotification,
+  StatusDefinition,
   StatusHistoryEntry,
+  Lead,
+  LeadActivity,
   ApplicantStatus,
   Language,
   Theme,
@@ -55,11 +58,14 @@ import {
   seedAgencyCharges,
   seedBackouts,
 } from '../data/seed'
+import { allStatusDefinitions } from '../data/stageSeeds'
 import { syncDerivedBilling } from '../lib/derivedBilling'
-import { BACKOUT_STAGE } from '../data/businessRules'
+import { BACKOUT_STAGE, SELECTION_STAGE, milestoneCost, movesForward, statusFromStages } from '../data/businessRules'
 import { serverOwnsBilling } from '../data/ownership'
-import { canEdit, type Area } from '../lib/permissions'
+import { canEdit, canRemove, type Area } from '../lib/permissions'
 import { DEFAULT_PASSWORD, makeCredentials, normaliseUsername, verifyPassword } from '../lib/passwords'
+import { sortActivities, withLeadDefaults } from '../lib/leads'
+import type { LiveRate } from '../lib/pesoRate'
 
 /*
   Which area each action belongs to. Hiding a button keeps an honest person out
@@ -71,6 +77,9 @@ import { DEFAULT_PASSWORD, makeCredentials, normaliseUsername, verifyPassword } 
 const ACTION_AREA: Record<string, Area> = {
   setLanguage: 'personal',
   setTheme: 'personal',
+  setShowPeso: 'personal',
+  // Each browser keeps the live rate it fetched, whoever is signed in.
+  setPesoLive: 'personal',
   signIn: 'personal',
   signOut: 'personal',
   changeOwnPassword: 'personal',
@@ -78,32 +87,32 @@ const ACTION_AREA: Record<string, Area> = {
   markAllNotificationsRead: 'personal',
   addNotification: 'personal',
 
-  addApplicant: 'operations',
-  updateApplicant: 'operations',
-  setApplicantStatus: 'operations',
-  deleteApplicant: 'operations',
-  addExperience: 'operations',
-  deleteExperience: 'operations',
-  addEducation: 'operations',
-  deleteEducation: 'operations',
-  addApplicantDocument: 'operations',
-  deleteApplicantDocument: 'operations',
-  addApplicantNote: 'operations',
-  addEmployer: 'operations',
-  updateEmployer: 'operations',
-  deleteEmployer: 'operations',
-  addAgency: 'operations',
-  updateAgency: 'operations',
-  deleteAgency: 'operations',
-  addAgent: 'operations',
-  updateAgent: 'operations',
-  deleteAgent: 'operations',
-  addRequest: 'operations',
-  updateRequest: 'operations',
-  deleteRequest: 'operations',
-  addStatusUpdate: 'operations',
-  updateStatusUpdate: 'operations',
-  deleteStatusUpdate: 'operations',
+  addApplicant: 'directory',
+  updateApplicant: 'directory',
+  setApplicantStatus: 'directory',
+  deleteApplicant: 'directory',
+  addExperience: 'directory',
+  deleteExperience: 'directory',
+  addEducation: 'directory',
+  deleteEducation: 'directory',
+  addApplicantDocument: 'directory',
+  deleteApplicantDocument: 'directory',
+  addApplicantNote: 'directory',
+  addEmployer: 'directory',
+  updateEmployer: 'directory',
+  deleteEmployer: 'directory',
+  addAgency: 'directory',
+  updateAgency: 'directory',
+  deleteAgency: 'directory',
+  addAgent: 'directory',
+  updateAgent: 'directory',
+  deleteAgent: 'directory',
+  addRequest: 'placements',
+  updateRequest: 'placements',
+  deleteRequest: 'placements',
+  addStatusUpdate: 'placements',
+  updateStatusUpdate: 'placements',
+  deleteStatusUpdate: 'placements',
 
   addInvoice: 'finance',
   updateInvoiceStatus: 'finance',
@@ -142,6 +151,19 @@ const ACTION_AREA: Record<string, Area> = {
   deleteCity: 'system',
   addProfession: 'system',
   deleteProfession: 'system',
+  addStatusDefinition: 'system',
+  updateStatusDefinition: 'system',
+  moveStatusDefinition: 'system',
+  placeStatusDefinition: 'system',
+  deleteStatusDefinition: 'system',
+  addLead: 'system',
+  updateLead: 'system',
+  deleteLead: 'system',
+  setLeadStage: 'system',
+  logLeadContact: 'system',
+  completeLeadAction: 'system',
+  addLeadNote: 'system',
+  deleteLeadNote: 'system',
   addManager: 'system',
   deleteManager: 'system',
   addExpenseCategory: 'system',
@@ -164,9 +186,18 @@ function guarded<T extends object>(slice: T, role: () => StaffRole): T {
       continue
     }
     const area = ACTION_AREA[name] ?? 'system'
+    // Anything called delete... takes a record away, which is a narrower right
+    // than changing one: a role may be trusted to correct a file without being
+    // trusted to remove it. Naming the action is enough to be covered by this,
+    // so a new one is not quietly left open.
+    const removes = name.startsWith('delete')
     out[name] = (...args: unknown[]) => {
-      if (!canEdit(role(), area)) {
-        console.warn(`${name} is a ${area} action and this role cannot make ${area} changes.`)
+      if (removes ? !canRemove(role(), area) : !canEdit(role(), area)) {
+        console.warn(
+          removes
+            ? `${name} removes a ${area} record and this role may not do that.`
+            : `${name} is a ${area} action and this role cannot make ${area} changes.`,
+        )
         return undefined
       }
       return (value as (...a: unknown[]) => unknown)(...args)
@@ -185,6 +216,25 @@ function todayIso(): string {
  * created here is saved. What kind of thing an id belongs to is answered by
  * the collection it is in, not by the id.
  */
+/** A new entry in a lead's history, by whoever is signed in. */
+function leadActivity(
+  kind: LeadActivity['kind'],
+  authorId: string,
+  fields: Partial<Omit<LeadActivity, 'id' | 'kind' | 'authorId'>> & { at: string },
+): LeadActivity {
+  return {
+    id: newId(),
+    kind,
+    channel: '',
+    direction: '',
+    title: '',
+    body: '',
+    durationMinutes: 0,
+    authorId,
+    ...fields,
+  }
+}
+
 function newId(): string {
   return crypto.randomUUID()
 }
@@ -209,17 +259,96 @@ function usernameTaken(staff: StaffMember[], username: string, exceptId?: string
 }
 
 /**
- * True when this account is the only active administrator left. Removing,
- * suspending or demoting that one would lock everybody out of the settings,
- * and nothing in a browser-only app can undo it.
+ * True when this account is the only active super administrator left. Removing,
+ * suspending or demoting that one would leave nobody who can open the System
+ * pages -- and so nobody who can hand the role back out. Nothing in the app can
+ * undo that.
  */
 function isLastActiveAdmin(staff: StaffMember[], id: string): boolean {
   const member = staff.find((m) => m.id === id)
-  if (!member || member.role !== 'admin' || member.status !== 'Active') return false
-  return staff.filter((m) => m.role === 'admin' && m.status === 'Active').length <= 1
+  if (!member || member.role !== 'super_admin' || member.status !== 'Active') return false
+  return staff.filter((m) => m.role === 'super_admin' && m.status === 'Active').length <= 1
+}
+
+/**
+ * The stages of one pipeline in the order they happen, exceptions left out --
+ * those can occur at any point, so they have no place in the walk.
+ */
+function stageWalk(all: StatusDefinition[], pipeline: StatusDefinition['pipeline']): StatusDefinition[] {
+  return all.filter((d) => d.pipeline === pipeline && !d.isException).sort((a, b) => a.order - b.order)
+}
+
+/**
+ * Numbers one pipeline 1, 2, 3 down the list it is given.
+ *
+ * Every move renumbers the whole pipeline rather than nudging one figure,
+ * because an order typed by hand drifts: two stages end up sharing a number and
+ * the list quietly sorts by whichever was loaded first.
+ */
+function stagesInOrder(
+  all: StatusDefinition[],
+  pipeline: StatusDefinition['pipeline'],
+  ids: string[],
+): StatusDefinition[] {
+  const place = new Map(ids.map((id, index) => [id, index + 1]))
+  return all.map((d) => (place.has(d.id) ? { ...d, order: place.get(d.id)!, pipeline } : d))
 }
 
 /** The request a worker's own status change should be written against. */
+/**
+ * Her own record follows her placement.
+ *
+ * Logging a stage is the office saying what happened, so the status on her
+ * file should not need saying twice -- and when it did, the published view
+ * kept showing a worker who had already been selected or flown, because that
+ * view asks her record rather than her stage log.
+ *
+ * It only moves her forward. Deleting a stage does not quietly undo a status
+ * somebody set on purpose; that is a decision, and it is made on her profile.
+ */
+function followStages(
+  state: AppState,
+  requests: RecruitmentRequest[],
+  requestId: string,
+): Applicant[] {
+  const request = requests.find((r) => r.id === requestId)
+  if (!request) return state.applicants
+  const wanted = statusFromStages(request.statusHistory)
+  if (!wanted) return state.applicants
+  return state.applicants.map((a) =>
+    a.id === request.applicantId && a.status !== wanted && movesForward(a.status, wanted)
+      ? { ...a, status: wanted, updatedOn: todayIso() }
+      : a,
+  )
+}
+
+/**
+ * The stage a new request opens on. Raising a recruitment request is the office
+ * saying this candidate has been chosen for this employer, so Selected is
+ * already true the moment the request exists -- waiting for somebody to type it
+ * in afterwards left the agent's first half unbooked and the worker still
+ * advertised as available on the public website.
+ *
+ * It is an ordinary stage entry, editable and deletable like any other, priced
+ * by the same milestone rule the stage form uses: nothing when an agent
+ * introduced her, because their fee is booked against them, and cash assistance
+ * when she came to us directly.
+ */
+function openingStage(state: AppState, applicantId: string, responsibleEmployeeId: string): StatusHistoryEntry {
+  const applicant = state.applicants.find((a) => a.id === applicantId)
+  const source = state.paymentSources.find((p) => p.scopes.includes('Request Status'))
+  return {
+    id: newId(),
+    status: SELECTION_STAGE,
+    date: todayIso(),
+    cost: milestoneCost(SELECTION_STAGE, Boolean(applicant?.agentId)) ?? 0,
+    paymentSourceId: source?.id ?? '',
+    responsibleEmployeeId,
+    attachment: null,
+    notes: '',
+  }
+}
+
 function latestRequestFor(requests: RecruitmentRequest[], applicantId: string): RecruitmentRequest | null {
   return (
     requests
@@ -236,10 +365,13 @@ export interface NewStaff {
   phone: string
   email: string
   role: StaffRole
+  /** Both empty for somebody on the payroll who does not sign in. */
   username: string
   password: string
   /** The Supabase auth account this staff row belongs to, once there is one. */
   userId?: string | null
+  /** Opens this month's payroll row at this salary; left out, at nothing. */
+  monthlySalary?: number
 }
 
 export type StaffPatch = Partial<Pick<StaffMember, 'name' | 'phone' | 'email' | 'role' | 'username'>>
@@ -249,7 +381,25 @@ interface AppSettings {
   companyTagline: string
   licenseNumber: string
   address: string
+  // What the CV prints under the licence number: the way somebody holding the
+  // document gets in touch with the office. On the letterhead rather than in
+  // the body, so it is on the page whoever reads it.
+  website: string
+  phones: string
+  email: string
   currency: string
+  /**
+   * Pesos to one dollar. Kept with the company's details, because it is a fact
+   * about the office's books rather than about this screen.
+   */
+  pesoRate: number
+  /**
+   * Follow the bank's live rate rather than the one above, which is then only
+   * the fallback for when the live rate cannot be reached. The office's choice.
+   */
+  pesoRateLive: boolean
+  /** Shows every amount in pesos beside the dollars. This machine's choice, like the language. */
+  showPeso: boolean
   language: Language
   theme: Theme
 }
@@ -265,6 +415,12 @@ export interface AppState {
   cities: City[]
   professions: Profession[]
   managers: Manager[]
+  /** The stages of each pipeline, as the office has them now. */
+  statusDefinitions: StatusDefinition[]
+  /** Employers' enquiries, from first message to job order. */
+  leads: Lead[]
+  /** The live peso rate this browser last fetched; null until it has one. */
+  pesoLive: LiveRate | null
   expenseCategories: ExpenseCategory[]
   paymentSources: PaymentSource[]
   payroll: PayrollEntry[]
@@ -293,6 +449,8 @@ export interface AppState {
 
   setLanguage: (lang: Language) => void
   setTheme: (theme: Theme) => void
+  setShowPeso: (showPeso: boolean) => void
+  setPesoLive: (live: LiveRate | null) => void
   updateSettings: (patch: Partial<Omit<AppSettings, 'language' | 'theme'>>) => void
 
   addApplicant: (data: Omit<Applicant, 'id' | 'createdOn' | 'updatedOn' | 'updatedBy' | 'status' | 'experience' | 'education' | 'documents' | 'notes' | 'photoDataUrl' | 'photoPath' | 'cvFileName' | 'cvPath' | 'cvDetails' | 'fullBodyPath' | 'fullBodyDataUrl' | 'passportCopyFileName' | 'passportCopyPath' | 'passportCopyDataUrl' | 'cvLinkedToWebsite'>) => string
@@ -348,6 +506,26 @@ export interface AppState {
   deleteCity: (id: string) => void
   addProfession: (name: Profession['name']) => void
   deleteProfession: (id: string) => void
+  /** `afterId` is the stage it follows; null puts it first. */
+  addStatusDefinition: (data: Omit<StatusDefinition, 'id'>, afterId?: string | null) => void
+  updateStatusDefinition: (id: string, patch: Partial<Omit<StatusDefinition, 'id'>>) => void
+  moveStatusDefinition: (id: string, direction: 'up' | 'down') => void
+  placeStatusDefinition: (id: string, afterId: string | null) => void
+  deleteStatusDefinition: (id: string) => void
+
+  /** Gives it the next reference and records who entered it; returns its id. */
+  addLead: (data: Omit<Lead, 'id' | 'refNo' | 'createdAt' | 'activities'>) => string
+  updateLead: (id: string, patch: Partial<Omit<Lead, 'id' | 'refNo' | 'createdAt' | 'activities'>>) => void
+  deleteLead: (id: string) => void
+  /** Moves a lead to a stage and writes the move into its history. */
+  setLeadStage: (id: string, stage: Lead['stage'], note?: string) => void
+  /** Records a message, call or meeting, and with it the last contact. */
+  logLeadContact: (id: string, contact: Omit<LeadActivity, 'id' | 'kind' | 'authorId'>) => void
+  /** The next action is done: it goes into the history and the slot empties. */
+  completeLeadAction: (id: string) => void
+  addLeadNote: (id: string, body: string) => void
+  deleteLeadNote: (id: string, noteId: string) => void
+
   addManager: (name: Manager['name']) => void
   deleteManager: (id: string) => void
   addExpenseCategory: (name: ExpenseCategory['name']) => void
@@ -403,6 +581,10 @@ export const useAppStore = create<AppState>()(
       cities: seedCities,
       professions: seedProfessions,
       managers: seedManagers,
+      statusDefinitions: allStatusDefinitions,
+      // Entered by hand through the Add lead form; nothing is invented here.
+      leads: [],
+      pesoLive: null,
       expenseCategories: seedExpenseCategories,
       paymentSources: seedPaymentSources,
       payroll: seedPayroll,
@@ -421,7 +603,13 @@ export const useAppStore = create<AppState>()(
         companyTagline: 'International Placement Services',
         licenseNumber: 'DMW-622-LB-07032025-R',
         address: 'Gedisco Center, Ermita, Manila',
+        website: 'eleutheria.agency',
+        phones: 'PH +63 961 278 0038 · PH +63 960 401 4714',
+        email: 'info@eleutheria.agency',
         currency: 'USD',
+        pesoRate: 56.5,
+        pesoRateLive: true,
+        showPeso: false,
         language: 'en',
         theme: 'dark',
       },
@@ -446,6 +634,8 @@ export const useAppStore = create<AppState>()(
 
       setLanguage: (language) => set((s) => ({ settings: { ...s.settings, language } })),
       setTheme: (theme) => set((s) => ({ settings: { ...s.settings, theme } })),
+      setShowPeso: (showPeso) => set((s) => ({ settings: { ...s.settings, showPeso } })),
+      setPesoLive: (pesoLive) => set({ pesoLive }),
       updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
 
       addApplicant: (data) => {
@@ -622,15 +812,18 @@ export const useAppStore = create<AppState>()(
 
       addRequest: (data) => {
         const id = newId()
-        const request: RecruitmentRequest = {
-          ...data,
-          id,
-          notes: { en: '', ar: '' },
-          statusHistory: [],
-          createdOn: todayIso(),
-          updatedOn: todayIso(),
-        }
-        set((s) => withBilling(s, { requests: [request, ...s.requests] }))
+        set((s) => {
+          const request: RecruitmentRequest = {
+            ...data,
+            id,
+            notes: { en: '', ar: '' },
+            statusHistory: [openingStage(s, data.applicantId, data.responsibleEmployeeId)],
+            createdOn: todayIso(),
+            updatedOn: todayIso(),
+          }
+          const requests = [request, ...s.requests]
+          return withBilling(s, { requests, applicants: followStages(s, requests, id) })
+        })
         return id
       },
       updateRequest: (id, patch) =>
@@ -655,31 +848,21 @@ export const useAppStore = create<AppState>()(
               ? { ...r, statusHistory: [...r.statusHistory, { ...entry, id: newId() }], updatedOn: todayIso() }
               : r,
           )
-          // Logging the stage is what makes her a backout worker, wherever it
-          // was logged from, so her own record says so too.
-          const applicantId = s.requests.find((r) => r.id === requestId)?.applicantId
-          const applicants =
-            entry.status === BACKOUT_STAGE && applicantId
-              ? s.applicants.map((a) =>
-                  a.id === applicantId ? { ...a, status: 'Back Out' as ApplicantStatus } : a,
-                )
-              : s.applicants
-          return withBilling(s, { requests, applicants })
+          return withBilling(s, { requests, applicants: followStages(s, requests, requestId) })
         }),
       updateStatusUpdate: (requestId, entryId, patch) =>
-        set((s) =>
-          withBilling(s, {
-            requests: s.requests.map((r) =>
-              r.id === requestId
-                ? {
-                    ...r,
-                    statusHistory: r.statusHistory.map((h) => (h.id === entryId ? { ...patch, id: h.id } : h)),
-                    updatedOn: todayIso(),
-                  }
-                : r,
-            ),
-          }),
-        ),
+        set((s) => {
+          const requests = s.requests.map((r) =>
+            r.id === requestId
+              ? {
+                  ...r,
+                  statusHistory: r.statusHistory.map((h) => (h.id === entryId ? { ...patch, id: h.id } : h)),
+                  updatedOn: todayIso(),
+                }
+              : r,
+          )
+          return withBilling(s, { requests, applicants: followStages(s, requests, requestId) })
+        }),
       deleteStatusUpdate: (requestId, entryId) =>
         set((s) =>
           withBilling(s, {
@@ -721,26 +904,41 @@ export const useAppStore = create<AppState>()(
         })),
       deleteInvoice: (id) => set((s) => ({ invoices: s.invoices.filter((i) => i.id !== id) })),
 
-      addStaff: async ({ password, username, userId = null, ...rest }) => {
-        if (usernameTaken(get().staff, username)) return 'username-taken'
+      addStaff: async ({ password, username, userId = null, monthlySalary, ...rest }) => {
+        // Somebody on the payroll who does not sign in has no username to
+        // collide with, so the check only applies when one was given.
+        if (username.trim() && usernameTaken(get().staff, username)) return 'username-taken'
         const member: StaffMember = {
           ...rest,
           // Connected, this is the auth account they sign in with; without one
           // the row is a name in a list and nobody can get in as them.
           userId,
           username: normaliseUsername(username),
-          credentials: await makeCredentials(password, true),
+          credentials: password ? await makeCredentials(password, true) : null,
           id: newId(),
           status: 'Active',
         }
-        set((s) => ({ staff: [member, ...s.staff] }))
+        // Whoever is added to the roster is on this month's payroll, because
+        // that is what adding them is for; the amount is theirs to set and is
+        // nothing until somebody does.
+        const entry: PayrollEntry = {
+          id: newId(),
+          staffId: member.id,
+          month: todayIso().slice(0, 7),
+          basicSalary: monthlySalary ?? 0,
+          bonus: 0,
+          allowances: 0,
+          status: 'Pending',
+          attachment: null,
+        }
+        set((s) => ({ staff: [member, ...s.staff], payroll: [entry, ...s.payroll] }))
         return 'ok'
       },
       updateStaff: (id, patch) => {
         const state = get()
         if (patch.username && usernameTaken(state.staff, patch.username, id)) return 'username-taken'
         // Somebody has to be able to get back into the settings.
-        if (patch.role && patch.role !== 'admin' && isLastActiveAdmin(state.staff, id)) return 'last-admin'
+        if (patch.role && patch.role !== 'super_admin' && isLastActiveAdmin(state.staff, id)) return 'last-admin'
         set((s) => ({
           staff: s.staff.map((m) =>
             m.id === id
@@ -783,6 +981,155 @@ export const useAppStore = create<AppState>()(
       deleteCity: (id) => set((s) => ({ cities: s.cities.filter((c) => c.id !== id) })),
       addProfession: (name) => set((s) => ({ professions: [...s.professions, { id: newId(), name }] })),
       deleteProfession: (id) => set((s) => ({ professions: s.professions.filter((p) => p.id !== id) })),
+      // Stages are the shape of the work itself, so they are the super
+      // administrator's to change. A stage already logged against a request
+      // keeps its label in that log whatever happens here -- the log records
+      // what was done, not what the list says today.
+      addStatusDefinition: (data, afterId = null) =>
+        set((s) => {
+          const created: StatusDefinition = { ...data, id: newId() }
+          const all = [...s.statusDefinitions, created]
+          if (created.isException) return { statusDefinitions: all }
+          const ids = stageWalk(all, created.pipeline)
+            .map((d) => d.id)
+            .filter((candidate) => candidate !== created.id)
+          const at = afterId === null ? 0 : ids.indexOf(afterId) + 1
+          ids.splice(at === 0 && afterId !== null ? ids.length : at, 0, created.id)
+          return { statusDefinitions: stagesInOrder(all, created.pipeline, ids) }
+        }),
+      updateStatusDefinition: (id, patch) =>
+        set((s) => {
+          const before = s.statusDefinitions.find((d) => d.id === id)
+          const all = s.statusDefinitions.map((d) => (d.id === id ? { ...d, ...patch } : d))
+          const after = all.find((d) => d.id === id)
+          if (!before || !after) return { statusDefinitions: all }
+          // Changed pipeline, or turned into an ordinary stage: renumber both
+          // sides so neither is left with a gap or a repeat.
+          const touched = new Set([before.pipeline, after.pipeline])
+          let next = all
+          for (const pipeline of touched) {
+            next = stagesInOrder(next, pipeline, stageWalk(next, pipeline).map((d) => d.id))
+          }
+          return { statusDefinitions: next }
+        }),
+      /** One step earlier or later in the process, swapping with its neighbour. */
+      moveStatusDefinition: (id, direction) =>
+        set((s) => {
+          const stage = s.statusDefinitions.find((d) => d.id === id)
+          if (!stage || stage.isException) return {}
+          const ids = stageWalk(s.statusDefinitions, stage.pipeline).map((d) => d.id)
+          const from = ids.indexOf(id)
+          const to = direction === 'up' ? from - 1 : from + 1
+          if (from === -1 || to < 0 || to >= ids.length) return {}
+          ids[from] = ids[to]
+          ids[to] = id
+          return { statusDefinitions: stagesInOrder(s.statusDefinitions, stage.pipeline, ids) }
+        }),
+      /** Straight to a place in the process: after that stage, or first of all. */
+      placeStatusDefinition: (id, afterId) =>
+        set((s) => {
+          const stage = s.statusDefinitions.find((d) => d.id === id)
+          if (!stage || stage.isException || afterId === id) return {}
+          const ids = stageWalk(s.statusDefinitions, stage.pipeline)
+            .map((d) => d.id)
+            .filter((candidate) => candidate !== id)
+          const at = afterId === null ? 0 : ids.indexOf(afterId) + 1
+          ids.splice(at === 0 && afterId !== null ? ids.length : at, 0, id)
+          return { statusDefinitions: stagesInOrder(s.statusDefinitions, stage.pipeline, ids) }
+        }),
+      deleteStatusDefinition: (id) =>
+        set((s) => {
+          const stage = s.statusDefinitions.find((d) => d.id === id)
+          const left = s.statusDefinitions.filter((d) => d.id !== id)
+          if (!stage) return { statusDefinitions: left }
+          return {
+            statusDefinitions: stagesInOrder(
+              left,
+              stage.pipeline,
+              stageWalk(left, stage.pipeline).map((d) => d.id),
+            ),
+          }
+        }),
+
+      addLead: (data) => {
+        const id = newId()
+        set((s) => {
+          const now = new Date().toISOString()
+          const refNo = Math.max(1000, ...s.leads.map((lead) => lead.refNo || 0)) + 1
+          // Notes typed into the form start the lead's history of notes.
+          const activities: LeadActivity[] = data.notes.trim()
+            ? [leadActivity('note', s.currentStaffId, { title: 'Note', body: data.notes.trim(), at: now })]
+            : []
+          return {
+            leads: [
+              { ...data, notes: '', id, refNo, createdAt: now, stageChangedAt: data.stageChangedAt || now, activities },
+              ...s.leads,
+            ],
+          }
+        })
+        return id
+      },
+      updateLead: (id, patch) =>
+        set((s) => ({ leads: s.leads.map((lead) => (lead.id === id ? { ...lead, ...patch } : lead)) })),
+      deleteLead: (id) => set((s) => ({ leads: s.leads.filter((lead) => lead.id !== id) })),
+      setLeadStage: (id, stage, note = '') =>
+        set((s) => ({
+          leads: s.leads.map((lead) => {
+            if (lead.id !== id || lead.stage === stage) return lead
+            const at = new Date().toISOString()
+            const move = leadActivity('stage', s.currentStaffId, { title: `Moved to ${stage}`, body: note.trim(), at })
+            return { ...lead, stage, stageChangedAt: at, activities: [move, ...lead.activities] }
+          }),
+        })),
+      logLeadContact: (id, contact) =>
+        set((s) => ({
+          leads: s.leads.map((lead) => {
+            if (lead.id !== id) return lead
+            const entry = leadActivity('contact', s.currentStaffId, contact)
+            // An older call logged late does not move the last contact back.
+            const latest = !lead.lastContactAt || contact.at >= lead.lastContactAt
+            return {
+              ...lead,
+              contacted: true,
+              lastContactAt: latest ? contact.at : lead.lastContactAt,
+              lastContactChannel: latest ? contact.channel : lead.lastContactChannel,
+              activities: sortActivities([entry, ...lead.activities]),
+            }
+          }),
+        })),
+      completeLeadAction: (id) =>
+        set((s) => ({
+          leads: s.leads.map((lead) => {
+            if (lead.id !== id) return lead
+            const done = leadActivity('task', s.currentStaffId, {
+              title: `${lead.nextStep || 'Follow-up'} — done`,
+              body: lead.nextStepDetail,
+              at: new Date().toISOString(),
+            })
+            return { ...lead, nextStep: '', nextStepDetail: '', nextFollowUpAt: '', activities: [done, ...lead.activities] }
+          }),
+        })),
+      addLeadNote: (id, body) =>
+        set((s) => ({
+          leads: s.leads.map((lead) =>
+            lead.id === id
+              ? {
+                  ...lead,
+                  activities: [
+                    leadActivity('note', s.currentStaffId, { title: 'Note', body: body.trim(), at: new Date().toISOString() }),
+                    ...lead.activities,
+                  ],
+                }
+              : lead,
+          ),
+        })),
+      deleteLeadNote: (id, noteId) =>
+        set((s) => ({
+          leads: s.leads.map((lead) =>
+            lead.id === id ? { ...lead, activities: lead.activities.filter((a) => a.id !== noteId) } : lead,
+          ),
+        })),
+
       addManager: (name) => set((s) => ({ managers: [...s.managers, { id: newId(), name }] })),
       // Her record keeps pointing at a manager who has been removed only until
       // the next edit; the column is nulled here so nothing reads a ghost.
@@ -960,6 +1307,12 @@ export const useAppStore = create<AppState>()(
           currentStaffId: '',
           agents: state.agents ?? seedAgents,
           managers: state.managers ?? seedManagers,
+          leads: (state.leads ?? []).map(withLeadDefaults),
+          pesoLive: state.pesoLive ?? null,
+          statusDefinitions:
+            state.statusDefinitions && state.statusDefinitions.length > 0
+              ? state.statusDefinitions
+              : allStatusDefinitions,
           expenseCategories: state.expenseCategories ?? seedExpenseCategories,
           agentCommissions: state.agentCommissions ?? [],
           agencyContracts: state.agencyContracts ?? seedAgencyContracts,
@@ -1018,8 +1371,34 @@ export function currentStatus(request: RecruitmentRequest): string | null {
   return request.statusHistory[request.statusHistory.length - 1].status
 }
 
-export function requestCost(request: RecruitmentRequest): number {
+/** What the stage log alone came to: the fees the office paid out step by step. */
+export function stageCost(request: RecruitmentRequest): number {
   return request.statusHistory.reduce((sum, h) => sum + h.cost, 0)
+}
+
+/**
+ * What this placement has cost, which is the stage log plus the agent's fee.
+ *
+ * The fee is not in the stage log on purpose: it is owed to the agent rather
+ * than spent at a counter, so it is booked against the agent and paid on the
+ * Agents page. It is still money this worker cost, incurred the day she
+ * reached the milestone, and leaving it out made every placement look cheaper
+ * than it was. The commissions are passed in rather than read here because
+ * this is a plain function, and they are already derived from the same stage
+ * log it is reading.
+ */
+export function requestCost(request: RecruitmentRequest, commissions: AgentCommission[]): number {
+  const fees = commissions.reduce((sum, c) => (c.requestId === request.id ? sum + c.amount : sum), 0)
+  return stageCost(request) + fees
+}
+
+/**
+ * The stages, as the screens should read them: what the office has saved, or
+ * the list the app ships with while the database has never been given one.
+ */
+export function useStatusDefinitions(): StatusDefinition[] {
+  const stored = useAppStore((s) => s.statusDefinitions)
+  return stored.length > 0 ? stored : allStatusDefinitions
 }
 
 export function invoiceTotalPaid(invoice: Invoice): number {
@@ -1030,13 +1409,31 @@ export function invoiceBalance(invoice: Invoice): number {
   return invoice.servicePrice - invoiceTotalPaid(invoice)
 }
 
+/**
+ * The rate the pesos are shown at: the bank's live rate when the office
+ * follows it and this browser has one, otherwise the rate saved in Settings.
+ */
+export function effectivePesoRate(settings: Pick<AppSettings, 'pesoRate' | 'pesoRateLive'>, live: LiveRate | null): number {
+  return settings.pesoRateLive !== false && live && live.rate > 0 ? live.rate : settings.pesoRate
+}
+
 export function formatMoney(amount: number, currency = 'USD', fractionDigits = 2): string {
   const symbol = currency === 'USD' ? '$' : currency
   const value = Math.abs(amount).toLocaleString('en-US', {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   })
-  return `${amount < 0 ? '−' : ''}${symbol}${value}`
+  const dollars = `${amount < 0 ? '−' : ''}${symbol}${value}`
+
+  // With the peso switch on, every dollar figure carries its peso equivalent
+  // beside it, at the office's rate. Pesos are never shown with cents: nobody
+  // reads a peso figure to the centavo, and it keeps the pair short enough for
+  // a table cell.
+  const state = useAppStore.getState()
+  const pesoRate = effectivePesoRate(state.settings, state.pesoLive)
+  if (!state.settings.showPeso || currency !== 'USD' || !(pesoRate > 0)) return dollars
+  const pesos = Math.abs(amount * pesoRate).toLocaleString('en-US', { maximumFractionDigits: 0 })
+  return `${dollars} \u00b7 \u20b1${pesos}`
 }
 
 export function payrollTotal(entry: PayrollEntry): number {

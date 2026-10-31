@@ -72,6 +72,9 @@ create table if not exists ops.settings (
   company_tagline text not null default 'International Placement Services',
   license_number  text not null default '',
   address         text not null default '',
+  website         text not null default 'eleutheria.agency',
+  phones          text not null default 'PH +63 961 278 0038 · PH +63 960 401 4714',
+  email           text not null default 'info@eleutheria.agency',
   currency        text not null default 'USD',
   updated_at      timestamptz not null default now()
 );
@@ -217,6 +220,11 @@ create table if not exists ops.applicant_experience (
   applicant_id  uuid not null references ops.applicants (id) on delete cascade,
   title         text not null,
   employer      text not null default '',
+  -- The years she was there, as the office types them. Null together on an
+  -- entry recorded before the range existed.
+  from_year     smallint,
+  to_year       smallint,
+  -- How long that comes to, worked out from the range rather than typed.
   years         smallint not null default 0,
   -- What she actually did there, and where. Both are columns in the CV.
   duties        text not null default '',
@@ -1505,3 +1513,629 @@ alter table ops.applicants add column if not exists full_body_path text;
 
 -- The name the office uploaded, beside the uuid the file is stored under.
 alter table ops.applicants add column if not exists passport_copy_file_name text;
+
+
+-- ======================================================== 0012_caller_identity.sql --
+
+-- Who is signed in, however the question is asked.
+--
+-- Every rule in this database turns on ops.is_staff(), which turns on
+-- auth.uid(), which reads the signed-in account out of a setting the server
+-- puts on the connection before it runs anything.
+--
+-- The catch is that there is more than one server. PostgREST, which the
+-- dashboard's queries go through, sets request.jwt.claims. Storage, which
+-- uploads go through, has set request.jwt.claim.sub as well, and older
+-- projects' auth.uid() reads only one of the two. When the one it reads is
+-- the one that service did not set, auth.uid() is null, the caller looks like
+-- a stranger, and the upload is refused with a row level security error --
+-- while every other screen in the dashboard works, because its queries come
+-- in through the service that does set the setting auth.uid() reads.
+--
+-- So the identity is resolved here instead, from whichever of the two is
+-- present. It is still the signed-in account and nothing else: both settings
+-- are put there by the server out of a verified token, and neither can be set
+-- by anybody calling in.
+
+create or replace function ops.caller_uid() returns uuid
+language plpgsql stable as $$
+declare sub text;
+begin
+  -- Whatever the project's own auth.uid() manages first, since that is what
+  -- the rest of Supabase agrees on.
+  begin
+    sub := auth.uid()::text;
+  exception when others then
+    sub := null;
+  end;
+  if sub is not null then return sub::uuid; end if;
+
+  sub := nullif(current_setting('request.jwt.claim.sub', true), '');
+  if sub is null then
+    begin
+      sub := nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub';
+    exception when others then
+      sub := null;
+    end;
+  end if;
+
+  begin
+    return sub::uuid;
+  exception when others then
+    return null;
+  end;
+end
+$$;
+
+-- The one line that changes: the caller's id now comes from the function
+-- above rather than from auth.uid() alone.
+create or replace function ops.current_role() returns text
+language sql stable security definer set search_path = ops, pg_temp as $$
+  select role from ops.staff where user_id = ops.caller_uid() and status = 'Active';
+$$;
+
+
+-- ======================================================== 0013_company_contact.sql --
+
+-- How to reach the office, on the document itself.
+--
+-- The CV's letterhead prints the licence number and, under it, the line
+-- somebody holding the document rings: the website and the agency's numbers.
+-- They were part of the template from the start and had no home in the
+-- database, so they are three columns on the one settings row rather than
+-- something typed into the page by hand each time.
+
+alter table ops.settings add column if not exists website text not null default 'eleutheria.agency';
+alter table ops.settings add column if not exists phones  text not null default 'PH +63 961 278 0038 · PH +63 960 401 4714';
+alter table ops.settings add column if not exists email   text not null default 'info@eleutheria.agency';
+
+comment on column ops.settings.phones is
+  'Printed on the CV letterhead as written, so the separators and country prefixes are the office''s choice.';
+
+
+-- ======================================================== 0014_experience_span.sql --
+
+-- The years she was there.
+--
+-- The office types a range -- 2021 to 2023 -- because that is what her
+-- passport, her contract and her own memory say. The count of years is worked
+-- out from it rather than typed a second time and disagreed with, so `years`
+-- stays exactly what it was and everything reading it, the website's cards
+-- included, is untouched.
+--
+-- Null on an entry recorded before the range existed, which is why neither
+-- column is required: a job somebody logged as "4 years" and nothing else is
+-- still a job she did.
+
+alter table ops.applicant_experience add column if not exists from_year smallint;
+alter table ops.applicant_experience add column if not exists to_year   smallint;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'applicant_experience_span_sane'
+  ) then
+    alter table ops.applicant_experience add constraint applicant_experience_span_sane
+      check (
+        (from_year is null or from_year between 1950 and 2100)
+        and (to_year is null or to_year between 1950 and 2100)
+        and (from_year is null or to_year is null or to_year >= from_year)
+      );
+  end if;
+end
+$$;
+
+comment on column ops.applicant_experience.from_year is
+  'The year the job started. Null on an entry recorded before the range existed.';
+
+
+-- ======================================================== 0015_super_admin.sql --
+
+-- The super administrator, and the stages as data.
+--
+-- Two offices had grown into one role. Running the office -- the caseload and
+-- the money -- is one job; deciding who may sign in, what the lists hold and
+-- what the stages of a recruitment are is another, and it is the one that can
+-- hand itself out. They are separate roles now:
+--
+--   super_admin  everything, and the only one who may write the System tables.
+--   admin        the whole caseload and the whole of the money, nothing more.
+--
+-- Nothing already stored changes meaning: an existing administrator keeps
+-- every power they had except the System pages, and the promotion to
+-- super_admin is a one-line update at the bottom of this file.
+--
+-- Re-runnable, like every migration here.
+
+-- ------------------------------------------------------------- the role ---
+
+alter table ops.staff drop constraint if exists staff_role_check;
+alter table ops.staff add constraint staff_role_check
+  check (role in ('super_admin', 'admin', 'accountant', 'data_entry'));
+
+create or replace function ops.is_super_admin() returns boolean
+language sql stable as $$ select ops.current_role() = 'super_admin' $$;
+
+-- Everywhere that already said "administrator" keeps meaning it, with the
+-- super administrator counted in: they can do anything an administrator can.
+create or replace function ops.is_admin() returns boolean
+language sql stable as $$ select ops.current_role() in ('admin', 'super_admin') $$;
+
+create or replace function ops.can_read_finance() returns boolean
+language sql stable as $$ select ops.current_role() in ('admin', 'super_admin', 'accountant') $$;
+
+create or replace function ops.can_write_finance() returns boolean
+language sql stable as $$ select ops.current_role() in ('admin', 'super_admin', 'accountant') $$;
+
+create or replace function ops.can_write_operations() returns boolean
+language sql stable as $$ select ops.current_role() in ('admin', 'super_admin', 'data_entry') $$;
+
+-- --------------------------------------------------------- the stages -----
+
+-- The stages of each pipeline. They were compiled into the app, which meant
+-- adding one needed a developer; they are rows now, and the Statuses page
+-- writes them. A stage already logged against a placement keeps its label in
+-- that log whatever happens here: the log records what was done, not what the
+-- list says today.
+create table if not exists ops.status_definitions (
+  id            uuid primary key default gen_random_uuid(),
+  label         text not null,
+  pipeline      text not null check (pipeline in ('Domestic', 'Profession', 'Invoice')),
+  step_order    smallint not null default 0,
+  default_cost  numeric(12,2) not null default 0 check (default_cost >= 0),
+  cost_note     text not null default '',
+  is_terminal   boolean not null default false,
+  is_exception  boolean not null default false,
+  created_at    timestamptz not null default now()
+);
+
+create index if not exists ops_status_definitions_pipeline_order_idx
+  on ops.status_definitions (pipeline, step_order);
+
+-- PostgREST keeps its own picture of the schema and only reloads it when told.
+-- A table it has not heard of is "not found in the schema cache", which reaches
+-- the dashboard as a save that will not go through, so say it out loud here
+-- rather than leaving somebody to wonder.
+notify pgrst, 'reload schema';
+
+-- ------------------------------------------------- who writes the system ---
+
+-- Reading stays as it was: everyone signed in needs these to fill a dropdown
+-- or name a stage. Writing is the super administrator's alone -- hiding the
+-- page stops an honest mistake, refusing the write stops the rest.
+do $$
+declare t text;
+begin
+  foreach t in array array['countries', 'cities', 'professions', 'managers', 'expense_categories',
+                           'payment_sources', 'staff', 'settings', 'status_definitions']
+  loop
+    execute format('alter table ops.%I enable row level security', t);
+    execute format('alter table ops.%I force row level security', t);
+    execute format('drop policy if exists read_all_staff on ops.%I', t);
+    execute format('drop policy if exists write_admin on ops.%I', t);
+    execute format('drop policy if exists update_admin on ops.%I', t);
+    execute format('drop policy if exists delete_admin on ops.%I', t);
+    execute format('drop policy if exists write_super on ops.%I', t);
+    execute format('drop policy if exists update_super on ops.%I', t);
+    execute format('drop policy if exists delete_super on ops.%I', t);
+    execute format('create policy read_all_staff on ops.%I for select to authenticated using (ops.is_staff())', t);
+    execute format('create policy write_super on ops.%I for insert to authenticated with check (ops.is_super_admin())', t);
+    execute format('create policy update_super on ops.%I for update to authenticated using (ops.is_super_admin()) with check (ops.is_super_admin())', t);
+    execute format('create policy delete_super on ops.%I for delete to authenticated using (ops.is_super_admin())', t);
+  end loop;
+end
+$$;
+
+grant select, insert, update, delete on ops.status_definitions to authenticated;
+
+-- ------------------------------------------- nobody is the unknown user ----
+
+-- The guard that stops somebody handing themselves a role compared the row
+-- being written with the signed-in account using "is not distinct from", which
+-- treats two unknowns as the same person: a staff row with no account linked to
+-- it yet matched a caller with no account -- the SQL editor, among others --
+-- and so its role could never be changed at all. A caller who is nobody is not
+-- the person on the row; the rule is otherwise exactly as it was.
+create or replace function ops.guard_own_account() returns trigger
+language plpgsql security definer set search_path = ops, pg_temp as $$
+begin
+  if auth.uid() is not null
+     and new.user_id = auth.uid()
+     and (new.role is distinct from old.role or new.status is distinct from old.status) then
+    raise exception 'You cannot change your own role or status.';
+  end if;
+  return new;
+end;
+$$;
+
+-- ------------------------------------------------------ the two of them ----
+
+-- Promote by name, and only where the account is real: an office with nobody
+-- holding this role can never hand it out again. Edit the names if yours are
+-- spelled differently, or run it again after adding the person.
+update ops.staff
+   set role = 'super_admin'
+ where status = 'Active'
+   and (
+     lower(name_en) like '%maan%'
+     or lower(name_en) like '%munzer%'
+     or lower(name_en) like '%abdelkarim%'
+     or lower(coalesce(email, '')) like '%munzer%'
+   );
+
+-- What this file did, as the last thing on screen.
+select name_en as staff, role, status
+  from ops.staff
+ order by (role = 'super_admin') desc, name_en;
+
+
+-- ======================================================== 0016_directory_and_placements.sql --
+
+-- Two halves of the caseload, and deleting as its own right.
+--
+-- "The caseload" was one thing to this database: the four directories the
+-- office keeps -- workers, employers, partner offices, agents -- and the
+-- recruitment itself, the requests and their stage log. Data entry could write
+-- all of it, and delete all of it.
+--
+-- The office wanted those apart. Data entry keeps the directories: they add
+-- somebody and correct what is on file. They do not open placements, and they
+-- delete nothing at all -- a wrong entry is corrected, not removed. So:
+--
+--   directories  insert and update by data entry, an administrator or a super
+--                administrator; delete by the administrators.
+--   placements   administrators only, in and out.
+--
+-- Reading is untouched: everybody signed in still reads both, which is what
+-- lets a worker's file show the placement she is on.
+--
+-- Re-runnable, like every migration here. Nothing is moved or deleted.
+
+create or replace function ops.can_write_directory() returns boolean
+language sql stable as $$ select ops.current_role() in ('admin', 'super_admin', 'data_entry') $$;
+
+create or replace function ops.can_write_placements() returns boolean
+language sql stable as $$ select ops.current_role() in ('admin', 'super_admin') $$;
+
+-- Removing a record is not part of changing one. This is the whole difference
+-- between the two roles on the pages they share.
+create or replace function ops.can_delete_caseload() returns boolean
+language sql stable as $$ select ops.current_role() in ('admin', 'super_admin') $$;
+
+-- ------------------------------------------------------- the directories ---
+
+do $$
+declare t text;
+begin
+  foreach t in array array[
+    'employers', 'agencies', 'agents', 'applicants', 'applicant_experience',
+    'applicant_education', 'applicant_documents', 'applicant_notes'
+  ]
+  loop
+    execute format('drop policy if exists read_all_staff on ops.%I', t);
+    execute format('drop policy if exists write_operations on ops.%I', t);
+    execute format('drop policy if exists update_operations on ops.%I', t);
+    execute format('drop policy if exists delete_operations on ops.%I', t);
+    execute format('create policy read_all_staff on ops.%I for select to authenticated using (ops.is_staff())', t);
+    execute format('create policy write_operations on ops.%I for insert to authenticated with check (ops.can_write_directory())', t);
+    execute format('create policy update_operations on ops.%I for update to authenticated using (ops.can_write_directory()) with check (ops.can_write_directory())', t);
+    execute format('create policy delete_operations on ops.%I for delete to authenticated using (ops.can_delete_caseload())', t);
+  end loop;
+end
+$$;
+
+-- -------------------------------------------------------- the placements ---
+
+do $$
+declare t text;
+begin
+  foreach t in array array['requests', 'request_status_history']
+  loop
+    execute format('drop policy if exists read_all_staff on ops.%I', t);
+    execute format('drop policy if exists write_operations on ops.%I', t);
+    execute format('drop policy if exists update_operations on ops.%I', t);
+    execute format('drop policy if exists delete_operations on ops.%I', t);
+    execute format('create policy read_all_staff on ops.%I for select to authenticated using (ops.is_staff())', t);
+    execute format('create policy write_operations on ops.%I for insert to authenticated with check (ops.can_write_placements())', t);
+    execute format('create policy update_operations on ops.%I for update to authenticated using (ops.can_write_placements()) with check (ops.can_write_placements())', t);
+    execute format('create policy delete_operations on ops.%I for delete to authenticated using (ops.can_write_placements())', t);
+  end loop;
+end
+$$;
+
+-- New policies are read straight from the catalogue, but the API's picture of
+-- the schema is reloaded on request only.
+notify pgrst, 'reload schema';
+
+-- What this file leaves behind, as the last thing on screen.
+select tablename as table_name,
+       policyname as policy,
+       cmd as applies_to
+  from pg_policies
+ where schemaname = 'ops'
+   and tablename in ('applicants', 'requests')
+ order by tablename, cmd, policyname;
+
+
+-- ======================================================== 0017_payroll_only_staff.sql --
+
+-- Somebody on the payroll who does not sign in.
+--
+-- A staff row has always meant two things at once: a person the office pays,
+-- and an account that opens the dashboard. Most offices have people who are
+-- only the first -- a driver, a cleaner, somebody paid monthly who has no
+-- business in the system at all -- and there was nowhere to put them: the row
+-- demanded a username, a password and a role.
+--
+-- So the role list gains 'none', which opens nothing anywhere, and the username
+-- becomes optional. Unique still: two people cannot share one, but any number
+-- of people can have none, because in Postgres a unique index lets nulls be.
+--
+-- Nothing already stored changes. Every existing row keeps its username and its
+-- role, and re-running this file does nothing at all.
+
+alter table ops.staff drop constraint if exists staff_role_check;
+alter table ops.staff add constraint staff_role_check
+  check (role in ('super_admin', 'admin', 'accountant', 'data_entry', 'none'));
+
+alter table ops.staff alter column username drop not null;
+
+-- An empty string is not "no username", it is a username nobody can type and
+-- that a second person cannot have. Rows written before this file could carry
+-- one, so they are turned into the real answer.
+update ops.staff set username = null where username = '';
+
+notify pgrst, 'reload schema';
+
+-- Who is on the roster, and who among them can get in.
+select name_en as staff,
+       role,
+       coalesce(username, '(no sign-in)') as username,
+       status
+  from ops.staff
+ order by (role = 'none'), name_en;
+
+
+-- ======================================================== 0018_peso_rate.sql --
+
+-- The office's peso rate.
+--
+-- The books are kept in dollars and the office lives in pesos, so the
+-- dashboard can show every amount in both, side by side, at a rate the office
+-- sets itself. The rate is a fact about the books, not about one screen, so it
+-- is kept with the company's details here; whether a given machine shows the
+-- pesos at all is that machine's choice, like its language, and stays local.
+--
+-- Additive and re-runnable.
+
+alter table ops.settings add column if not exists peso_rate numeric(10,4) not null default 56.5
+  check (peso_rate > 0);
+
+notify pgrst, 'reload schema';
+
+select peso_rate as pesos_per_dollar from ops.settings;
+
+
+-- ======================================================== 0019_leads.sql --
+
+-- Leads: employers' enquiries, from the first message to a job order.
+--
+-- Every row is entered by hand through the Add lead form on the Leads page,
+-- which sits with the System pages and so belongs to the super administrators.
+-- The database says the same: only they read or write this table.
+--
+-- Times are kept as instants (timestamptz) and shown in Arabia Standard Time,
+-- the clock the employers keep; the day an enquiry arrived is a plain date.
+--
+-- Additive and re-runnable.
+
+create table if not exists ops.leads (
+  id                    uuid primary key default gen_random_uuid(),
+  employer_name         text not null,
+  contact_name          text not null default '',
+  phone                 text not null default '',
+  email                 text not null default '',
+  -- What they asked for, as they put it: "24 ICU & ER nurses".
+  need                  text not null default '',
+  city                  text not null default '',
+  source                text not null default 'WhatsApp'
+                          check (source in ('WhatsApp', 'Email', 'Website form')),
+  stage                 text not null default 'New enquiry'
+                          check (stage in ('New enquiry', 'Qualified', 'Shortlisting', 'Proposal sent', 'Won', 'Lost')),
+  owner_id              uuid references ops.staff (id) on delete set null,
+  received_on           date not null default current_date,
+  last_contact_at       timestamptz,
+  last_contact_channel  text check (last_contact_channel in ('WhatsApp', 'Email', 'Call', 'Meeting')),
+  next_follow_up_at     timestamptz,
+  next_step             text not null default '',
+  notes                 text not null default '',
+  created_at            timestamptz not null default now()
+);
+
+create index if not exists ops_leads_next_follow_up_idx on ops.leads (next_follow_up_at);
+create index if not exists ops_leads_stage_idx on ops.leads (stage);
+
+alter table ops.leads enable row level security;
+alter table ops.leads force row level security;
+
+drop policy if exists read_super   on ops.leads;
+drop policy if exists write_super  on ops.leads;
+drop policy if exists update_super on ops.leads;
+drop policy if exists delete_super on ops.leads;
+create policy read_super   on ops.leads for select to authenticated using (ops.is_super_admin());
+create policy write_super  on ops.leads for insert to authenticated with check (ops.is_super_admin());
+create policy update_super on ops.leads for update to authenticated using (ops.is_super_admin()) with check (ops.is_super_admin());
+create policy delete_super on ops.leads for delete to authenticated using (ops.is_super_admin());
+
+grant select, insert, update, delete on ops.leads to authenticated;
+
+notify pgrst, 'reload schema';
+
+select count(*) as leads_on_file from ops.leads;
+
+
+-- ======================================================== 0020_lead_records.sql --
+
+-- Leads, in full: the record behind the lead page.
+--
+-- 0019 kept one line per enquiry. The lead page keeps the whole of it: a
+-- reference to quote (LD-1001), whether anybody has answered, the brief the
+-- employer gave, the next action in more than a few words, the one document
+-- they sent, and a history -- every message, call, stage change, completed
+-- action and internal note, each with who and when.
+--
+-- 'Manual entry' joins the sources, for an enquiry somebody was simply told
+-- about. The stages are unchanged.
+--
+-- Additive and re-runnable. The only rows it writes are its own new columns:
+-- each existing lead gets a reference, and one already contacted is marked so.
+
+alter table ops.leads add column if not exists ref_no            integer;
+alter table ops.leads add column if not exists contacted         boolean not null default false;
+-- The enquiry as it came in: roles, numbers, location, start date.
+alter table ops.leads add column if not exists enquiry           text not null default '';
+alter table ops.leads add column if not exists contact_role      text not null default '';
+alter table ops.leads add column if not exists industry          text not null default '';
+alter table ops.leads add column if not exists country           text not null default '';
+alter table ops.leads add column if not exists experience        text not null default '';
+alter table ops.leads add column if not exists target_start      text not null default '';
+alter table ops.leads add column if not exists requirements      text not null default '';
+alter table ops.leads add column if not exists next_step_detail  text not null default '';
+alter table ops.leads add column if not exists stage_changed_at  timestamptz;
+alter table ops.leads add column if not exists document_path     text;
+alter table ops.leads add column if not exists document_name     text;
+alter table ops.leads add column if not exists document_size     integer;
+alter table ops.leads add column if not exists document_added_at timestamptz;
+
+-- References in the order the enquiries arrived, from LD-1001.
+with numbered as (
+  select id, 1000 + row_number() over (order by created_at, id)
+               + coalesce((select max(ref_no) - 1000 from ops.leads where ref_no is not null), 0) as n
+  from ops.leads
+  where ref_no is null
+)
+update ops.leads l set ref_no = numbered.n from numbered where l.id = numbered.id;
+
+update ops.leads set contacted = true where last_contact_at is not null and not contacted;
+
+alter table ops.leads drop constraint if exists leads_source_check;
+alter table ops.leads add constraint leads_source_check
+  check (source in ('Manual entry', 'WhatsApp', 'Email', 'Website form'));
+
+-- Every step of the conversation with the employer.
+--
+--   contact  a message, email, call or meeting, either way
+--   stage    the lead moved stage
+--   task     a next action was done
+--   note     an internal note; never sent anywhere
+create table if not exists ops.lead_activities (
+  id                uuid primary key default gen_random_uuid(),
+  lead_id           uuid not null references ops.leads (id) on delete cascade,
+  kind              text not null check (kind in ('contact', 'stage', 'task', 'note')),
+  channel           text check (channel in ('WhatsApp', 'Email', 'Call', 'Meeting')),
+  direction         text check (direction in ('Inbound', 'Outbound')),
+  title             text not null default '',
+  body              text not null default '',
+  duration_minutes  integer check (duration_minutes is null or duration_minutes >= 0),
+  author_id         uuid references ops.staff (id) on delete set null,
+  occurred_at       timestamptz not null default now()
+);
+
+create index if not exists ops_lead_activities_lead_id_idx on ops.lead_activities (lead_id, occurred_at);
+
+alter table ops.lead_activities enable row level security;
+alter table ops.lead_activities force row level security;
+
+drop policy if exists read_super   on ops.lead_activities;
+drop policy if exists write_super  on ops.lead_activities;
+drop policy if exists update_super on ops.lead_activities;
+drop policy if exists delete_super on ops.lead_activities;
+create policy read_super   on ops.lead_activities for select to authenticated using (ops.is_super_admin());
+create policy write_super  on ops.lead_activities for insert to authenticated with check (ops.is_super_admin());
+create policy update_super on ops.lead_activities for update to authenticated using (ops.is_super_admin()) with check (ops.is_super_admin());
+create policy delete_super on ops.lead_activities for delete to authenticated using (ops.is_super_admin());
+
+grant select, insert, update, delete on ops.lead_activities to authenticated;
+
+notify pgrst, 'reload schema';
+
+select count(*) as leads_on_file, min(ref_no) as first_reference, max(ref_no) as last_reference from ops.leads;
+
+
+-- ======================================================== 0021_lead_documents_storage.sql --
+
+-- The document an employer sends with an enquiry: a job order, a requirements
+-- sheet. It lives in a private bucket of its own, because leads belong to the
+-- super administrators alone and the worker buckets are open to all staff.
+--
+-- Additive and re-runnable.
+
+insert into storage.buckets (id, name, public)
+values ('lead-documents', 'lead-documents', false)
+on conflict (id) do nothing;
+
+drop policy if exists "lead-documents_read"   on storage.objects;
+drop policy if exists "lead-documents_write"  on storage.objects;
+drop policy if exists "lead-documents_update" on storage.objects;
+drop policy if exists "lead-documents_delete" on storage.objects;
+
+create policy "lead-documents_read" on storage.objects for select to authenticated
+  using (bucket_id = 'lead-documents' and ops.is_super_admin());
+create policy "lead-documents_write" on storage.objects for insert to authenticated
+  with check (bucket_id = 'lead-documents' and ops.is_super_admin());
+create policy "lead-documents_update" on storage.objects for update to authenticated
+  using (bucket_id = 'lead-documents' and ops.is_super_admin())
+  with check (bucket_id = 'lead-documents' and ops.is_super_admin());
+create policy "lead-documents_delete" on storage.objects for delete to authenticated
+  using (bucket_id = 'lead-documents' and ops.is_super_admin());
+
+
+-- ======================================================== 0022_accountant_payroll.sql --
+
+-- The accountant runs the payroll.
+--
+-- 0002 kept the payroll to the administrators alone, narrower than the rest of
+-- finance. The office has since given the payroll to its accountant: the
+-- Payroll page is on her menu, and she pays the salaries. So the payroll now
+-- follows the same rule as every other finance table -- the administrators
+-- and the accountant read and change it, and data entry still cannot see it.
+--
+-- Only the rules change. Not a row is touched. Re-runnable.
+
+drop policy if exists read_admin     on ops.payroll_entries;
+drop policy if exists write_admin    on ops.payroll_entries;
+drop policy if exists update_admin   on ops.payroll_entries;
+drop policy if exists delete_admin   on ops.payroll_entries;
+drop policy if exists read_finance   on ops.payroll_entries;
+drop policy if exists write_finance  on ops.payroll_entries;
+drop policy if exists update_finance on ops.payroll_entries;
+drop policy if exists delete_finance on ops.payroll_entries;
+
+create policy read_finance   on ops.payroll_entries for select to authenticated using (ops.can_read_finance());
+create policy write_finance  on ops.payroll_entries for insert to authenticated with check (ops.can_write_finance());
+create policy update_finance on ops.payroll_entries for update to authenticated using (ops.can_write_finance()) with check (ops.can_write_finance());
+create policy delete_finance on ops.payroll_entries for delete to authenticated using (ops.can_write_finance());
+
+notify pgrst, 'reload schema';
+
+select count(*) as payroll_entries_on_file from ops.payroll_entries;
+
+
+-- ======================================================== 0023_live_peso_rate.sql --
+
+-- The live peso rate.
+--
+-- The dashboard can now read the dollar's price in pesos from a bank's
+-- published reference rate (the European Central Bank's, through Frankfurter),
+-- refreshed by itself through the day. Whether the office follows that live
+-- rate or keeps its own is a choice for the whole office, so it is kept here
+-- beside the saved rate -- which stays, as the fallback for when the live
+-- rate cannot be reached, and as the rate used when the office turns live off.
+--
+-- Additive and re-runnable. Live is on unless somebody turns it off.
+
+alter table ops.settings add column if not exists peso_rate_live boolean not null default true;
+
+notify pgrst, 'reload schema';
+
+select peso_rate as saved_pesos_per_dollar, peso_rate_live as follows_live_rate from ops.settings;

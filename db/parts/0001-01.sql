@@ -68,6 +68,9 @@ create table if not exists ops.settings (
   company_tagline text not null default 'International Placement Services',
   license_number  text not null default '',
   address         text not null default '',
+  website         text not null default 'eleutheria.agency',
+  phones          text not null default 'PH +63 961 278 0038 · PH +63 960 401 4714',
+  email           text not null default 'info@eleutheria.agency',
   currency        text not null default 'USD',
   updated_at      timestamptz not null default now()
 );

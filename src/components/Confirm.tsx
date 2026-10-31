@@ -42,7 +42,7 @@ export default function Confirm({
         <div className="flex flex-col gap-2">
           <p className="text-[12px] leading-relaxed text-ink-2">{message}</p>
           {detail && (
-            <p className="rounded-control border border-line bg-sunken px-2.5 py-2 text-[11.5px] text-ink">
+            <p className="whitespace-pre-line rounded-control border border-line bg-sunken px-2.5 py-2 text-[11.5px] text-ink">
               {detail}
             </p>
           )}

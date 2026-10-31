@@ -51,7 +51,10 @@ import type {
   RecruitmentAgency,
   RecruitmentRequest,
   StaffMember,
+  StatusDefinition,
   StatusHistoryEntry,
+  Lead,
+  LeadActivity,
 } from '../types'
 
 type Row = Record<string, unknown>
@@ -142,6 +145,138 @@ export const expenseCategoryRows = {
   in: (r: Row): ExpenseCategory => ({ id: text(r.id), name: { en: text(r.name_en), ar: text(r.name_ar) } }),
 }
 
+const instantIn = (value: unknown): string => (value ? new Date(String(value)).toISOString() : '')
+
+export const leadRows = {
+  table: 'leads',
+  out: (l: Lead): Row => ({
+    id: l.id,
+    ref_no: l.refNo || null,
+    employer_name: l.employerName,
+    contact_name: l.contactName,
+    contact_role: l.contactRole,
+    phone: l.phone,
+    email: l.email,
+    industry: l.industry,
+    city: l.city,
+    country: l.country,
+    need: l.need,
+    enquiry: l.enquiry,
+    experience: l.experience,
+    target_start: l.targetStart,
+    requirements: l.requirements,
+    source: l.source,
+    stage: l.stage,
+    stage_changed_at: l.stageChangedAt || null,
+    contacted: l.contacted,
+    owner_id: l.ownerId || null,
+    received_on: l.receivedOn || null,
+    last_contact_at: l.lastContactAt || null,
+    last_contact_channel: l.lastContactChannel || null,
+    next_follow_up_at: l.nextFollowUpAt || null,
+    next_step: l.nextStep,
+    next_step_detail: l.nextStepDetail,
+    notes: l.notes,
+    document_path: l.document?.path ?? null,
+    document_name: l.document?.name ?? null,
+    document_size: l.document?.size ?? null,
+    document_added_at: l.document?.addedAt || null,
+    ...(l.createdAt ? { created_at: l.createdAt } : {}),
+  }),
+  // Instants come back from Postgres in its own spelling; one shape is kept
+  // so the page can compare them without caring which machine wrote them.
+  in: (r: Row): Lead => ({
+    id: text(r.id),
+    refNo: r.ref_no === null || r.ref_no === undefined ? 0 : Number(r.ref_no),
+    employerName: text(r.employer_name),
+    contactName: text(r.contact_name),
+    contactRole: text(r.contact_role),
+    phone: text(r.phone),
+    email: text(r.email),
+    industry: text(r.industry),
+    city: text(r.city),
+    country: text(r.country),
+    need: text(r.need),
+    enquiry: text(r.enquiry),
+    experience: text(r.experience),
+    targetStart: text(r.target_start),
+    requirements: text(r.requirements),
+    source: (text(r.source) || 'WhatsApp') as Lead['source'],
+    stage: (text(r.stage) || 'New enquiry') as Lead['stage'],
+    stageChangedAt: instantIn(r.stage_changed_at),
+    contacted: Boolean(r.contacted) || Boolean(r.last_contact_at),
+    ownerId: text(r.owner_id),
+    receivedOn: dateIn(r.received_on),
+    lastContactAt: instantIn(r.last_contact_at),
+    lastContactChannel: (text(r.last_contact_channel) as Lead['lastContactChannel']) || '',
+    nextFollowUpAt: instantIn(r.next_follow_up_at),
+    nextStep: text(r.next_step),
+    nextStepDetail: text(r.next_step_detail),
+    notes: text(r.notes),
+    document: r.document_path
+      ? {
+          path: text(r.document_path),
+          name: text(r.document_name),
+          size: money(r.document_size),
+          addedAt: instantIn(r.document_added_at),
+        }
+      : null,
+    activities: [],
+    createdAt: instantIn(r.created_at),
+  }),
+}
+
+export const leadActivityRows = {
+  table: 'lead_activities',
+  out: (a: LeadActivity, leadId: string): Row => ({
+    id: a.id,
+    lead_id: leadId,
+    kind: a.kind,
+    channel: a.channel || null,
+    direction: a.direction || null,
+    title: a.title,
+    body: a.body,
+    duration_minutes: a.durationMinutes || null,
+    author_id: a.authorId || null,
+    occurred_at: a.at,
+  }),
+  in: (r: Row): LeadActivity => ({
+    id: text(r.id),
+    kind: (text(r.kind) || 'note') as LeadActivity['kind'],
+    channel: (text(r.channel) as LeadActivity['channel']) || '',
+    direction: (text(r.direction) as LeadActivity['direction']) || '',
+    title: text(r.title),
+    body: text(r.body),
+    durationMinutes: money(r.duration_minutes),
+    authorId: text(r.author_id),
+    at: instantIn(r.occurred_at),
+  }),
+}
+
+export const statusDefinitionRows = {
+  table: 'status_definitions',
+  out: (d: StatusDefinition): Row => ({
+    id: d.id,
+    label: d.label,
+    pipeline: d.pipeline,
+    step_order: d.order,
+    default_cost: d.defaultCost,
+    cost_note: d.costNote,
+    is_terminal: d.isTerminal,
+    is_exception: d.isException,
+  }),
+  in: (r: Row): StatusDefinition => ({
+    id: text(r.id),
+    label: text(r.label),
+    pipeline: text(r.pipeline) as StatusDefinition['pipeline'],
+    order: Number(r.step_order ?? 0),
+    defaultCost: money(r.default_cost),
+    costNote: text(r.cost_note),
+    isTerminal: Boolean(r.is_terminal),
+    isException: Boolean(r.is_exception),
+  }),
+}
+
 export const paymentSourceRows = {
   table: 'payment_sources',
   out: (p: PaymentSource): Row => ({ id: p.id, name: p.name, scopes: p.scopes }),
@@ -165,22 +300,38 @@ export const settingsRows = {
     company_tagline: s.companyTagline,
     license_number: s.licenseNumber,
     address: s.address,
+    website: s.website,
+    phones: s.phones,
+    email: s.email,
     currency: s.currency,
+    peso_rate: s.pesoRate,
+    peso_rate_live: s.pesoRateLive !== false,
   }),
   in: (r: Row): CompanySettings => ({
     companyName: text(r.company_name),
     companyTagline: text(r.company_tagline),
     licenseNumber: text(r.license_number),
     address: text(r.address),
+    website: text(r.website),
+    phones: text(r.phones),
+    email: text(r.email),
     currency: text(r.currency) || 'USD',
+    pesoRate: Number(r.peso_rate ?? 56.5) || 56.5,
+    // A project that has not run 0023 yet has no column, which means live.
+    pesoRateLive: r.peso_rate_live !== false,
   }),
 }
 
 export interface CompanySettings {
+  pesoRate: number
+  pesoRateLive: boolean
   companyName: string
   companyTagline: string
   licenseNumber: string
   address: string
+  website: string
+  phones: string
+  email: string
   currency: string
 }
 
@@ -196,7 +347,9 @@ export const staffRows = {
   out: (m: StaffMember): Row => ({
     id: m.id,
     user_id: m.userId,
-    username: m.username.toLowerCase(),
+    // No username at all for somebody who does not sign in: an empty string is
+    // a name nobody can type, and only one person could have it.
+    username: m.username.trim() ? m.username.toLowerCase() : null,
     name_en: m.name.en,
     name_ar: m.name.ar,
     phone: m.phone,
@@ -393,6 +546,8 @@ export const experienceRows = {
     applicant_id: applicantId,
     title: e.title,
     employer: e.employer,
+    from_year: e.fromYear || null,
+    to_year: e.toYear || null,
     years: e.years,
     duties: e.duties,
     country: e.country,
@@ -401,6 +556,8 @@ export const experienceRows = {
     id: text(r.id),
     title: text(r.title),
     employer: text(r.employer),
+    fromYear: Number(r.from_year ?? 0),
+    toYear: Number(r.to_year ?? 0),
     years: Number(r.years ?? 0),
     duties: text(r.duties),
     country: text(r.country),

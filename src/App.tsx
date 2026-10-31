@@ -26,6 +26,9 @@ import Notifications from './pages/Notifications'
 import Settings from './pages/Settings'
 import Account from './pages/Account'
 import NotFound from './pages/NotFound'
+import LeadsPage from './pages/Leads/LeadsPage'
+import LeadFormPage from './pages/Leads/LeadFormPage'
+import LeadDetailPage from './pages/Leads/LeadDetailPage'
 
 function App() {
   return (
@@ -45,9 +48,15 @@ function App() {
           <Route path="/recruitments/:id" element={<RequestDetail />} />
           <Route path="/invoices" element={<InvoicesList />} />
           <Route path="/staff" element={<StaffList />} />
+          <Route path="/leads" element={<LeadsPage />} />
+          <Route path="/leads/new" element={<LeadFormPage />} />
+          <Route path="/leads/:id" element={<LeadDetailPage />} />
+          <Route path="/leads/:id/edit" element={<LeadFormPage key="edit" />} />
           <Route path="/accounting" element={<FinancialCenter />} />
           <Route path="/accounting/payroll" element={<PayrollPage />} />
           <Route path="/accounting/agency-accounts" element={<AgencyAccountsPage />} />
+          <Route path="/accounting/expenses" element={<OfficeExpensesPage />} />
+          {/* What the page used to be called, so an old link still lands. */}
           <Route path="/accounting/office-expenses" element={<OfficeExpensesPage />} />
           <Route path="/accounting/backouts" element={<BackoutsPage />} />
           <Route path="/accounting/reports" element={<AccountingReports />} />

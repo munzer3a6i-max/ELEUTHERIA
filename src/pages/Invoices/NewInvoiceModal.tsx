@@ -40,10 +40,17 @@ const today = () => new Date().toISOString().slice(0, 10)
 export default function NewInvoiceModal({
   onClose,
   agencyId = null,
+  requestId: forRequest = '',
 }: {
   onClose: () => void
   /** Opened from an agency's own page, so that agency's requests come first. */
   agencyId?: string | null
+  /**
+   * Opened from a placement's own screen, so that placement is already chosen
+   * and the price is still asked for. The office decides what a placement is
+   * worth; nothing here guesses it from what the placement cost.
+   */
+  requestId?: string
 }) {
   const requests = useAppStore((s) => s.requests)
   const applicants = useAppStore((s) => s.applicants)
@@ -59,7 +66,7 @@ export default function NewInvoiceModal({
   const ar = language === 'ar'
 
   const [query, setQuery] = useState('')
-  const [requestId, setRequestId] = useState('')
+  const [requestId, setRequestId] = useState(forRequest)
   const [price, setPrice] = useState('')
   const [issuedOn, setIssuedOn] = useState(today())
   const [shape, setShape] = useState<Shape>('none')

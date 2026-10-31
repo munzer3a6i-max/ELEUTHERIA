@@ -15,7 +15,7 @@ export default function EmployersList() {
   const deleteEmployer = useAppStore((s) => s.deleteEmployer)
   const updateEmployer = useAppStore((s) => s.updateEmployer)
   const { t, tb, language } = useTranslation()
-  const { canEdit } = useCurrentUser()
+  const { canEdit, canRemove } = useCurrentUser()
   const [addOpen, setAddOpen] = useState(false)
 
   function handleDelete(id: string, name: string) {
@@ -28,7 +28,7 @@ export default function EmployersList() {
         title={t('nav_employers')}
         subtitle={t('page_employers_subtitle')}
         actions={
-          canEdit('operations') && (
+          canEdit('directory') && (
             <PrimaryButton onClick={() => setAddOpen(true)} className="flex items-center gap-1.5">
               <Plus className="size-3.5" /> {language === 'ar' ? 'إضافة صاحب عمل' : 'Add Employer'}
             </PrimaryButton>
@@ -57,7 +57,8 @@ export default function EmployersList() {
                 </div>
                 <button
                   type="button"
-                  hidden={!canEdit('operations')}
+                  aria-label={t('action_delete')}
+                  hidden={!canRemove('directory')}
                   onClick={() => handleDelete(e.id, e.englishName)}
                   className="text-ink-3 hover:text-neg"
                 >

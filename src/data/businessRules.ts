@@ -5,6 +5,8 @@
   owes and is owed.
 */
 
+import type { ApplicantStatus, RequestType } from '../types'
+
 /** A worker who leaves before this many months is brought home at our expense. */
 export const GUARANTEE_MONTHS = 3
 
@@ -19,12 +21,71 @@ export const DEPLOYMENT_STAGE = 'Deployed'
 export const BACKOUT_STAGE = 'Back Out'
 
 /**
+ * The status her own record should carry, given what her placement has
+ * reached. Null means the stage log has nothing to say about it, and her
+ * status stays whatever the office set.
+ *
+ * This is what keeps the website honest. The published view shows only
+ * workers who are still Available, so a worker whose status never moved went
+ * on advertising herself after she had been selected and after she had flown.
+ * The stage log already knew; her record did not.
+ *
+ * It only ever moves her forward. Removing a stage does not quietly undo a
+ * status somebody may have set deliberately -- that is a decision, and it is
+ * made on her profile.
+ */
+export function statusFromStages(history: { status: string }[]): ApplicantStatus | null {
+  const reached = new Set(history.map((entry) => entry.status))
+  if (reached.has(BACKOUT_STAGE)) return 'Back Out'
+  if (reached.has(DEPLOYMENT_STAGE)) return 'Deployed'
+  if (reached.has(SELECTION_STAGE)) return 'Selected'
+  return null
+}
+
+/** True when the second status is further along than the first. */
+export function movesForward(from: ApplicantStatus, to: ApplicantStatus): boolean {
+  const order: ApplicantStatus[] = ['Available', 'Unavailable', 'Selected', 'Deployed', 'Back Out']
+  return order.indexOf(to) > order.indexOf(from)
+}
+
+/**
  * Paid to a candidate who came to us directly, at selection and again at
  * deployment. An agent's fee replaces it when one introduced her, which is why
  * the pipeline's own note reads "or $150 cash assistance if not placed through
  * an agent".
  */
 export const CASH_ASSISTANCE = 150
+
+/**
+ * What a milestone stage costs the office. An agent's fee at selection or
+ * deployment is booked as that agent's commission, so the stage itself stays
+ * at nothing and the money is counted once. A candidate who came to us
+ * directly has no agent to pay, and is given cash assistance at the same two
+ * points instead. Null means this is an ordinary stage, priced by the pipeline.
+ *
+ * Both the stage form and the store that opens a request with Selected already
+ * logged ask this, so a placement is costed the same either way.
+ */
+export function milestoneCost(label: string, hasAgent: boolean): number | null {
+  if (label !== SELECTION_STAGE && label !== DEPLOYMENT_STAGE) return null
+  return hasAgent ? 0 : CASH_ASSISTANCE
+}
+
+/**
+ * Who a placement belongs to, which is the line the month is split on.
+ *
+ * A domestic worker is the office's own: the office raises her, carries her
+ * costs and keeps what she earns, so no partner is named against her. A
+ * tradesman is the other way round -- he belongs to the partner who brought him
+ * in, and that partner's name is chosen when the request is raised.
+ *
+ * Null means the office. Her own record keeps whatever manager was set on it;
+ * this rule decides what the books do with it, so nothing is rewritten to
+ * follow a policy that may change again.
+ */
+export function placementOwnerId(type: RequestType, managerId: string | null): string | null {
+  return type === 'Domestic' ? null : managerId
+}
 
 /** Months between two dates, used to decide who carries a backout. */
 export function monthsBetween(from: string, to: string): number {

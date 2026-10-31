@@ -63,9 +63,10 @@ export default function UsersTab() {
 
   function handleRole(member: StaffMember, role: StaffRole) {
     setNotice(null)
-    // Giving away your own administrator role closes this page behind you, so
-    // say so before it happens rather than after.
-    if (member.id === me?.id && role !== 'admin' && !window.confirm(t('users_demote_self'))) return
+    // Giving away your own role closes this page behind you -- the System
+    // pages are the super administrator's -- so say so before it happens
+    // rather than after.
+    if (member.id === me?.id && role !== 'super_admin' && !window.confirm(t('users_demote_self'))) return
     report(updateStaff(member.id, { role }))
   }
 

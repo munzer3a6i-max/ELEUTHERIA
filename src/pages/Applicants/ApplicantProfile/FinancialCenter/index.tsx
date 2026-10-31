@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAppStore } from '../../../../store/useAppStore'
 import { useTranslation } from '../../../../i18n/useTranslation'
+import NewInvoiceModal from '../../../Invoices/NewInvoiceModal'
 import ExpensesTable from './ExpensesTable'
 import IncomeTable from './IncomeTable'
 import StageBreakdownPanel from './StageBreakdownPanel'
@@ -14,8 +15,8 @@ export default function FinancialCenter({
   activeRequest: RecruitmentRequest | null
 }) {
   const invoices = useAppStore((s) => s.invoices)
-  const addInvoice = useAppStore((s) => s.addInvoice)
   const { language } = useTranslation()
+  const [billing, setBilling] = useState(false)
   const subTabs = [
     language === 'ar' ? 'المصروفات (التكاليف)' : 'Expenses (Costs)',
     language === 'ar' ? 'الدخل (من العميل)' : 'Income (From Client)',
@@ -37,15 +38,6 @@ export default function FinancialCenter({
   }
 
   const invoice = invoices.find((i) => i.recruitmentRequestId === activeRequest.id) ?? null
-
-  function handleCreateInvoice() {
-    addInvoice({
-      recruitmentRequestId: activeRequest!.id,
-      employerId: activeRequest!.employerId,
-      recruitmentAgencyId: activeRequest!.recruitmentAgencyId,
-      servicePrice: 500,
-    })
-  }
 
   return (
     <div>
@@ -69,7 +61,7 @@ export default function FinancialCenter({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div className="lg:col-span-9 flex flex-col gap-4">
           {activeSubTab === subTabs[0] && <ExpensesTable request={activeRequest} />}
-          {activeSubTab === subTabs[1] && <IncomeTable invoice={invoice} onCreateInvoice={handleCreateInvoice} />}
+          {activeSubTab === subTabs[1] && <IncomeTable invoice={invoice} onCreateInvoice={() => setBilling(true)} />}
           {activeSubTab === subTabs[2] && (
             <div className="rounded-panel border border-line bg-surface p-[13px]">
               <h2 className="mb-3 panel-title">
@@ -105,6 +97,8 @@ export default function FinancialCenter({
           <StageBreakdownPanel request={activeRequest} invoice={invoice} />
         </div>
       </div>
+
+      {billing && <NewInvoiceModal requestId={activeRequest.id} onClose={() => setBilling(false)} />}
     </div>
   )
 }

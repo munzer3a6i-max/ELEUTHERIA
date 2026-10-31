@@ -1,12 +1,54 @@
 # Who can do what
 
-Three roles, set per member of staff on the Staff page.
+Four roles, set per member of staff in Settings -> Users.
 
-| Role | Finance pages | Caseload | Staff, addons, settings |
-| --- | --- | --- | --- |
-| **Administrator** | read and change | read and change | read and change |
-| **Accountant** | read and change | read only | not shown |
-| **Data entry** | not shown | read and change | not shown |
+| Role | Directories | Placements | Finance pages | System pages |
+| --- | --- | --- | --- | --- |
+| **Super administrator** | add, edit, delete | add, edit, delete | add, edit, delete | add, edit, delete |
+| **Administrator** | add, edit, delete | add, edit, delete | add, edit, delete | not shown |
+| **Accountant** | read only | read only | add, edit, delete | not shown |
+| **Data entry** | **add and edit only** | not shown | not shown | not shown |
+| **No sign-in** | nothing | nothing | nothing | nothing |
+
+**No sign-in** is somebody on the payroll who has no business in the dashboard:
+a driver, a cleaner, anybody the office pays monthly. They hold no username and
+no password, so there is nothing to sign in with, and every area is closed to
+them. Add them on the Staff page, which opens their payroll row for the current
+month at the salary you give; granting them a way in later is a separate
+decision, made in Settings → Users by setting a username, a password and a role.
+
+The **directories** are the four lists the office keeps -- workers, employers,
+partner offices and agents -- and the records behind them. **Placements** are
+the recruitment itself: the requests, their stage log, and the dashboard that
+reports on them.
+
+Data entry gets the directories and nothing else. No dashboard, no
+recruitments, no invoices, no reports: those pages are not in their sidebar and
+typing the address in says so plainly. On the pages they do have, they add and
+correct records but delete nothing -- a wrong entry is corrected, not removed --
+and that holds down to the small bins beside an experience entry, a document or
+a CV. Their applicant profiles show the information and the files, without the
+stages tab or the financial one.
+
+Deleting is its own right, not part of editing. Every store action whose name
+begins with `delete` is checked against that right rather than against editing,
+so a new one is covered the day it is written.
+
+The **System pages** are Staff, Leads, Addons, Notifications and Settings: who may
+sign in and with what role, the lists the office runs on (countries, cities,
+professions, managers, expense categories, payment sources), the stages of the
+recruitment itself, and the company's own details. That group is the super
+administrator's; nobody else is shown that it exists, and typing the address in
+does not get them there either.
+
+Running the office and deciding how the system works are different jobs, and
+the second one can hand itself out -- a super administrator can make anybody
+else a super administrator -- which is why it is held by the owners rather than
+by whoever runs the desk that week.
+
+The app refuses to leave itself without one: the last active super
+administrator cannot be demoted, suspended or deleted, because nobody would be
+left who could hand the role back out.
 
 "Finance pages" means Accounting and everything under it — the Financial
 Center, payroll, agency accounts, office expenses, backouts and the accounting
@@ -19,8 +61,29 @@ but cannot change it. Data entry never sees the finance pages at all; on the
 dashboard they get the caseload figures and the alerts about stalled files and
 expiring passports, not the ones about money.
 
-A few things everyone can do regardless of role: read their notifications,
+A few things everyone can do regardless of role: open their own account page,
 switch language and theme.
+
+## The stages are data
+
+The stages of each pipeline live in `ops.status_definitions`, and **Addons ->
+Statuses** is where they are added, reworded and removed, with the details the
+rest of the system reads: where the stage sits in the order, what it costs by
+default, the note shown under the amount when it is logged, and whether
+reaching it ends the placement (terminal) or interrupts it (an exception, which
+can happen at any point and so carries no place in the order).
+
+Where a stage sits in the process is not a number anybody types. A new stage is
+put after the one it follows (or first of all), the arrows on each row move one
+a step earlier or later, and every change renumbers that pipeline 1, 2, 3 --
+which is what stops two stages quietly sharing a number and sorting by whichever
+was loaded first. Exceptions have no place in that order at all, so they carry
+no number and no arrows.
+
+A stage already logged against a placement keeps its label in that log whatever
+happens to the list afterwards: the log records what was done, not what the
+list says today. Removing a stage therefore loses nothing that was recorded --
+it only stops the stage being offered again.
 
 ## Two layers, on purpose
 
@@ -43,7 +106,7 @@ rather than being open by default.
 
 ## Accounts
 
-Administrators manage accounts in **Settings → Users**: add someone with a
+Super administrators manage accounts in **Settings → Users**: add someone with a
 username, a starting password and a role; change any of those later; reset a
 forgotten password; suspend an account so it cannot sign in; or remove it
 entirely. Everyone else reaches **My Account** from the profile menu, where

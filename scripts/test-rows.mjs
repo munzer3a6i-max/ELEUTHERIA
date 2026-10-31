@@ -14,7 +14,7 @@
 
 import { PGlite } from '@electric-sql/pglite'
 import { chromium } from 'playwright'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 
 /*
@@ -61,7 +61,46 @@ const browser = await chromium.launch({ executablePath: process.env.CHROME ?? '/
 const page = await browser.newPage()
 await page.goto(`${BASE}/login`, { waitUntil: 'networkidle' })
 
-const mapped = await page.evaluate(async () => {
+// Leads start empty in the app, so two are made up here: one with the whole
+// record filled in and a history of every kind, one bare as the Add lead form
+// leaves it.
+const SAMPLE_LEADS = [
+  {
+    id: '1ead0000-0000-4000-8000-000000000001', refNo: 1001,
+    employerName: 'Al Noor Medical Group', contactName: 'Dr. Faisal Al Harbi', contactRole: 'HR Director',
+    phone: '+966 55 482 1930', email: 'f.alharbi@alnoormed.example', industry: 'Healthcare',
+    city: 'Riyadh', country: 'Saudi Arabia', need: '24 ICU & ER nurses',
+    enquiry: 'We are looking to recruit experienced ICU and ER nurses.', experience: '3+ years',
+    targetStart: 'Jan 2027', requirements: 'SCFHS eligibility.', source: 'WhatsApp', stage: 'Qualified',
+    stageChangedAt: '2026-10-27T12:10:00.000Z', contacted: true, ownerId: '', receivedOn: '2026-10-26',
+    lastContactAt: '2026-10-28T13:40:00.000Z', lastContactChannel: 'WhatsApp',
+    nextFollowUpAt: '2026-10-28T14:00:00.000Z', nextStep: 'Send shortlist & fee proposal',
+    nextStepDetail: 'Confirm the ICU / ER split first.', notes: '',
+    document: { path: 'x/1.pdf', name: 'Nursing requirements.pdf', size: 247808, addedAt: '2026-10-27T09:00:00.000Z' },
+    createdAt: '2026-10-26T06:12:00.000Z',
+    activities: [
+      { id: '1ead0000-0000-4000-8000-0000000000a1', kind: 'contact', channel: 'WhatsApp', direction: 'Outbound',
+        title: 'Requirements confirmed', body: 'Shortlist by 30 October.', durationMinutes: 0, authorId: '', at: '2026-10-28T13:40:00.000Z' },
+      { id: '1ead0000-0000-4000-8000-0000000000a2', kind: 'stage', channel: '', direction: '',
+        title: 'Moved to Qualified', body: '', durationMinutes: 0, authorId: '', at: '2026-10-27T12:10:00.000Z' },
+      { id: '1ead0000-0000-4000-8000-0000000000a3', kind: 'contact', channel: 'Call', direction: 'Outbound',
+        title: 'Discovery call completed', body: '', durationMinutes: 18, authorId: '', at: '2026-10-27T11:30:00.000Z' },
+      { id: '1ead0000-0000-4000-8000-0000000000a4', kind: 'note', channel: '', direction: '',
+        title: 'Note', body: 'Prefers WhatsApp after 14:00 AST.', durationMinutes: 0, authorId: '', at: '2026-10-26T13:45:00.000Z' },
+    ],
+  },
+  {
+    id: '1ead0000-0000-4000-8000-000000000002', refNo: 1002,
+    employerName: 'Najd Facilities', contactName: 'Ahmed Al Dosari', contactRole: '', phone: '', email: 'a@najd.example',
+    industry: '', city: '', country: '', need: '', enquiry: '30 cleaners for Riyadh.', experience: '', targetStart: '',
+    requirements: '', source: 'Manual entry', stage: 'New enquiry', stageChangedAt: '2026-10-29T05:00:00.000Z',
+    contacted: false, ownerId: '', receivedOn: '2026-10-29', lastContactAt: '', lastContactChannel: '',
+    nextFollowUpAt: '', nextStep: '', nextStepDetail: '', notes: '', document: null,
+    createdAt: '2026-10-29T05:00:00.000Z', activities: [],
+  },
+]
+
+const mapped = await page.evaluate(async (sampleLeads) => {
   const rows = await import('/src/data/rows.ts')
   const { useAppStore } = await import('/src/store/useAppStore.ts')
   const s = useAppStore.getState()
@@ -77,6 +116,8 @@ const mapped = await page.evaluate(async () => {
   push(rows.professionRows, s.professions)
   push(rows.paymentSourceRows, s.paymentSources)
   push(rows.staffRows, s.staff)
+  push(rows.leadRows, sampleLeads)
+  for (const lead of sampleLeads) push(rows.leadActivityRows, lead.activities, lead.id)
   push(rows.agencyRows, s.agencies)
   push(rows.agentRows, s.agents)
   push(rows.employerRows, s.employers)
@@ -143,9 +184,11 @@ const mapped = await page.evaluate(async () => {
   trip('commission', rows.commissionRows, s.agentCommissions)
   trip('backout', rows.backoutRows, s.backouts, ['costs', 'createdOn'])
   trip('notification', rows.notificationRows, s.notifications, ['date'])
+  trip('lead', rows.leadRows, sampleLeads, ['activities'])
+  for (const lead of sampleLeads) trip('leadActivity', rows.leadActivityRows, lead.activities)
 
   return { out, trips }
-})
+}, SAMPLE_LEADS)
 await browser.close()
 
 // --- put every row into a database built from the migrations ---------------
@@ -159,8 +202,15 @@ await db.exec(`
     if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if;
   end $$;
 `)
-for (const file of ['db/migrations/0001_schema.sql', 'db/migrations/0002_security.sql']) {
-  await db.exec(readFileSync(file, 'utf8'))
+// Every migration that shapes a table, in order. The storage ones (0003, 0005,
+// 0006) belong to Supabase and are applied only against the real project, and
+// the derived-billing triggers (0004) are left out on purpose: this script
+// inserts the commissions and charges itself, which is the thing being checked,
+// and the triggers would write their own copies of them first.
+for (const file of readdirSync('db/migrations')
+  .filter((name) => name.endsWith('.sql') && !/^(0003|0004|0005|0006|0021)/.test(name))
+  .sort()) {
+  await db.exec(readFileSync(`db/migrations/${file}`, 'utf8'))
 }
 
 let inserted = 0
@@ -219,7 +269,7 @@ for (const table of new Set(mapped.out.map((entry) => entry.table))) {
 const browser2 = await chromium.launch({ executablePath: process.env.CHROME ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' })
 const page2 = await browser2.newPage()
 await page2.goto(`${BASE}/login`, { waitUntil: 'networkidle' })
-const differences = await page2.evaluate(async (tables) => {
+const differences = await page2.evaluate(async ({ tables, sampleLeads }) => {
   const { assemble } = await import('/src/data/assemble.ts')
   const { useAppStore } = await import('/src/store/useAppStore.ts')
   const state = useAppStore.getState()
@@ -280,6 +330,11 @@ const differences = await page2.evaluate(async (tables) => {
   compare('agencyCharges', state.agencyCharges, back.agencyCharges)
   compare('agentCommissions', state.agentCommissions, back.agentCommissions)
   compare('backouts', state.backouts, back.backouts)
+  compare('leads', sampleLeads, back.leads)
+
+  // A lead's history reads newest first.
+  const unsorted = back.leads.filter((lead) => lead.activities.some((a, i, all) => i > 0 && all[i - 1].at < a.at))
+  if (unsorted.length > 0) problems.push(`lead history out of order for ${unsorted.length} lead(s)`)
 
   // The one ordering the app depends on: a worker's stages, oldest first.
   const outOfOrder = back.requests.filter((request) =>
@@ -294,7 +349,7 @@ const differences = await page2.evaluate(async (tables) => {
       Object.entries(back).filter(([, v]) => Array.isArray(v)).map(([k, v]) => [k, v.length]),
     ),
   }
-}, readBack)
+}, { tables: readBack, sampleLeads: SAMPLE_LEADS })
 await browser2.close()
 
 console.log()
