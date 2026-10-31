@@ -214,12 +214,13 @@ anyone who opens the developer tools can edit them.
 | | operations | finance | payroll | staff & settings |
 | --- | --- | --- | --- | --- |
 | **admin** | read, write | read, write | read, write | read, write |
-| **accountant** | read | read, write | — | read |
+| **accountant** | read | read, write | read, write | read |
 | **data entry** | read, write | — | — | read |
 | **anon** (the website) | — | — | — | — |
 
-Payroll is narrower than the rest of finance on purpose: it is what colleagues
-earn. And nobody can change their own role or status, administrator or not —
+Payroll was at first kept to the administrators alone; since migration 0022 it
+follows the rest of finance, because the accountant runs it (paste file
+`db/run-payroll-access.sql`). And nobody can change their own role or status, administrator or not —
 a trigger refuses it, because that is the single edit that would undo
 everything above.
 
